@@ -1,0 +1,31 @@
+{{define "footer"}}
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-info">
+                <div>&copy; 2024-2025 合肥木雷坞信息技术有限公司. All rights reserved.</div>
+                <div class="address-info">
+                    <span>地址：安徽省合肥市高新区天乐社区服务中心科学大道118号5F创业园A栋511-13号</span>
+                </div>
+                <div class="contact-info">
+                    <span>违法信息举报电话：18355845106</span>
+                    <span>/邮箱：service@mliev.com</span>
+                </div>
+                <div class="business-info">
+                    <span>商务合作电话：18355845106</span>
+                </div>
+            </div>
+        </div>
+        {{if or .ICPNumber .PoliceNumber}}
+        <div class="beian-info">
+            {{if .ICPNumber}}
+            <div><a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{{.ICPNumber}}</a></div>
+            {{end}}
+            {{if .PoliceNumber}}
+            <div>公安备案号：{{.PoliceNumber}}</div>
+            {{end}}
+        </div>
+        {{end}}
+    </div>
+</footer>
+{{end}} 

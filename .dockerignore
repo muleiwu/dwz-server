@@ -1,0 +1,35 @@
+# 忽略测试和文档目录
+test/
+docs/
+
+# 忽略版本控制
+.git/
+.gitignore
+
+# 忽略IDE配置
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 忽略构建产物和缓存
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 忽略Docker相关文件
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 忽略配置文件示例
+*.example
+config.yaml
+
+# 忽略README和文档
+README.md
+*.md
+
+# 忽略已编译的二进制文件
+go-web 

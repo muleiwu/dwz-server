@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务异常 - {{.SiteName}}</title>
+    {{template "styles" .}}
+</head>
+<body>
+    {{template "header" .}}
+
+    <main class="error-section">
+        <div class="container">
+            <div class="error-content">
+                <div class="error-icon">⚠️</div>
+                <h1 class="error-title">服务暂时异常</h1>
+                <p class="error-message">
+                    抱歉，短链接服务暂时遇到了一些问题。<br>
+                    我们的技术团队正在努力解决，请稍后再试。
+                </p>
+                <div class="error-code">错误代码: 500</div>
+                
+                <div class="action-buttons">
+                    <a href="/" class="btn btn-primary">返回首页</a>
+                    <a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
+                </div>
+                
+                <div class="suggestions">
+                    <h3>您可以尝试</h3>
+                    <ul>
+                        <li>• 刷新页面重新访问</li>
+                        <li>• 稍后几分钟再试</li>
+                        <li>• 检查网络连接是否正常</li>
+                        <li>• 联系技术支持获取帮助</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {{template "footer" .}}
+</body>
+</html> 

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.SiteName}} - 专业短网址服务</title>
+    {{template "styles" .}}
+</head>
+<body>
+    {{template "header" .}}
+
+    <main class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>{{.SiteName}}</h1>
+                <p>木雷坞公司的专业的短网址服务，让链接更短更美观，支持统计分析等高级功能</p>
+                
+                <div class="features">
+                    <div class="feature">
+                        <div class="feature-icon">🔗</div>
+                        <h3>短链生成</h3>
+                        <p>快速生成短链接</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">📊</div>
+                        <h3>数据统计</h3>
+                        <p>详细的访问统计和分析报告</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🌐</div>
+                        <h3>高并发支持</h3>
+                        <p>高并短链接系统，由木雷坞公司研发</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🔒</div>
+                        <h3>安全可靠</h3>
+                        <p>企业级安全保障，数据加密存储</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <section class="cta-section">
+        <div class="container">
+            <h2>开始使用短网址服务</h2>
+        </div>
+    </section>
+
+    {{template "footer" .}}
+</body>
+</html> 

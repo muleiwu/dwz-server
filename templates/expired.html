@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>链接已过期 - {{.SiteName}}</title>
+    {{template "styles" .}}
+</head>
+<body>
+    {{template "header" .}}
+
+    <main class="error-section">
+        <div class="container">
+            <div class="error-content">
+                <div class="error-icon">⏰</div>
+                <h1 class="error-title">短链接已过期</h1>
+                <p class="error-message">
+                    抱歉，您访问的短链接已过期失效。<br>
+                    请联系短链接的创建者获取新的有效链接。
+                </p>
+                <div class="error-code">错误代码: 410</div>
+                
+                <div class="action-buttons">
+                    <a href="/" class="btn btn-primary">返回首页</a>
+                    <a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
+                </div>
+                
+                <div class="suggestions">
+                    <h3>建议您</h3>
+                    <ul>
+                        <li>• 联系短链接的创建者获取新链接</li>
+                        <li>• 检查是否有更新的链接版本</li>
+                        <li>• 访问原始网站获取最新内容</li>
+                        <li>• 如有疑问，请联系网站管理员</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {{template "footer" .}}
+</body>
+</html> 

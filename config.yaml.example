@@ -1,0 +1,76 @@
+# 服务器配置
+server:
+  mode: release  # debug, release, test
+  addr: ":8080"
+
+# 数据库配置
+database:
+  host: localhost
+  port: 3306
+  username: root
+  password: password
+  database: dwz_db
+  charset: utf8mb4
+  parse_time: true
+  loc: Local
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600
+
+# PostgreSQL 配置（可选）
+# postgres:
+#   host: localhost
+#   port: 5432
+#   username: postgres
+#   password: password
+#   database: dwz_db
+#   sslmode: disable
+
+# Redis 配置
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+  min_idle_conns: 5
+
+# 日志配置
+log:
+  level: info    # debug, info, warn, error
+  filename: logs/app.log
+  max_size: 100     # MB
+  max_age: 30       # days
+  max_backups: 10
+  compress: true
+
+# JWT 配置
+jwt:
+  secret: your-secret-key
+  expire_hours: 24
+
+# 短链接配置
+shortlink:
+  domain: "http://localhost:8080"
+  length: 6
+  custom_length: true
+
+# 限流配置
+rate_limit:
+  requests_per_minute: 100
+  burst: 10
+
+# CORS 配置
+cors:
+  allow_origins:
+    - "*"
+  allow_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  allow_headers:
+    - "Origin"
+    - "Content-Type"
+    - "Authorization" 

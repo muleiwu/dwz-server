@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面未找到 - {{.SiteName}}</title>
+    {{template "styles" .}}
+</head>
+<body>
+    {{template "header" .}}
+
+    <main class="error-section">
+        <div class="container">
+            <div class="error-content">
+                <div class="error-icon">🔍</div>
+                <h1 class="error-title">短链接不存在</h1>
+                <p class="error-message">
+                    抱歉，您访问的短链接不存在或已失效。<br>
+                    请检查链接是否正确，或联系提供方获取新的链接。
+                </p>
+                <div class="error-code">错误代码: 404</div>
+                
+                <div class="action-buttons">
+                    <a href="/" class="btn btn-primary">返回首页</a>
+                    <a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
+                </div>
+                
+                <div class="suggestions">
+                    <h3>可能的原因</h3>
+                    <ul>
+                        <li>• 短链接已过期或被删除</li>
+                        <li>• 链接地址输入错误</li>
+                        <li>• 短链接服务暂时不可用</li>
+                        <li>• 链接已被禁用或限制访问</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {{template "footer" .}}
+</body>
+</html> 
