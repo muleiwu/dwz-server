@@ -357,9 +357,8 @@ GET /health/simple
 
 ## 📞 联系方式
 
-- **Issue**: [GitHub Issues](https://github.com/your-org/dwz-server/issues)
-- **邮箱**: your-email@example.com
-- **文档**: [项目文档](docs/)
+- **Issue**: [GitHub Issues](https://cnb.cool/mliev/open/dwz-server/-/issues)
+\- **文档**: [项目文档](docs/)
 
 ---
 
