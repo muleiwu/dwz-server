@@ -119,14 +119,81 @@
 
 ![Snipaste_2025-07-16_01-36-59.png](./docs/image/Snipaste_2025-07-16_01-36-59.png)
 
-## 🚀 快速开始
+## 🔧 快速安装
+
+
+### 1. 创建项目目录
+```bash
+mkdir mliev-dwz
+cd mliev-dwz
+```
+
+### 2. 创建 Docker Compose 文件
+创建 `docker-compose.yml` 文件：
+
+```yaml
+version: '3.8'
+
+services:
+  mliev-dwz-server:
+    image: docker.cnb.cool/mliev/open/dwz-server:latest
+    restart: always
+    ports:
+      - "8080"  # 仅暴露给容器网络
+    volumes:
+      - "./config/:/app/config/"
+    environment:
+      - TZ=Asia/Shanghai
+
+  mliev-dwz-admin-webui:
+    container_name: mliev-dwz-admin-webui
+    image: docker.cnb.cool/mliev/open/dwz-admin-webui:latest
+    restart: always
+    ports:
+      - "8081:80"
+    depends_on:
+      - dwz-server
+    environment:
+      - TZ=Asia/Shanghai
+```
+
+### 3. 创建配置目录
+```bash
+mkdir -p config
+chmod 666 ./config
+```
+
+### 4. 启动服务
+```bash
+# 后台启动所有服务
+docker-compose up -d
+
+# 或者前台启动（可以看到日志）
+docker-compose up
+```
+
+### 5. 验证安装
+```bash
+# 检查服务状态
+docker-compose ps
+
+# 查看服务日志
+docker-compose logs -f
+```
+
+### 6. 页面配置
+
+打开 `http://{您的IP}:8081` 进行继续配置（请注意8081端口放开）
+
+
+## 🚀 二次开发
 
 ### 环境要求
 - Go 1.23+
 - MySQL 5.7+ 或 PostgreSQL 9.6+
 - Redis 6.0+
 
-### 安装步骤
+### 开发步骤
 
 1. **克隆项目**
 ```bash
