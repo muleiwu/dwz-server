@@ -1,18 +1,22 @@
 package controller
 
 import (
-	"cnb.cool/mliev/open/dwz-server/app/dao"
-	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/helper/database"
-	"cnb.cool/mliev/open/dwz-server/helper/env"
-	"cnb.cool/mliev/open/dwz-server/helper/logger"
-	redis2 "cnb.cool/mliev/open/dwz-server/helper/redis"
 	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
+
+	"cnb.cool/mliev/open/dwz-server/app/dao"
+	"cnb.cool/mliev/open/dwz-server/app/model"
+	"cnb.cool/mliev/open/dwz-server/config"
+	database2 "cnb.cool/mliev/open/dwz-server/config/database"
+	redis3 "cnb.cool/mliev/open/dwz-server/config/redis"
+	"cnb.cool/mliev/open/dwz-server/helper/database"
+	"cnb.cool/mliev/open/dwz-server/helper/env"
+	"cnb.cool/mliev/open/dwz-server/helper/logger"
+	redis2 "cnb.cool/mliev/open/dwz-server/helper/redis"
 
 	"cnb.cool/mliev/open/dwz-server/helper/install"
 	"github.com/gin-gonic/gin"
@@ -27,10 +31,12 @@ type InstallController struct {
 
 // InstallPageData 安装页面数据结构
 type InstallPageData struct {
-	SiteName     string
-	ICPNumber    string
-	PoliceNumber string
-	Domain       string
+	SiteName       string
+	ICPNumber      string
+	PoliceNumber   string
+	Domain         string
+	DatabaseConfig database2.DatabaseConfig
+	RedisConfig    redis3.RedisConfig
 }
 
 // DatabaseConfig 数据库配置结构
@@ -71,6 +77,54 @@ type TestConnectionRequest struct {
 	Redis    RedisConfig    `json:"redis" binding:"required"`
 }
 
+// GetDefaultDatabaseConfig 从环境变量获取默认数据库配置
+func (receiver InstallController) GetDefaultDatabaseConfig() DatabaseConfig {
+	// 初始化配置以支持环境变量读取
+	err := config.InitViper()
+
+	if err != nil {
+		logger.Logger().Error(err.Error())
+	}
+
+	// 从环境变量获取数据库类型，默认mysql
+	dbType := config.GetString("database.type", "mysql")
+	if dbType == "postgres" {
+		dbType = "postgresql"
+	}
+
+	// 根据数据库类型设置默认端口
+	defaultPort := 3306
+	if dbType == "postgresql" {
+		defaultPort = 5432
+	}
+
+	return DatabaseConfig{
+		Type:     dbType,
+		Host:     config.GetString("database.host", "localhost"),
+		Port:     config.GetInt("database.port", defaultPort),
+		Name:     config.GetString("database.dbname", "dwz"),
+		User:     config.GetString("database.username", "dwz"),
+		Password: config.GetString("database.password", "dwz"),
+	}
+}
+
+// GetDefaultRedisConfig 从环境变量获取默认Redis配置
+func (receiver InstallController) GetDefaultRedisConfig() RedisConfig {
+	// 初始化配置以支持环境变量读取
+	err := config.InitViper()
+
+	if err != nil {
+		logger.Logger().Error(err.Error())
+	}
+
+	return RedisConfig{
+		Host:     config.GetString("redis.host", "localhost"),
+		Port:     config.GetInt("redis.port", 6379),
+		Password: config.GetString("redis.password", ""),
+		DB:       config.GetInt("redis.db", 0),
+	}
+}
+
 // GetInstall 显示安装页面
 func (receiver InstallController) GetInstall(c *gin.Context) {
 	// 检查是否已经安装
@@ -82,12 +136,30 @@ func (receiver InstallController) GetInstall(c *gin.Context) {
 	// 获取当前访问的域名
 	host := c.Request.Host
 
-	// 默认数据
+	// 从环境变量获取默认配置
+	defaultDbConfig := receiver.GetDefaultDatabaseConfig()
+	defaultRedisConfig := receiver.GetDefaultRedisConfig()
+
+	// 构造页面数据，将配置结构映射到页面需要的结构
 	pageData := InstallPageData{
 		SiteName:     "短网址服务",
 		ICPNumber:    "",
 		PoliceNumber: "",
 		Domain:       host,
+		DatabaseConfig: database2.DatabaseConfig{
+			Driver:   defaultDbConfig.Type,
+			Host:     defaultDbConfig.Host,
+			Port:     defaultDbConfig.Port,
+			DBName:   defaultDbConfig.Name,
+			Username: defaultDbConfig.User,
+			Password: defaultDbConfig.Password,
+		},
+		RedisConfig: redis3.RedisConfig{
+			Host:     defaultRedisConfig.Host,
+			Port:     defaultRedisConfig.Port,
+			Password: defaultRedisConfig.Password,
+			DB:       defaultRedisConfig.DB,
+		},
 	}
 
 	c.HTML(http.StatusOK, "install.html", pageData)

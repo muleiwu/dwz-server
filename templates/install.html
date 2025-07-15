@@ -416,6 +416,10 @@
                 <h2>数据库配置</h2>
                 <p>请配置数据库和Redis连接信息</p>
                 
+                <div class="alert alert-info">
+                    <strong>提示:</strong> 配置值已从环境变量预填，您可以根据需要修改。
+                </div>
+                
                 <div id="dbAlert"></div>
                 
                 <form id="dbConfigForm">
@@ -423,35 +427,35 @@
                     <div class="form-group">
                         <label class="form-label" for="dbType">数据库类型</label>
                         <select class="form-input" id="dbType" name="dbType" required onchange="changeDbType()">
-                            <option value="mysql">MySQL</option>
-                            <option value="postgresql">PostgreSQL</option>
+                            <option value="mysql" {{if eq .DatabaseConfig.Driver "mysql"}}selected{{end}}>MySQL</option>
+                            <option value="postgresql" {{if eq .DatabaseConfig.Driver "postgresql"}}selected{{end}}>PostgreSQL</option>
                         </select>
                     </div>
                     
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="dbHost">数据库主机</label>
-                            <input type="text" class="form-input" id="dbHost" name="dbHost" value="localhost" required>
+                            <input type="text" class="form-input" id="dbHost" name="dbHost" value="{{.DatabaseConfig.Host}}" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="dbPort">端口</label>
-                            <input type="number" class="form-input" id="dbPort" name="dbPort" value="3306" required>
+                            <input type="number" class="form-input" id="dbPort" name="dbPort" value="{{.DatabaseConfig.Port}}" required>
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label" for="dbName">数据库名称</label>
-                        <input type="text" class="form-input" id="dbName" name="dbName" value="dwz_server" required>
+                        <input type="text" class="form-input" id="dbName" name="dbName" value="{{.DatabaseConfig.DBName}}" required>
                     </div>
                     
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="dbUser">用户名</label>
-                            <input type="text" class="form-input" id="dbUser" name="dbUser" value="root" required>
+                            <input type="text" class="form-input" id="dbUser" name="dbUser" value="{{.DatabaseConfig.Username}}" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="dbPassword">密码</label>
-                            <input type="password" class="form-input" id="dbPassword" name="dbPassword" required>
+                            <input type="text" class="form-input" id="dbPassword" name="dbPassword" value="{{.DatabaseConfig.Password}}" required>
                         </div>
                     </div>
                     
@@ -459,22 +463,22 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="redisHost">Redis主机</label>
-                            <input type="text" class="form-input" id="redisHost" name="redisHost" value="localhost" required>
+                            <input type="text" class="form-input" id="redisHost" name="redisHost" value="{{.RedisConfig.Host}}" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="redisPort">端口</label>
-                            <input type="number" class="form-input" id="redisPort" name="redisPort" value="6379" required>
+                            <input type="number" class="form-input" id="redisPort" name="redisPort" value="{{.RedisConfig.Port}}" required>
                         </div>
                     </div>
                     
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="redisPassword">Redis密码</label>
-                            <input type="password" class="form-input" id="redisPassword" name="redisPassword" placeholder="留空如无密码">
+                            <input type="text" class="form-input" id="redisPassword" name="redisPassword" value="{{.RedisConfig.Password}}" placeholder="留空如无密码">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="redisDB">数据库索引</label>
-                            <input type="number" class="form-input" id="redisDB" name="redisDB" value="0" min="0" max="15" required>
+                            <input type="number" class="form-input" id="redisDB" name="redisDB" value="{{.RedisConfig.DB}}" min="0" max="15" required>
                         </div>
                     </div>
                 </form>
@@ -601,14 +605,17 @@
         let dbTestPassed = false;
         
         // 数据库类型切换
-        function changeDbType() {
+        function changeDbType(resetPort = true) {
             const dbType = document.getElementById('dbType').value;
             const portInput = document.getElementById('dbPort');
             
-            if (dbType === 'mysql') {
-                portInput.value = '3306';
-            } else if (dbType === 'postgresql') {
-                portInput.value = '5432';
+            // 只在用户主动切换时才重置端口
+            if (resetPort) {
+                if (dbType === 'mysql') {
+                    portInput.value = '3306';
+                } else if (dbType === 'postgresql') {
+                    portInput.value = '5432';
+                }
             }
             
             // 重置测试状态
@@ -861,6 +868,23 @@
             const container = document.getElementById(containerId);
             container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
         }
+        
+        // 页面初始化
+        function initializePage() {
+            // 初始化数据库类型选择（不重置端口）
+            changeDbType(false); // 不重置端口，保持服务器传递的值
+            
+            // 如果Redis密码为空，显示占位符
+            const redisPassword = document.getElementById('redisPassword');
+            if (redisPassword.value === '') {
+                redisPassword.placeholder = '留空如无密码';
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+        });
     </script>
 </body>
 </html> 
