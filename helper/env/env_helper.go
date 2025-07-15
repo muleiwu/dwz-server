@@ -14,6 +14,15 @@ func InitViper() error {
 	return nil
 }
 
+// ReloadViper 初始化配置
+func ReloadViper() error {
+	if err := config.ReloadViper(); err != nil {
+		log.Printf("配置初始化失败: %v", err)
+		return err
+	}
+	return nil
+}
+
 // Env 获取环境变量
 func Env(name string, def any) any {
 	return config.GetEnvWithDefault(name, def)

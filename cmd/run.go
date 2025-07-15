@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"cnb.cool/mliev/open/dwz-server/config/middleware"
 	"context"
 	"embed"
 	"fmt"
@@ -13,8 +12,11 @@ import (
 	"syscall"
 	"time"
 
+	"cnb.cool/mliev/open/dwz-server/config/middleware"
+
 	"cnb.cool/mliev/open/dwz-server/helper/database"
 	"cnb.cool/mliev/open/dwz-server/helper/env"
+	"cnb.cool/mliev/open/dwz-server/helper/install"
 	"cnb.cool/mliev/open/dwz-server/helper/logger"
 	"cnb.cool/mliev/open/dwz-server/helper/redis"
 
@@ -40,24 +42,33 @@ func Start(fs embed.FS) {
 
 // initializeServices 初始化所有服务
 func initializeServices() {
-	if err := env.InitViper(); err != nil {
-		logger.Logger().Error(fmt.Sprintf("配置初始化失败: %v", err))
-		os.Exit(1)
-	}
+	// 检查安装状态
+	if install.CheckInstallStatus() {
+		logger.Logger().Info("系统已安装，正在初始化服务...")
 
-	// 自动迁移数据库表结构
-	if err := autoMigrate(); err != nil {
-		logger.Logger().Error(fmt.Sprintf("数据库迁移失败: %v", err))
-		os.Exit(1)
-	}
+		if err := env.InitViper(); err != nil {
+			logger.Logger().Error(fmt.Sprintf("配置初始化失败: %v", err))
+			os.Exit(1)
+		}
 
-	// 初始化Redis连接
-	redis.GetRedis()
+		// 自动迁移数据库表结构
+		if err := autoMigrate(); err != nil {
+			logger.Logger().Error(fmt.Sprintf("数据库迁移失败: %v", err))
+			os.Exit(1)
+		}
 
-	// 初始化分布式发号器的域名计数器
-	if err := initializeDomainCounters(); err != nil {
-		logger.Logger().Error(fmt.Sprintf("分布式发号器初始化失败: %v", err))
-		os.Exit(1)
+		// 初始化Redis连接
+		redis.GetRedis()
+
+		// 初始化分布式发号器的域名计数器
+		if err := initializeDomainCounters(); err != nil {
+			logger.Logger().Error(fmt.Sprintf("分布式发号器初始化失败: %v", err))
+			os.Exit(1)
+		}
+	} else {
+		logger.Logger().Info("系统未安装，请访问 /install.cgi 进行安装")
+		// 未安装时，只初始化基本的日志服务
+		return
 	}
 }
 

@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统安装 - {{.SiteName}}</title>
+    {{template "styles"}}
+    <style>
+        .install-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+        }
+        
+        .install-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .install-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .install-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 0 1rem;
+        }
+        
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            flex: 1;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active .step-number {
+            background: #667eea;
+            color: white;
+        }
+        
+        .step.completed .step-number {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .step-label {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+        }
+        
+        .step.active .step-label {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .step-connector {
+            position: absolute;
+            top: 20px;
+            left: 60%;
+            width: 100%;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: -1;
+        }
+        
+        .step:last-child .step-connector {
+            display: none;
+        }
+        
+        .step.completed .step-connector {
+            background: #4caf50;
+        }
+        
+        .step-content {
+            display: none;
+            padding: 2rem 0;
+        }
+        
+        .step-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .license-content {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            line-height: 1.8;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #45a049;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.3s ease;
+        }
+        
+        .config-summary {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .config-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .config-label {
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .config-value {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    {{template "header" .}}
+    
+    <main class="main">
+        <div class="install-container">
+            <div class="install-header">
+                <h1 class="install-title">系统安装向导</h1>
+                <p class="install-subtitle">欢迎使用短网址服务系统，请按照以下步骤完成安装</p>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 25%"></div>
+            </div>
+            
+            <div class="step-indicator">
+                <div class="step active" id="step1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">许可协议</div>
+                    <div class="step-connector"></div>
+                </div>
+                <div class="step" id="step2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">数据库配置</div>
+                    <div class="step-connector"></div>
+                </div>
+                <div class="step" id="step3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">管理员配置</div>
+                    <div class="step-connector"></div>
+                </div>
+                <div class="step" id="step4">
+                    <div class="step-number">4</div>
+                    <div class="step-label">安装完成</div>
+                </div>
+            </div>
+            
+            <!-- 步骤1: 许可协议 -->
+            <div class="step-content active" id="content1">
+                <h2>软件许可协议</h2>
+                <div class="license-content">
+                    <h3>木雷短网址程序 软件许可协议</h3>
+                    <p><strong>版本 1.0</strong></p>
+                    <p><strong>生效日期：2025年07月15日</strong></p>
+
+                    授权协议<br /><br />
+
+                    版权所有 (c) 2025，合肥木雷坞信息技术有限公司<br />
+                    保留所有权利。<br /><br />
+
+                    感谢您选择合肥木雷坞信息技术有限公司产品。希望我们的努力能为您提供一个高效快速、强大的短网址解决方案。<br /><br />
+
+                    用户须知：本协议是您与合肥木雷坞信息技术有限公司之间关于您使用合肥木雷坞信息技术有限公司提供的各种软件产品及服务的法律协议。无论您是个人或组织、盈利与否、用途如何（包括以学习和研究为目的），均需仔细阅读本协议，包括免除或者限制合肥木雷坞信息技术有限公司责任的免责条款及对您的权利限制。请您审阅并接受或不接受本服务条款。如您不同意本服务条款及/或合肥木雷坞信息技术有限公司随时对其的修改，您应不使用或主动取消合肥木雷坞信息技术有限公司提供的合肥木雷坞信息技术有限公司产品。否则，您的任何对合肥木雷坞信息技术有限公司产品中的相关服务的注册、登陆、下载、查看等使用行为将被视为您对本服务条款全部的完全接受，包括接受合肥木雷坞信息技术有限公司对服务条款随时所做的任何修改。<br />
+                    本服务条款一旦发生变更， 合肥木雷坞信息技术有限公司将在网页上公布修改内容。修改后的服务条款一旦在网站管理后台上公布即有效代替原来的服务条款。您可随时登录开源代码网址查阅最新版服务条款。如果您选择接受本条款，即表示您同意接受协议各项条件的约束。如果您不同意本服务条款，则不能获得使用本服务的权利。您若有违反本条款规定，合肥木雷坞信息技术有限公司有权随时中止或终止您对合肥木雷坞信息技术有限公司产品的使用资格并保留追究相关法律责任的权利。<br />
+                    在理解、同意、并遵守本协议的全部条款后，方可开始使用合肥木雷坞信息技术有限公司产品。您可能与合肥木雷坞信息技术有限公司直接签订另一书面协议，以补充或者取代本协议的全部或者任何部分。<br />
+                    <br />
+                    合肥木雷坞信息技术有限公司拥有本软件的全部知识产权。本软件只供许可协议，并非出售。合肥木雷坞信息技术有限公司只允许您在遵守本协议各项条款的情况下复制、下载、安装、使用或者以其他方式受益于本软件的功能或者知识产权。<br />
+                    <br />
+                    I. 协议许可的权利<br />
+                    <br />
+                    1. 您可以在完全遵守本许可协议的基础上，将本软件应用于非商业用途或商业用途使用（局限于本协议所适配许可的情况下），而不必支付软件版权许可费用。<br />
+                    2. 您可以在协议规定的约束和限制范围内修改合肥木雷坞信息技术有限公司产品源代码（如果被提供的话）或界面风格以适应您的网站要求。<br />
+                    3. 您拥有使用本软件构建的网站中全部资料，并独立承担与使用本软件构建的网站内容的审核、注意义务，确保其不侵犯任何人的合法权益，独立承担因使用合肥木雷坞信息技术有限公司软件和服务带来的全部责任，若造成合肥木雷坞信息技术有限公司或用户损失的，您应予以全部赔偿。<br />
+                    4. 若您需将合肥木雷坞信息技术有限公司软件或服务用户商业用途，必须遵守中国人民共和国相关法律。若需提供技术支持方式或技术支持内容，请向官方（https://www.mliev.com/）获取技术支持服务。<br />
+                    5. 您可以从合肥木雷坞信息技术有限公司提供的应用中心服务中下载适合您网站的应用程序，但应向应用程序开发者/所有者支付相应的费用。<br />
+                    <br />
+                    II. 协议规定的约束和限制<br />
+                    <br />
+                    1. 不得对本软件或与之关联的商业授权进行出租、出售、抵押或发放子许可证。<br />
+                    2. 无论如何，即无论用途如何、是否经过修改或美化、修改程度如何，只要使用合肥木雷坞信息技术有限公司产品的整体或任何部分，未经书面许可，页面页脚处的 Powered by 木雷短网址! 及链接（https://www.mliev.com/）都必须保留，而不能清除或修改、替换。<br />
+                    3. 禁止在合肥木雷坞信息技术有限公司产品的整体或任何部分基础上以发展任何派生版本、修改版本或第三方版本用于重新分发。<br />
+                    4. 您从应用中心下载的应用程序，未经应用程序开发者/所有者的书面许可，不得对其进行反向工程、反向汇编、反向编译等，不得擅自复制、修改、链接、转载、汇编、发表、出版、发展与之有关的衍生产品、作品等。<br />
+                    5. 如果您未能遵守本协议的条款，您的授权将被终止，所许可的权利将被收回，同时您应承担相应法律责任。<br />
+                    <br />
+                    III. 有限担保和免责声明<br />
+                    <br />
+                    1. 本软件及所附带的文件是作为不提供任何明确的或隐含的赔偿或担保的形式提供的。<br />
+                    2. 用户出于自愿而使用本软件，您必须了解使用本软件的风险，我们不承诺提供任何形式的技术支持、使用担保，也不承担任何因使用本软件而产生问题的相关责任。<br />
+                    3. 合肥木雷坞信息技术有限公司不对使用本软件构建的网站中或者论坛中的文章或信息承担责任，全部责任由您自行承担。<br />
+                    4. 合肥木雷坞信息技术有限公司对合肥木雷坞信息技术有限公司提供的软件和服务之及时性、安全性、准确性不作担保，由于不可抗力因素、合肥木雷坞信息技术有限公司无法控制的因素（包括黑客攻击、停断电等）等造成软件使用和服务中止或终止，而给您造成损失的，您同意放弃追究合肥木雷坞信息技术有限公司责任的全部权利。<br />
+                    5. 合肥木雷坞信息技术有限公司特别提请您注意，合肥木雷坞信息技术有限公司为了保障公司业务发展和调整的自主权，合肥木雷坞信息技术有限公司拥有随时经或未经事先通知而修改服务内容、中止或终止部分或全部软件使用和服务的权利，修改会公布于合肥木雷坞信息技术有限公司网站相关页面上，一经公布视为通知。 合肥木雷坞信息技术有限公司行使修改或中止、终止部分或全部软件使用和服务的权利而造成损失的，合肥木雷坞信息技术有限公司不需对您或任何第三方负责。<br />
+                    <br />
+                    有关合肥木雷坞信息技术有限公司产品最终用户授权协议、商业授权与技术服务的详细内容，均由合肥木雷坞信息技术有限公司独家提供。合肥木雷坞信息技术有限公司拥有在不事先通知的情况下，修改授权协议和服务价目表的权利，修改后的协议或价目表对自改变之日起的新授权用户生效。<br />
+                    <br />
+                    一旦您开始安装合肥木雷坞信息技术有限公司产品，即被视为完全理解并接受本协议的各项条款，在享有上述条款授予的权利的同时，受到相关的约束和限制。协议许可范围以外的行为，将直接违反本授权协议并构成侵权，我们有权随时终止授权，责令停止损害，并保留追究相关责任的权力。<br />
+                    <br />
+                    本许可协议条款的解释，效力及纠纷的解决，适用于中华人民共和国大陆法律。<br />
+                    <br />
+                    若您和合肥木雷坞信息技术有限公司之间发生任何纠纷或争议，首先应友好协商解决，协商不成的，您在此完全同意将纠纷或争议提交合肥木雷坞信息技术有限公司所在地合肥市高新区人民法院管辖。合肥木雷坞信息技术有限公司拥有对以上各项条款内容的解释权及修改权。（正文完）<br />
+                    <br />
+                    合肥木雷坞信息技术有限公司<br />
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="agreeTerms" required>
+                    <label for="agreeTerms">我已仔细阅读并同意上述许可协议</label>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">取消</button>
+                    <button class="btn btn-primary" id="nextStep1" onclick="nextStep(1)" disabled>下一步</button>
+                </div>
+            </div>
+            
+            <!-- 步骤2: 数据库配置 -->
+            <div class="step-content" id="content2">
+                <h2>数据库配置</h2>
+                <p>请配置数据库和Redis连接信息</p>
+                
+                <div id="dbAlert"></div>
+                
+                <form id="dbConfigForm">
+                    <h3>数据库配置</h3>
+                    <div class="form-group">
+                        <label class="form-label" for="dbType">数据库类型</label>
+                        <select class="form-input" id="dbType" name="dbType" required onchange="changeDbType()">
+                            <option value="mysql">MySQL</option>
+                            <option value="postgresql">PostgreSQL</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="dbHost">数据库主机</label>
+                            <input type="text" class="form-input" id="dbHost" name="dbHost" value="localhost" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dbPort">端口</label>
+                            <input type="number" class="form-input" id="dbPort" name="dbPort" value="3306" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="dbName">数据库名称</label>
+                        <input type="text" class="form-input" id="dbName" name="dbName" value="dwz_server" required>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="dbUser">用户名</label>
+                            <input type="text" class="form-input" id="dbUser" name="dbUser" value="root" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dbPassword">密码</label>
+                            <input type="password" class="form-input" id="dbPassword" name="dbPassword" required>
+                        </div>
+                    </div>
+                    
+                    <h3>Redis配置</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="redisHost">Redis主机</label>
+                            <input type="text" class="form-input" id="redisHost" name="redisHost" value="localhost" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="redisPort">端口</label>
+                            <input type="number" class="form-input" id="redisPort" name="redisPort" value="6379" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="redisPassword">Redis密码</label>
+                            <input type="password" class="form-input" id="redisPassword" name="redisPassword" placeholder="留空如无密码">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="redisDB">数据库索引</label>
+                            <input type="number" class="form-input" id="redisDB" name="redisDB" value="0" min="0" max="15" required>
+                        </div>
+                    </div>
+                </form>
+                
+                <div class="loading" id="dbLoading">
+                    <div class="spinner"></div>
+                    <p>正在测试数据库连接...</p>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="prevStep(2)">上一步</button>
+                    <button class="btn btn-primary" id="testDB" onclick="testDatabaseConnection()">测试连接</button>
+                    <button class="btn btn-primary" id="nextStep2" onclick="nextStep(2)" disabled>下一步</button>
+                </div>
+            </div>
+            
+            <!-- 步骤3: 管理员配置 -->
+            <div class="step-content" id="content3">
+                <h2>管理员配置</h2>
+                <p>请创建系统管理员账户</p>
+                
+                <div id="adminAlert"></div>
+                
+                <form id="adminConfigForm">
+                    <div class="form-group">
+                        <label class="form-label" for="adminUsername">管理员用户名</label>
+                        <input type="text" class="form-input" id="adminUsername" name="adminUsername" value="admin" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="adminPassword">密码</label>
+                        <input type="password" class="form-input" id="adminPassword" name="adminPassword" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="adminPasswordConfirm">确认密码</label>
+                        <input type="password" class="form-input" id="adminPasswordConfirm" name="adminPasswordConfirm" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="adminEmail">邮箱</label>
+                        <input type="email" class="form-input" id="adminEmail" name="adminEmail" placeholder="可选">
+                    </div>
+                </form>
+                
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="prevStep(3)">上一步</button>
+                    <button class="btn btn-primary" id="nextStep3" onclick="nextStep(3)">下一步</button>
+                </div>
+            </div>
+            
+            <!-- 步骤4: 安装确认 -->
+            <div class="step-content" id="content4">
+                <h2>安装确认</h2>
+                <p>请确认以下配置信息，点击"开始安装"完成系统安装</p>
+                
+                <div id="installAlert"></div>
+                
+                <div class="config-summary">
+                    <h3>数据库配置</h3>
+                    <div class="config-item">
+                        <span class="config-label">数据库类型:</span>
+                        <span class="config-value" id="summaryDbType">-</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">数据库主机:</span>
+                        <span class="config-value" id="summaryDbHost">-</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">数据库端口:</span>
+                        <span class="config-value" id="summaryDbPort">-</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">数据库名称:</span>
+                        <span class="config-value" id="summaryDbName">-</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">数据库用户:</span>
+                        <span class="config-value" id="summaryDbUser">-</span>
+                    </div>
+                    
+                    <h3>Redis配置</h3>
+                    <div class="config-item">
+                        <span class="config-label">Redis主机:</span>
+                        <span class="config-value" id="summaryRedisHost">-</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">Redis端口:</span>
+                        <span class="config-value" id="summaryRedisPort">-</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">Redis数据库:</span>
+                        <span class="config-value" id="summaryRedisDB">-</span>
+                    </div>
+                    
+                    <h3>管理员配置</h3>
+                    <div class="config-item">
+                        <span class="config-label">管理员用户名:</span>
+                        <span class="config-value" id="summaryAdminUsername">-</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">管理员邮箱:</span>
+                        <span class="config-value" id="summaryAdminEmail">-</span>
+                    </div>
+                </div>
+                
+                <div class="loading" id="installLoading">
+                    <div class="spinner"></div>
+                    <p>正在安装系统，请稍候...</p>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="prevStep(4)" id="backButton">上一步</button>
+                    <button class="btn btn-success" id="installButton" onclick="startInstall()">开始安装</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    {{template "footer" .}}
+    
+    <script>
+        let currentStep = 1;
+        let dbTestPassed = false;
+        
+        // 数据库类型切换
+        function changeDbType() {
+            const dbType = document.getElementById('dbType').value;
+            const portInput = document.getElementById('dbPort');
+            
+            if (dbType === 'mysql') {
+                portInput.value = '3306';
+            } else if (dbType === 'postgresql') {
+                portInput.value = '5432';
+            }
+            
+            // 重置测试状态
+            dbTestPassed = false;
+            document.getElementById('nextStep2').disabled = true;
+        }
+        
+        // 同意协议复选框事件
+        document.getElementById('agreeTerms').addEventListener('change', function() {
+            document.getElementById('nextStep1').disabled = !this.checked;
+        });
+        
+        // 密码确认验证
+        document.getElementById('adminPasswordConfirm').addEventListener('input', function() {
+            const password = document.getElementById('adminPassword').value;
+            const confirmPassword = this.value;
+            const nextButton = document.getElementById('nextStep3');
+            
+            if (password !== confirmPassword) {
+                this.setCustomValidity('密码不匹配');
+                nextButton.disabled = true;
+            } else {
+                this.setCustomValidity('');
+                nextButton.disabled = false;
+            }
+        });
+        
+        // 下一步
+        function nextStep(step) {
+            if (step === 1) {
+                // 协议步骤
+                if (!document.getElementById('agreeTerms').checked) {
+                    return;
+                }
+                showStep(2);
+            } else if (step === 2) {
+                // 数据库配置步骤
+                if (!dbTestPassed) {
+                    showAlert('dbAlert', 'error', '请先测试数据库连接');
+                    return;
+                }
+                showStep(3);
+            } else if (step === 3) {
+                // 管理员配置步骤
+                if (!validateAdminForm()) {
+                    return;
+                }
+                updateSummary();
+                showStep(4);
+            }
+        }
+        
+        // 上一步
+        function prevStep(step) {
+            showStep(step - 1);
+        }
+        
+        // 显示步骤
+        function showStep(step) {
+            // 隐藏所有内容
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 隐藏所有步骤指示器
+            document.querySelectorAll('.step').forEach(stepEl => {
+                stepEl.classList.remove('active');
+            });
+            
+            // 显示当前步骤
+            document.getElementById(`content${step}`).classList.add('active');
+            document.getElementById(`step${step}`).classList.add('active');
+            
+            // 更新已完成的步骤
+            for (let i = 1; i < step; i++) {
+                document.getElementById(`step${i}`).classList.add('completed');
+            }
+            
+            // 更新进度条
+            const progress = (step / 4) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            
+            currentStep = step;
+        }
+        
+        // 测试数据库连接
+        async function testDatabaseConnection() {
+            const form = document.getElementById('dbConfigForm');
+            const formData = new FormData(form);
+            
+            // 显示加载状态
+            document.getElementById('dbLoading').classList.add('show');
+            document.getElementById('testDB').disabled = true;
+            
+            try {
+                const response = await fetch('/api/v1/install/test-db', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        database: {
+                            type: formData.get('dbType'),
+                            host: formData.get('dbHost'),
+                            port: parseInt(formData.get('dbPort')),
+                            name: formData.get('dbName'),
+                            user: formData.get('dbUser'),
+                            password: formData.get('dbPassword')
+                        },
+                        redis: {
+                            host: formData.get('redisHost'),
+                            port: parseInt(formData.get('redisPort')),
+                            password: formData.get('redisPassword'),
+                            db: parseInt(formData.get('redisDB'))
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+
+                debugger
+                if (response.ok && result.code === 0) {
+                    showAlert('dbAlert', 'success', '数据库连接测试成功！');
+                    dbTestPassed = true;
+                    document.getElementById('nextStep2').disabled = false;
+                } else {
+                    showAlert('dbAlert', 'error', result.message || '数据库连接测试失败');
+                    dbTestPassed = false;
+                    document.getElementById('nextStep2').disabled = true;
+                }
+            } catch (error) {
+                showAlert('dbAlert', 'error', '网络错误，请检查网络连接');
+                dbTestPassed = false;
+                document.getElementById('nextStep2').disabled = true;
+            }
+            
+            // 隐藏加载状态
+            document.getElementById('dbLoading').classList.remove('show');
+            document.getElementById('testDB').disabled = false;
+        }
+        
+        // 验证管理员表单
+        function validateAdminForm() {
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            const confirmPassword = document.getElementById('adminPasswordConfirm').value;
+            
+            if (!username || !password || !confirmPassword) {
+                showAlert('adminAlert', 'error', '请填写所有必填字段');
+                return false;
+            }
+            
+            if (password !== confirmPassword) {
+                showAlert('adminAlert', 'error', '两次输入的密码不匹配');
+                return false;
+            }
+            
+            if (password.length < 6) {
+                showAlert('adminAlert', 'error', '密码长度不能少于6位');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // 更新配置摘要
+        function updateSummary() {
+            // 数据库配置
+            const dbType = document.getElementById('dbType').value;
+            const dbTypeText = dbType === 'mysql' ? 'MySQL' : 'PostgreSQL';
+            document.getElementById('summaryDbType').textContent = dbTypeText;
+            document.getElementById('summaryDbHost').textContent = document.getElementById('dbHost').value;
+            document.getElementById('summaryDbPort').textContent = document.getElementById('dbPort').value;
+            document.getElementById('summaryDbName').textContent = document.getElementById('dbName').value;
+            document.getElementById('summaryDbUser').textContent = document.getElementById('dbUser').value;
+            
+            // Redis配置
+            document.getElementById('summaryRedisHost').textContent = document.getElementById('redisHost').value;
+            document.getElementById('summaryRedisPort').textContent = document.getElementById('redisPort').value;
+            document.getElementById('summaryRedisDB').textContent = document.getElementById('redisDB').value;
+            
+            // 管理员配置
+            document.getElementById('summaryAdminUsername').textContent = document.getElementById('adminUsername').value;
+            document.getElementById('summaryAdminEmail').textContent = document.getElementById('adminEmail').value || '未设置';
+        }
+        
+        // 开始安装
+        async function startInstall() {
+            const dbForm = document.getElementById('dbConfigForm');
+            const dbFormData = new FormData(dbForm);
+            
+            // 显示加载状态
+            document.getElementById('installLoading').classList.add('show');
+            document.getElementById('installButton').disabled = true;
+            document.getElementById('backButton').disabled = true;
+            
+            try {
+                const response = await fetch('/api/v1/install', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        database: {
+                            type: dbFormData.get('dbType'),
+                            host: dbFormData.get('dbHost'),
+                            port: parseInt(dbFormData.get('dbPort')),
+                            name: dbFormData.get('dbName'),
+                            user: dbFormData.get('dbUser'),
+                            password: dbFormData.get('dbPassword')
+                        },
+                        redis: {
+                            host: dbFormData.get('redisHost'),
+                            port: parseInt(dbFormData.get('redisPort')),
+                            password: dbFormData.get('redisPassword'),
+                            db: parseInt(dbFormData.get('redisDB'))
+                        },
+                        admin: {
+                            username: document.getElementById('adminUsername').value,
+                            password: document.getElementById('adminPassword').value,
+                            email: document.getElementById('adminEmail').value
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.code === 0) {
+                    showAlert('installAlert', 'success', '系统安装成功！正在跳转到登录页面...');
+                    setTimeout(() => {
+                        window.location.href = '/admin/';
+                    }, 3000);
+                } else {
+                    showAlert('installAlert', 'error', result.message || '安装失败');
+                    document.getElementById('installButton').disabled = false;
+                    document.getElementById('backButton').disabled = false;
+                }
+            } catch (error) {
+                showAlert('installAlert', 'error', '网络错误，请检查网络连接');
+                document.getElementById('installButton').disabled = false;
+                document.getElementById('backButton').disabled = false;
+            }
+            
+            // 隐藏加载状态
+            document.getElementById('installLoading').classList.remove('show');
+        }
+        
+        // 显示提示信息
+        function showAlert(containerId, type, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        }
+    </script>
+</body>
+</html> 

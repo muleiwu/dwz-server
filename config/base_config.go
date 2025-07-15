@@ -48,6 +48,32 @@ func InitViper() error {
 	return globalConfig.initError
 }
 
+// InitViper 初始化配置，返回错误以便调用方处理
+func ReloadViper() error {
+	viper.SetConfigName("config")
+	viper.SetConfigType("yml")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("./config")
+
+	// 支持读取环境变量
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// 尝试读取配置文件
+	if err := viper.ReadInConfig(); err != nil {
+		// 如果配置文件不存在，只记录日志但不返回错误
+		fmt.Printf("警告: 配置文件未找到，将使用默认配置和环境变量: %v\n", err)
+	}
+
+	// 预加载所有配置到缓存
+	globalConfig.preloadAllConfigs()
+
+	// 原子设置初始化完成标志
+	atomic.StoreInt64(&globalConfig.initialized, 1)
+
+	return globalConfig.initError
+}
+
 // preloadAllConfigs 预加载所有配置项到缓存
 func (c *Config) preloadAllConfigs() {
 	allSettings := viper.AllSettings()

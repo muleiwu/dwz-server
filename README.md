@@ -1,4 +1,4 @@
-# DWZ Server - 企业级短链接服务平台
+# 木雷短网址 - 企业级短链接服务平台
 
 [![Go Version](https://img.shields.io/github/go-mod/go-version/your-org/dwz-server)](https://golang.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)

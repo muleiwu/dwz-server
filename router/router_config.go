@@ -12,12 +12,24 @@ func InitRouter(router *gin.Engine) {
 
 	regexRouter := ginregex.New(router, nil)
 
+	// 添加安装检查中间件
+	router.Use(middleware.InstallMiddleware())
+
 	router.Any("/favicon.ico", func(c *gin.Context) {
 		c.Status(204) // 返回204 No Content
 	})
 	// 健康检查接口
 	router.GET("/health", controller.HealthController{}.GetHealth)
 	router.GET("/health/simple", controller.HealthController{}.GetHealthSimple)
+
+	router.GET("/install.cgi", controller.InstallController{}.GetInstall)
+
+	// 安装接口路由（不需要认证）
+	installRoutes := router.Group("/api/v1/install")
+	{
+		installRoutes.POST("/test-db", controller.InstallController{}.TestConnection) // 测试数据库连接
+		installRoutes.POST("", controller.InstallController{}.Install)                // 执行安装
+	}
 
 	// 首页
 	router.GET("/", controller.IndexController{}.GetIndex)
