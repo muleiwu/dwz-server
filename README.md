@@ -5,6 +5,15 @@
 
 > 🚀 一个功能完善、高性能的企业级短链接服务平台，支持多域名、AB测试、用户管理、实时统计等功能。
 
+###  📞 加群获取帮助
+
+ 1. QQ群：
+    - 1021660914 [点击链接加入群聊【木雷坞开源家】](https://n3.ink/lmKc)
+
+ 2. 企业微信群
+    - ![wechat_qr_code.png](/docs/image/wechat_qr_code.png)
+
+
 ## ✨ 功能特性
 
 ### 🔗 核心功能
@@ -451,12 +460,5 @@ GET /health/simple
 ## 🙏 致谢
 
 感谢所有贡献者的努力和开源社区的支持！
-
-## 📞 联系方式
-
-- **Issue**: [GitHub Issues](https://cnb.cool/mliev/open/dwz-server/-/issues)
-\- **文档**: [项目文档](docs/)
-
----
 
 ⭐ 如果这个项目对您有帮助，请给我们一个星标！
