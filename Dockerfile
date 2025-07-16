@@ -36,10 +36,6 @@ FROM alpine:latest
 # 安装ca证书和时区数据
 RUN apk --no-cache add ca-certificates tzdata
 
-# 创建非root用户
-RUN addgroup -g 1001 appgroup && \
-    adduser -D -u 1001 -G appgroup appuser
-
 # 设置时区
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone
@@ -53,10 +49,8 @@ COPY --from=builder /app/dwz .
 # 创建日志目录
 RUN mkdir -p logs && \
     mkdir -p config && \
-    chown -R appuser:appgroup /app
+    chown -R /app
 
-# 切换到非root用户
-USER appuser
 
 # 暴露端口
 EXPOSE 8080
