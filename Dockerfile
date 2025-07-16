@@ -49,7 +49,6 @@ COPY --from=builder /app/dwz .
 # 创建日志目录
 RUN mkdir -p logs && \
     mkdir -p config && \
-    chown -R /app
 
 
 # 暴露端口
