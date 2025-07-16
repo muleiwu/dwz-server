@@ -46,7 +46,8 @@ func initializeServices() {
 		logger.Logger().Warn(fmt.Sprintf("配置初始化警告: %v", err))
 	}
 
-	if !install.CheckInstallStatus() && env.EnvBool("AUTO_INIT", false) {
+	logger.Logger().Debug(fmt.Sprintf("自动安装标识：%s", env.Env("AUTO_INSTALL", "no")))
+	if !install.CheckInstallStatus() && env.EnvString("AUTO_INSTALL", "") == "install" {
 		installService := service.NewInitInstallService()
 		installService.AutoInstall()
 	}
