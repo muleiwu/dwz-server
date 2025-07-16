@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -146,6 +147,13 @@ func GetString(key string, defaultValue string) string {
 // GetInt 获取整数配置值
 func GetInt(key string, defaultValue int) int {
 	val := GetEnvWithDefault(key, defaultValue)
+	if i, ok := val.(string); ok {
+		num, err := strconv.Atoi(i)
+		if err != nil {
+			return defaultValue
+		}
+		return num
+	}
 	if i, ok := val.(int); ok {
 		return i
 	}
