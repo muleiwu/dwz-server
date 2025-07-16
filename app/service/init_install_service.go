@@ -1,6 +1,12 @@
 package service
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
+	"os"
+	"time"
+
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/model"
 	"cnb.cool/mliev/open/dwz-server/config"
@@ -8,14 +14,8 @@ import (
 	database2 "cnb.cool/mliev/open/dwz-server/config/database"
 	redis3 "cnb.cool/mliev/open/dwz-server/config/redis"
 	database1 "cnb.cool/mliev/open/dwz-server/helper/database"
-	"cnb.cool/mliev/open/dwz-server/helper/install"
 	"cnb.cool/mliev/open/dwz-server/helper/logger"
-	"context"
-	"database/sql"
-	"fmt"
 	"github.com/redis/go-redis/v9"
-	"os"
-	"time"
 )
 
 type InitInstallService struct {
@@ -84,9 +84,6 @@ func (receiver *InitInstallService) AutoInstall() {
 		logger.Logger().Error(fmt.Sprintf("[自动安装] 自动添默认用户失败, 原因: %s", err.Error()))
 		os.Exit(1)
 	}
-
-	// 标记系统为已安装
-	install.MarkAsInstalled()
 
 	logger.Logger().Info(fmt.Sprintf("【自动安装】成功， 用户名：admin 密码：admin"))
 	logger.Logger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
@@ -246,12 +243,28 @@ func (receiver *InitInstallService) TestDatabaseConnection(config database.Datab
 	db.SetMaxIdleConns(1)
 	db.SetConnMaxLifetime(time.Second * 10)
 
-	// 测试连接
-	if err := db.Ping(); err != nil {
-		return fmt.Errorf("数据库连接测试失败: %v", err)
+	// 测试连接 - 添加重试机制
+	maxRetries := 60
+	retryInterval := 2 * time.Second
+	var lastErr error
+
+	for i := 0; i < maxRetries; i++ {
+		if err := db.Ping(); err != nil {
+			lastErr = err
+			logger.Logger().Warn(fmt.Sprintf("数据库连接测试失败 (第%d次重试): %v", i+1, err))
+
+			// 如果不是最后一次重试，等待后重试
+			if i < maxRetries-1 {
+				time.Sleep(retryInterval)
+			}
+		} else {
+			// 连接成功
+			logger.Logger().Info("数据库连接测试成功")
+			return nil
+		}
 	}
 
-	return nil
+	return fmt.Errorf("数据库连接测试失败 (已重试%d次): %v", maxRetries, lastErr)
 }
 
 func (receiver *InitInstallService) TestRedisConnection(config redis3.RedisConfig) error {
@@ -264,10 +277,28 @@ func (receiver *InitInstallService) TestRedisConnection(config redis3.RedisConfi
 	defer rdb.Close()
 
 	ctx := context.Background()
-	_, err := rdb.Ping(ctx).Result()
-	if err != nil {
-		return fmt.Errorf("redis连接测试失败: %s", err.Error())
+
+	// 添加重试机制
+	maxRetries := 60
+	retryInterval := 2 * time.Second
+	var lastErr error
+
+	for i := 0; i < maxRetries; i++ {
+		_, err := rdb.Ping(ctx).Result()
+		if err != nil {
+			lastErr = err
+			logger.Logger().Warn(fmt.Sprintf("Redis连接测试失败 (第%d次重试): %v", i+1, err))
+
+			// 如果不是最后一次重试，等待后重试
+			if i < maxRetries-1 {
+				time.Sleep(retryInterval)
+			}
+		} else {
+			// 连接成功
+			logger.Logger().Info("Redis连接测试成功")
+			return nil
+		}
 	}
 
-	return nil
+	return fmt.Errorf("redis连接测试失败 (已重试%d次): %v", maxRetries, lastErr)
 }
