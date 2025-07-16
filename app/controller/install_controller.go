@@ -1,15 +1,7 @@
 package controller
 
 import (
-	"context"
-	"database/sql"
-	"fmt"
-	"net/http"
-	"os"
-	"time"
-
-	"cnb.cool/mliev/open/dwz-server/app/dao"
-	"cnb.cool/mliev/open/dwz-server/app/model"
+	"cnb.cool/mliev/open/dwz-server/app/service"
 	"cnb.cool/mliev/open/dwz-server/config"
 	database2 "cnb.cool/mliev/open/dwz-server/config/database"
 	redis3 "cnb.cool/mliev/open/dwz-server/config/redis"
@@ -17,12 +9,12 @@ import (
 	"cnb.cool/mliev/open/dwz-server/helper/env"
 	"cnb.cool/mliev/open/dwz-server/helper/logger"
 	redis2 "cnb.cool/mliev/open/dwz-server/helper/redis"
+	"net/http"
 
 	"cnb.cool/mliev/open/dwz-server/helper/install"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
-	"github.com/redis/go-redis/v9"
 )
 
 type InstallController struct {
@@ -245,142 +237,53 @@ func (receiver InstallController) Install(c *gin.Context) {
 
 // testDatabaseConnection 测试数据库连接
 func (receiver InstallController) testDatabaseConnection(config DatabaseConfig) error {
-	var dsn string
-	var driver string
+	installService := service.NewInitInstallService()
 
-	switch config.Type {
-	case "mysql":
-		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-			config.User, config.Password, config.Host, config.Port, config.Name)
-		driver = "mysql"
-	case "postgresql":
-		dsn = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-			config.Host, config.Port, config.User, config.Password, config.Name)
-		driver = "postgres"
-	default:
-		return fmt.Errorf("不支持的数据库类型: %s", config.Type)
+	databaseConfig := database2.DatabaseConfig{
+		Driver:   config.Type,
+		Username: config.User,
+		Password: config.Password,
+		Host:     config.Host,
+		Port:     config.Port,
+		DBName:   config.Name,
 	}
 
-	db, err := sql.Open(driver, dsn)
-	if err != nil {
-		return fmt.Errorf("数据库连接失败: %v", err)
-	}
-	defer db.Close()
-
-	// 设置连接池参数
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
-	db.SetConnMaxLifetime(time.Second * 10)
-
-	// 测试连接
-	if err := db.Ping(); err != nil {
-		return fmt.Errorf("数据库连接测试失败: %v", err)
-	}
-
-	return nil
+	return installService.TestDatabaseConnection(databaseConfig)
 }
 
 // testRedisConnection 测试Redis连接
 func (receiver InstallController) testRedisConnection(config RedisConfig) error {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
+	installService := service.NewInitInstallService()
+
+	redisConfig := redis3.RedisConfig{
+		Host:     config.Host,
+		Port:     config.Port,
 		Password: config.Password,
 		DB:       config.DB,
-	})
-
-	defer rdb.Close()
-
-	ctx := context.Background()
-	_, err := rdb.Ping(ctx).Result()
-	if err != nil {
-		return fmt.Errorf("redis连接测试失败: %s", err.Error())
 	}
-
-	return nil
+	return installService.TestRedisConnection(redisConfig)
 }
 
 // createConfigFile 创建配置文件
 func (receiver InstallController) createConfigFile(req InstallRequest) error {
-	configContent := fmt.Sprintf(`# 短网址服务配置文件
-# 由安装向导自动生成于 %s
 
-# 服务配置
-server:
-  port: 8080
-  mode: release
-
-# 数据库配置
-database:
-  type: %s
-  host: %s
-  port: %d
-  dbname: %s
-  username: %s
-  password: %s
-  charset: utf8mb4
-  max_open_conns: 100
-  max_idle_conns: 20
-  conn_max_lifetime: 300s
-
-# Redis配置
-redis:
-  host: %s
-  port: %d
-  password: %s
-  db: %d
-  max_idle: 10
-  max_active: 100
-  idle_timeout: 300s
-
-# 日志配置
-logger:
-  level: info
-  file: logs/app.log
-  max_size: 100
-  max_age: 7
-  max_backups: 10
-
-# 中间件配置
-middleware:
-  cors:
-    allow_origins: ["*"]
-    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers: ["*"]
-    expose_headers: ["*"]
-    allow_credentials: true
-    max_age: 12h
-
-# 操作日志配置
-operation_log:
-  enabled: true
-  max_age: 30d
-  batch_size: 100
-  flush_interval: 10s
-
-# 迁移配置
-migration:
-  enabled: true
-  auto_migrate: true
-`,
-		time.Now().Format("2006-01-02 15:04:05"),
-		req.Database.Type,
-		req.Database.Host,
-		req.Database.Port,
-		req.Database.Name,
-		req.Database.User,
-		req.Database.Password,
-		req.Redis.Host,
-		req.Redis.Port,
-		req.Redis.Password,
-		req.Redis.DB,
-	)
-
-	// 写入配置文件
-	if err := os.WriteFile("./config/config.yaml", []byte(configContent), 0644); err != nil {
-		return fmt.Errorf("配置文件写入失败: %v", err)
+	databaseConfig := database2.DatabaseConfig{
+		Driver:   req.Database.Type,
+		Username: req.Database.User,
+		Password: req.Database.Password,
+		Host:     req.Database.Host,
+		Port:     req.Database.Port,
+		DBName:   req.Database.Name,
 	}
 
-	return nil
+	redisConfig := redis3.RedisConfig{
+		Host:     req.Redis.Host,
+		Port:     req.Redis.Port,
+		Password: req.Redis.Password,
+		DB:       req.Redis.DB,
+	}
+	installService := service.NewInitInstallService()
+	return installService.CreateConfigFile(databaseConfig, redisConfig)
 }
 
 // initializeDatabase 初始化数据库
@@ -405,42 +308,12 @@ func (receiver InstallController) initializeDatabase(config DatabaseConfig) erro
 
 // createAdminUser 创建管理员账户
 func (receiver InstallController) createAdminUser(config AdminConfig) error {
-	// 由于安装过程中数据库连接可能尚未初始化，这里简化处理
-	// 实际实现中应该直接使用数据库连接创建用户
-
-	// 创建用户
-	user := &model.User{
-		Username: config.Username,
-		RealName: config.Username,
-		Email:    config.Email,
-		Phone:    "",
-		Status:   1, // 默认启用
-	}
-
-	// 设置密码
-	if err := user.SetPassword(config.Password); err != nil {
-		return err
-	}
-
-	userDAO := dao.NewUserDAO()
-	// 保存到数据库
-	if err := userDAO.Create(user); err != nil {
-		return err
-	}
-
-	logger.Logger().Info(fmt.Sprintf("管理员账户创建完成: %s\n", config.Username))
-
-	return nil
+	installService := service.NewInitInstallService()
+	return installService.CreateAdminUser(config.Username, "", config.Email, "", config.Password)
 }
 
 // createInstallLock 创建安装标记文件
 func (receiver InstallController) createInstallLock() error {
-	lockFile := "./config/install.lock"
-	lockContent := fmt.Sprintf("系统已安装\n安装时间: %s\n", time.Now().Format("2006-01-02 15:04:05"))
-
-	if err := os.WriteFile(lockFile, []byte(lockContent), 0644); err != nil {
-		return fmt.Errorf("安装标记文件创建失败: %v", err)
-	}
-
-	return nil
+	installService := service.NewInitInstallService()
+	return installService.CreateInstallLock()
 }

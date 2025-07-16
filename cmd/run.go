@@ -1,9 +1,21 @@
 package cmd
 
 import (
+	"cnb.cool/mliev/open/dwz-server/app/dao"
+	"cnb.cool/mliev/open/dwz-server/app/service"
+	"cnb.cool/mliev/open/dwz-server/config/middleware"
+	"cnb.cool/mliev/open/dwz-server/helper/database"
+	"cnb.cool/mliev/open/dwz-server/helper/env"
+	"cnb.cool/mliev/open/dwz-server/helper/install"
+	"cnb.cool/mliev/open/dwz-server/helper/logger"
+	"cnb.cool/mliev/open/dwz-server/helper/redis"
+	"cnb.cool/mliev/open/dwz-server/router"
+	"cnb.cool/mliev/open/dwz-server/util"
 	"context"
 	"embed"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -11,20 +23,6 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-
-	"cnb.cool/mliev/open/dwz-server/config/middleware"
-
-	"cnb.cool/mliev/open/dwz-server/helper/database"
-	"cnb.cool/mliev/open/dwz-server/helper/env"
-	"cnb.cool/mliev/open/dwz-server/helper/install"
-	"cnb.cool/mliev/open/dwz-server/helper/logger"
-	"cnb.cool/mliev/open/dwz-server/helper/redis"
-
-	"cnb.cool/mliev/open/dwz-server/app/dao"
-	"cnb.cool/mliev/open/dwz-server/router"
-	"cnb.cool/mliev/open/dwz-server/util"
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 var templateFS embed.FS
@@ -43,13 +41,18 @@ func Start(fs embed.FS) {
 // initializeServices 初始化所有服务
 func initializeServices() {
 	// 检查安装状态
+
+	if err := env.InitViper(); err != nil {
+		logger.Logger().Warn(fmt.Sprintf("配置初始化警告: %v", err))
+	}
+
+	if !install.CheckInstallStatus() && env.EnvBool("AUTO_INIT", false) {
+		installService := service.NewInitInstallService()
+		installService.AutoInstall()
+	}
+
 	if install.CheckInstallStatus() {
 		logger.Logger().Info("系统已安装，正在初始化服务...")
-
-		if err := env.InitViper(); err != nil {
-			logger.Logger().Error(fmt.Sprintf("配置初始化失败: %v", err))
-			os.Exit(1)
-		}
 
 		// 自动迁移数据库表结构
 		if err := autoMigrate(); err != nil {
