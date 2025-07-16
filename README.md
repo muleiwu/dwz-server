@@ -161,7 +161,7 @@ services:
     ports:
       - "8081:80"
     depends_on:
-      - dwz-server
+      - mliev-dwz-server
     environment:
       - TZ=Asia/Shanghai
 ```
