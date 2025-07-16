@@ -1,6 +1,7 @@
 package service
 
 import (
+	"cnb.cool/mliev/open/dwz-server/helper/install"
 	"context"
 	"database/sql"
 	"fmt"
@@ -84,6 +85,9 @@ func (receiver *InitInstallService) AutoInstall() {
 		logger.Logger().Error(fmt.Sprintf("[自动安装] 自动添默认用户失败, 原因: %s", err.Error()))
 		os.Exit(1)
 	}
+
+	// 标记系统为已安装
+	install.MarkAsInstalled()
 
 	logger.Logger().Info(fmt.Sprintf("【自动安装】成功， 用户名：admin 密码：admin"))
 	logger.Logger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
