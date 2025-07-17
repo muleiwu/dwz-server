@@ -3,7 +3,20 @@
 [![Go Version](https://img.shields.io/github/go-mod/go-version/your-org/dwz-server)](https://golang.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-> 🚀 一个功能完善、高性能的企业级短链接服务平台，支持多域名、AB测试、用户管理、实时统计等功能。
+> 🚀 木雷坞开源的一个功能完善、高性能的企业级短链接服务平台，支持多域名、AB测试、用户管理、实时统计等功能。
+
+### 开源地址
+
+1. 后端
+   - CNB [https://cnb.cool/mliev/open/dwz-server](https://cnb.cool/mliev/open/dwz-server)
+   - Gitee [https://gitee.com/muleiwu/dwz-server](https://gitee.com/muleiwu/dwz-server)
+   - GitHub [https://github.com/muleiwu/dwz-server](https://github.com/muleiwu/dwz-server)
+2. 界面
+   - CNB [https://cnb.cool/mliev/open/dwz-admin-webui](https://cnb.cool/mliev/open/dwz-admin-webui)
+   - Gitee [https://gitee.com/muleiwu/dwz-admin-webui](https://gitee.com/muleiwu/dwz-admin-webui)
+   - GitHub[https://github.com/muleiwu/dwz-admin-webui](https://github.com/muleiwu/dwz-admin-webui)
+3. 文档地址
+   - https://www.mliev.com/docs/dwz
 
 ###  📞 加群获取帮助
 
