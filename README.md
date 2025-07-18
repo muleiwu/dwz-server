@@ -24,7 +24,7 @@
     - 1021660914 [点击链接加入群聊【木雷坞开源家】](https://n3.ink/lmKc)
 
  2. 企业微信群
-    - ![wechat_qr_code.png](/docs/image/wechat_qr_code.png)
+    - ![wechat_qr_code.png](https://static.1ms.run/dwz/image/wechat_qr_code.png)
 
 
 ## ✨ 功能特性
@@ -113,33 +113,33 @@
 
 ## 🚀 系统预览
 
-![Snipaste_2025-07-16_01-30-57.png](./docs/image/Snipaste_2025-07-16_01-30-57.png)
+![Snipaste_2025-07-16_01-30-57.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-30-57.png)
 
-![Snipaste_2025-07-16_01-32-13.png](./docs/image/Snipaste_2025-07-16_01-32-13.png)
+![Snipaste_2025-07-16_01-32-13.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-32-13.png)
 
-![Snipaste_2025-07-16_01-32-59.png](./docs/image/Snipaste_2025-07-16_01-32-59.png)
+![Snipaste_2025-07-16_01-32-59.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-32-59.png)
 
-![Snipaste_2025-07-16_01-33-14.png](./docs/image/Snipaste_2025-07-16_01-33-14.png)
+![Snipaste_2025-07-16_01-33-14.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-33-14.png)
 
-![Snipaste_2025-07-16_01-33-45.png](./docs/image/Snipaste_2025-07-16_01-33-45.png)
+![Snipaste_2025-07-16_01-33-45.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-33-45.png)
 
-![Snipaste_2025-07-16_01-33-56.png](./docs/image/Snipaste_2025-07-16_01-33-56.png)
+![Snipaste_2025-07-16_01-33-56.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-33-56.png)
 
-![Snipaste_2025-07-16_01-34-36.png](./docs/image/Snipaste_2025-07-16_01-34-36.png)
+![Snipaste_2025-07-16_01-34-36.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-34-36.png)
 
-![Snipaste_2025-07-16_01-34-59.png](./docs/image/Snipaste_2025-07-16_01-34-59.png)
+![Snipaste_2025-07-16_01-34-59.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-34-59.png)
 
-![Snipaste_2025-07-16_01-35-19.png](./docs/image/Snipaste_2025-07-16_01-35-19.png)
+![Snipaste_2025-07-16_01-35-19.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-35-19.png)
 
-![Snipaste_2025-07-16_01-35-56.png](./docs/image/Snipaste_2025-07-16_01-35-56.png)
+![Snipaste_2025-07-16_01-35-56.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-35-56.png)
 
-![Snipaste_2025-07-16_01-36-07.png](./docs/image/Snipaste_2025-07-16_01-36-07.png)
+![Snipaste_2025-07-16_01-36-07.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-07.png)
 
-![Snipaste_2025-07-16_01-36-18.png](./docs/image/Snipaste_2025-07-16_01-36-18.png)
+![Snipaste_2025-07-16_01-36-18.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-18.png)
 
-![Snipaste_2025-07-16_01-36-35.png](./docs/image/Snipaste_2025-07-16_01-36-35.png)
+![Snipaste_2025-07-16_01-36-35.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-35.png)
 
-![Snipaste_2025-07-16_01-36-59.png](./docs/image/Snipaste_2025-07-16_01-36-59.png)
+![Snipaste_2025-07-16_01-36-59.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-59.png)
 
 ## 🔧 快速安装
 
