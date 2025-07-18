@@ -29,7 +29,7 @@ func (receiver IndexController) GetIndex(c *gin.Context) {
 	domain, err := domainService.GetDomainByName(host)
 
 	siteName := env.EnvString("website.name", "短网址服务")
-	copyright := env.EnvString("website.name", "")
+	copyright := env.EnvString("website.copyright", "")
 	// 默认数据
 	pageData := IndexPageData{
 		SiteName:     "",

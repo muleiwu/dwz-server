@@ -133,7 +133,7 @@ func (receiver InstallController) GetInstall(c *gin.Context) {
 	defaultDbConfig := receiver.GetDefaultDatabaseConfig()
 	defaultRedisConfig := receiver.GetDefaultRedisConfig()
 	siteName := env.EnvString("website.name", "短网址服务")
-	copyright := env.EnvString("website.name", "")
+	copyright := env.EnvString("website.copyright", "")
 	// 构造页面数据，将配置结构映射到页面需要的结构
 	pageData := InstallPageData{
 		SiteName:     siteName,

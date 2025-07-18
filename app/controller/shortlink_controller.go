@@ -257,7 +257,7 @@ func (ctrl ShortLinkController) renderErrorPage(c *gin.Context, domain, template
 	domainInfo, err := domainService.GetDomainByName(domain)
 
 	siteName := env.EnvString("website.name", "短网址服务")
-	copyright := env.EnvString("website.name", "")
+	copyright := env.EnvString("website.copyright", "")
 	// 默认数据
 	pageData := ErrorPageData{
 		SiteName:     siteName,
