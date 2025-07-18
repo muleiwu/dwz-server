@@ -35,9 +35,6 @@ $:
     - services:
         # 流水线中启用 docker 服务
         - docker
-      imports:
-        # 引用密钥仓库文件
-        - https://cnb.cool/mliev/keywords/-/blob/main/vm/1.15.77.181/env.yaml
       stages:
         # 云原生构建自动构建Docker镜像并将它发布到制品库
         - name: docker login
@@ -49,7 +46,3 @@ $:
         - name: docker push
           script:
             - docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}
-        - name: docker build latest
-          script: docker build --build-arg="IMAGE_TAG=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}" -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest .
-        - name: docker push
-          script: docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
