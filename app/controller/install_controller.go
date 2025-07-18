@@ -27,6 +27,7 @@ type InstallPageData struct {
 	ICPNumber      string
 	PoliceNumber   string
 	Domain         string
+	Copyright      string
 	DatabaseConfig database2.DatabaseConfig
 	RedisConfig    redis3.RedisConfig
 }
@@ -131,13 +132,15 @@ func (receiver InstallController) GetInstall(c *gin.Context) {
 	// 从环境变量获取默认配置
 	defaultDbConfig := receiver.GetDefaultDatabaseConfig()
 	defaultRedisConfig := receiver.GetDefaultRedisConfig()
-
+	siteName := env.EnvString("website.name", "短网址服务")
+	copyright := env.EnvString("website.name", "")
 	// 构造页面数据，将配置结构映射到页面需要的结构
 	pageData := InstallPageData{
-		SiteName:     "短网址服务",
+		SiteName:     siteName,
 		ICPNumber:    "",
 		PoliceNumber: "",
 		Domain:       host,
+		Copyright:    copyright,
 		DatabaseConfig: database2.DatabaseConfig{
 			Driver:   defaultDbConfig.Type,
 			Host:     defaultDbConfig.Host,

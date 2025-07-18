@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"cnb.cool/mliev/open/dwz-server/helper/env"
 	"net/http"
 	"strconv"
 	"strings"
@@ -180,6 +181,7 @@ type ErrorPageData struct {
 	ICPNumber    string
 	PoliceNumber string
 	Domain       string
+	Copyright    string
 }
 
 // RedirectShortLink 短网址跳转
@@ -254,12 +256,15 @@ func (ctrl ShortLinkController) renderErrorPage(c *gin.Context, domain, template
 	domainService := service.NewDomainService()
 	domainInfo, err := domainService.GetDomainByName(domain)
 
+	siteName := env.EnvString("website.name", "短网址服务")
+	copyright := env.EnvString("website.name", "")
 	// 默认数据
 	pageData := ErrorPageData{
-		SiteName:     "短网址服务",
+		SiteName:     siteName,
 		ICPNumber:    "",
 		PoliceNumber: "",
 		Domain:       domain,
+		Copyright:    copyright,
 	}
 
 	if err == nil {

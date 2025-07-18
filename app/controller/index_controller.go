@@ -2,6 +2,7 @@ package controller
 
 import (
 	"cnb.cool/mliev/open/dwz-server/app/service"
+	"cnb.cool/mliev/open/dwz-server/helper/env"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -16,6 +17,7 @@ type IndexPageData struct {
 	ICPNumber    string
 	PoliceNumber string
 	Domain       string
+	Copyright    string
 }
 
 func (receiver IndexController) GetIndex(c *gin.Context) {
@@ -26,18 +28,21 @@ func (receiver IndexController) GetIndex(c *gin.Context) {
 	domainService := service.NewDomainService()
 	domain, err := domainService.GetDomainByName(host)
 
+	siteName := env.EnvString("website.name", "短网址服务")
+	copyright := env.EnvString("website.name", "")
 	// 默认数据
 	pageData := IndexPageData{
-		SiteName:     "短网址服务",
+		SiteName:     "",
 		ICPNumber:    "",
 		PoliceNumber: "",
 		Domain:       host,
+		Copyright:    copyright,
 	}
 
 	if err == nil {
 		pageData.SiteName = domain.SiteName
 		if pageData.SiteName == "" {
-			pageData.SiteName = "短网址服务"
+			pageData.SiteName = siteName
 		}
 		pageData.ICPNumber = domain.ICPNumber
 		pageData.PoliceNumber = domain.PoliceNumber
