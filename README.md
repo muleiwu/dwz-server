@@ -153,6 +153,8 @@ cd mliev-dwz
 ### 2. 创建 Docker Compose 文件
 创建 `docker-compose.yml` 文件：
 
+启动后，后台地址是 `http://{ip}:{端口}/admin/`
+
 ```yaml
 version: '3.8'
 
