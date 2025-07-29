@@ -29,10 +29,12 @@ develop:
         - name: docker build && push
           script: |
             docker buildx build --platform linux/amd64,linux/arm64 -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH} . --push
-            docker buildx build --platform linux/loong64 -f Dockerfile.loong64 -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH} . --push
+            docker buildx build --platform linux/loong64 -f Dockerfile.loong64 -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}-loong64 . --push
 $:
   tag_push:
-    - services:
+    - runner:
+        tags: cnb:arch:amd64:containerd-snapshotter
+      services:
         # 流水线中启用 docker 服务
         - docker
       stages:
@@ -40,13 +42,15 @@ $:
         - name: docker login
           script:
             - docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
-        - name: docker build
-          script:
-            - docker build -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH} .
-        - name: docker push
-          script:
-            - docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}
-        - name: docker build latest
-          script: docker build --build-arg="IMAGE_TAG=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}" -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest .
-        - name: docker push
-          script: docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
+        - name: docker build && push
+          script: |
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH} \
+              -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest \
+              --push .
+
+            docker buildx build --platform linux/loong64 \
+              -f Dockerfile.loong64 \
+              -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}-loong64 \
+              -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest-loong64 \
+              --push .
