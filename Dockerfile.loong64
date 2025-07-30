@@ -1,5 +1,5 @@
 # 构建阶段
-FROM golang:1.23.2-alpine AS builder
+FROM ghcr.io/loong64/golang:1.23-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -29,7 +29,7 @@ COPY . .
 RUN go build -ldflags="-s -w" -o dwz main.go
 
 # 运行阶段
-FROM alpine:latest
+FROM ghcr.io/loong64/alpine:latest
 
 # 安装ca证书和时区数据
 RUN apk --no-cache add ca-certificates tzdata
