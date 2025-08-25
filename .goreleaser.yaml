@@ -1,0 +1,101 @@
+version: 2
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    - go generate ./...
+builds:
+    # Linux 和 Darwin 静态链接构建
+    -
+      id: dwz-server-unix
+      env:
+        - CGO_ENABLED=0
+      binary: dwz-server
+      goos:
+        - linux
+        - darwin
+      goarch:
+        - amd64
+        - arm64
+      # 静态链接编译标志（适用于Unix系统）
+      ldflags:
+        # 静态链接所有库，减小二进制大小，移除调试信息
+        - -s -w
+        # 静态链接标志
+        - -extldflags "-static"
+        # 添加版本信息 (可选)
+        - -X main.version={{.Version}}
+        - -X main.commit={{.Commit}}
+        - -X main.date={{.Date}}
+      # 构建标志确保静态编译
+      flags:
+        - -a
+        - -installsuffix
+        - cgo
+      # 构建标签，确保使用纯Go实现
+      tags:
+        - netgo
+        - osusergo
+    
+    # Windows 静态链接构建（不使用-extldflags "-static"）
+    -
+      id: dwz-server-windows
+      env:
+        - CGO_ENABLED=0
+      binary: dwz-server
+      goos:
+        - windows
+      goarch:
+        - amd64
+        - arm64
+      # 静态链接编译标志（适用于Windows）
+      ldflags:
+        # 减小二进制大小，移除调试信息
+        - -s -w
+        # 添加版本信息 (可选)
+        - -X main.version={{.Version}}
+        - -X main.commit={{.Commit}}
+        - -X main.date={{.Date}}
+      # 构建标志确保静态编译
+      flags:
+        - -a
+        - -installsuffix
+        - cgo
+      # 构建标签，确保使用纯Go实现
+      tags:
+        - netgo
+        - osusergo
+
+archives:
+  - format: tar.gz
+    # this name template makes the OS and Arch compatible with the results of uname.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+    - goos: windows
+      format: zip
+    # only include the binary executable, exclude README.md, CHANGELOG.md and CONTRIBUTING.md
+    files:
+      - "none*"
+checksum:
+  name_template: 'checksums.txt'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+# The lines beneath this are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
