@@ -6,6 +6,7 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"cnb.cool/mliev/open/dwz-server/utils"
 	"gorm.io/gorm"
 )
@@ -14,9 +15,9 @@ type DomainService struct {
 	domainDao *dao.DomainDao
 }
 
-func NewDomainService() *DomainService {
+func NewDomainService(helper interfaces.GetHelperInterface) *DomainService {
 	return &DomainService{
-		domainDao: &dao.DomainDao{},
+		domainDao: &dao.DomainDao{Helper: helper},
 	}
 }
 

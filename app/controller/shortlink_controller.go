@@ -253,7 +253,7 @@ func (ctrl ShortLinkController) renderInternalErrorPage(c *gin.Context, helper i
 // renderErrorPage 通用错误页面渲染方法
 func (ctrl ShortLinkController) renderErrorPage(c *gin.Context, helper interfaces.GetHelperInterface, domain, template string, statusCode int) {
 	// 获取域名信息
-	domainService := service.NewDomainService()
+	domainService := service.NewDomainService(helper)
 	domainInfo, err := domainService.GetDomainByName(domain)
 
 	siteName := helper.GetEnv().GetString("website.name", "短网址服务")

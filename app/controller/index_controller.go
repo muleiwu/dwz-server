@@ -26,7 +26,7 @@ func (receiver IndexController) GetIndex(c *gin.Context, helper interfaces.GetHe
 	host := c.Request.Host
 
 	// 获取域名信息
-	domainService := service.NewDomainService()
+	domainService := service.NewDomainService(helper)
 	domain, err := domainService.GetDomainByName(host)
 
 	siteName := helper.GetEnv().GetString("website.name", "短网址服务")

@@ -96,8 +96,8 @@ func (receiver *HttpServer) RunHttp() {
 	// 完全替换gin的默认Logger
 	gin.DisableConsoleColor()
 
-	gin.DefaultWriter = &zapLogWriter{logger: receiver.Helper.GetLogger()}
-	gin.DefaultErrorWriter = &zapLogWriter{logger: receiver.Helper.GetLogger(), isError: true}
+	//gin.DefaultWriter = &zapLogWriter{logger: receiver.Helper.GetLogger()}
+	//gin.DefaultErrorWriter = &zapLogWriter{logger: receiver.Helper.GetLogger(), isError: true}
 
 	// 配置Gin引擎
 	// 配置Gin引擎并替换默认logger
