@@ -1,5 +1,5 @@
 # 构建阶段
-FROM ghcr.io/loong64/golang:1.23-alpine AS builder
+FROM ghcr.io/loong64/golang:1.25-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
