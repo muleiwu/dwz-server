@@ -2,27 +2,28 @@ package dao
 
 import (
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/helper/database"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"gorm.io/gorm"
 )
 
-type ABTestDao struct{}
+type ABTestDao struct {
+	Helper interfaces.GetHelperInterface
+}
 
 // CreateABTest 创建AB测试
 func (dao *ABTestDao) CreateABTest(abTest *model.ABTest) error {
-	db := database.GetDB()
-	return db.Create(abTest).Error
+	return dao.Helper.GetDatabase().Create(abTest).Error
 }
 
 // CreateABTestVariant 创建AB测试变体
 func (dao *ABTestDao) CreateABTestVariant(variant *model.ABTestVariant) error {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	return db.Create(variant).Error
 }
 
 // FindABTestByID 根据ID查找AB测试
 func (dao *ABTestDao) FindABTestByID(id uint64) (*model.ABTest, error) {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	var abTest model.ABTest
 	err := db.Preload("Variants").Where("id = ?", id).First(&abTest).Error
 	return &abTest, err
@@ -30,7 +31,7 @@ func (dao *ABTestDao) FindABTestByID(id uint64) (*model.ABTest, error) {
 
 // FindABTestByShortLinkID 根据短链接ID查找正在运行的AB测试
 func (dao *ABTestDao) FindActiveABTestByShortLinkID(shortLinkID uint64) (*model.ABTest, error) {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	var abTest model.ABTest
 	err := db.Preload("Variants", "is_active = ?", true).
 		Where("short_link_id = ? AND is_active = ? AND status = ?", shortLinkID, true, "running").
@@ -40,7 +41,7 @@ func (dao *ABTestDao) FindActiveABTestByShortLinkID(shortLinkID uint64) (*model.
 
 // FindABTestVariantByID 根据ID查找AB测试变体
 func (dao *ABTestDao) FindABTestVariantByID(id uint64) (*model.ABTestVariant, error) {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	var variant model.ABTestVariant
 	err := db.Where("id = ?", id).First(&variant).Error
 	return &variant, err
@@ -48,19 +49,19 @@ func (dao *ABTestDao) FindABTestVariantByID(id uint64) (*model.ABTestVariant, er
 
 // UpdateABTest 更新AB测试
 func (dao *ABTestDao) UpdateABTest(abTest *model.ABTest) error {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	return db.Save(abTest).Error
 }
 
 // UpdateABTestVariant 更新AB测试变体
 func (dao *ABTestDao) UpdateABTestVariant(variant *model.ABTestVariant) error {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	return db.Save(variant).Error
 }
 
 // DeleteABTest 删除AB测试
 func (dao *ABTestDao) DeleteABTest(id uint64) error {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 删除相关的变体
 		if err := tx.Where("ab_test_id = ?", id).Delete(&model.ABTestVariant{}).Error; err != nil {
@@ -73,13 +74,13 @@ func (dao *ABTestDao) DeleteABTest(id uint64) error {
 
 // DeleteABTestVariant 删除AB测试变体
 func (dao *ABTestDao) DeleteABTestVariant(id uint64) error {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	return db.Delete(&model.ABTestVariant{}, id).Error
 }
 
 // ListABTests 获取AB测试列表
 func (dao *ABTestDao) ListABTests(offset, limit int, shortLinkID uint64, status string) ([]model.ABTest, int64, error) {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	var abTests []model.ABTest
 	var total int64
 
@@ -105,13 +106,13 @@ func (dao *ABTestDao) ListABTests(offset, limit int, shortLinkID uint64, status 
 
 // CreateABTestClickStatistic 创建AB测试点击统计
 func (dao *ABTestDao) CreateABTestClickStatistic(stat *model.ABTestClickStatistic) error {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	return db.Create(stat).Error
 }
 
 // GetABTestStatistics 获取AB测试统计数据
 func (dao *ABTestDao) GetABTestStatistics(abTestID uint64, days int) (map[uint64]int64, error) {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	var results []struct {
 		VariantID  uint64 `json:"variant_id"`
 		ClickCount int64  `json:"click_count"`
@@ -141,7 +142,7 @@ func (dao *ABTestDao) GetABTestStatistics(abTestID uint64, days int) (map[uint64
 
 // GetDailyABTestStatistics 获取AB测试每日统计数据
 func (dao *ABTestDao) GetDailyABTestStatistics(abTestID uint64, days int) ([]map[string]interface{}, error) {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	var results []struct {
 		Date       string `json:"date"`
 		VariantID  uint64 `json:"variant_id"`
@@ -185,7 +186,7 @@ func (dao *ABTestDao) GetDailyABTestStatistics(abTestID uint64, days int) ([]map
 
 // CheckSessionExists 检查会话是否存在（用于去重）
 func (dao *ABTestDao) CheckSessionExists(abTestID, variantID uint64, sessionID string) (bool, error) {
-	db := database.GetDB()
+	db := dao.Helper.GetDatabase()
 	var count int64
 	err := db.Model(&model.ABTestClickStatistic{}).
 		Where("ab_test_id = ? AND variant_id = ? AND session_id = ?", abTestID, variantID, sessionID).

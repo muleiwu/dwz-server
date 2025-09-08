@@ -418,7 +418,7 @@ POST /api/v1/ab_tests
 GET /api/v1/ab_tests/{id}/statistics
 ```
 
-详细的API文档请参考 [API.md](docs/API.md)
+详细的API文档请参考 [API.md](temp/docs/API.md)
 
 ## 🔧 配置说明
 

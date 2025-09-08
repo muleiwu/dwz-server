@@ -4,9 +4,10 @@ import (
 	"strconv"
 	"time"
 
+	"cnb.cool/mliev/open/dwz-server/app/constants"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/service"
-	"cnb.cool/mliev/open/dwz-server/constants"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,14 +16,14 @@ type ABTestClickStatisticController struct {
 }
 
 // GetABTestClickStatisticList 获取AB测试点击统计列表
-func (ctrl ABTestClickStatisticController) GetABTestClickStatisticList(c *gin.Context) {
+func (ctrl ABTestClickStatisticController) GetABTestClickStatisticList(c *gin.Context, helper interfaces.GetHelperInterface) {
 	var req dto.ABTestClickStatisticListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
 
-	abTestClickStatisticService := service.NewABTestClickStatisticService()
+	abTestClickStatisticService := service.NewABTestClickStatisticService(helper)
 	response, err := abTestClickStatisticService.GetABTestClickStatisticList(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -33,7 +34,7 @@ func (ctrl ABTestClickStatisticController) GetABTestClickStatisticList(c *gin.Co
 }
 
 // GetABTestClickStatisticAnalysis 获取AB测试点击统计分析
-func (ctrl ABTestClickStatisticController) GetABTestClickStatisticAnalysis(c *gin.Context) {
+func (ctrl ABTestClickStatisticController) GetABTestClickStatisticAnalysis(c *gin.Context, helper interfaces.GetHelperInterface) {
 	abTestIDStr := c.Query("ab_test_id")
 	daysStr := c.DefaultQuery("days", "7")
 	startDateStr := c.Query("start_date")
@@ -50,7 +51,7 @@ func (ctrl ABTestClickStatisticController) GetABTestClickStatisticAnalysis(c *gi
 		}
 	}
 
-	abTestClickStatisticService := service.NewABTestClickStatisticService()
+	abTestClickStatisticService := service.NewABTestClickStatisticService(helper)
 
 	// 如果指定了日期范围，优先使用日期范围
 	if startDateStr != "" && endDateStr != "" {
@@ -95,7 +96,7 @@ func (ctrl ABTestClickStatisticController) GetABTestClickStatisticAnalysis(c *gi
 }
 
 // GetABTestVariantStatistics 获取AB测试版本统计
-func (ctrl ABTestClickStatisticController) GetABTestVariantStatistics(c *gin.Context) {
+func (ctrl ABTestClickStatisticController) GetABTestVariantStatistics(c *gin.Context, helper interfaces.GetHelperInterface) {
 	abTestIDStr := c.Param("id")
 	daysStr := c.DefaultQuery("days", "7")
 
@@ -110,7 +111,7 @@ func (ctrl ABTestClickStatisticController) GetABTestVariantStatistics(c *gin.Con
 		days = 7
 	}
 
-	abTestClickStatisticService := service.NewABTestClickStatisticService()
+	abTestClickStatisticService := service.NewABTestClickStatisticService(helper)
 	response, err := abTestClickStatisticService.GetVariantStatistics(abTestID, days)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())

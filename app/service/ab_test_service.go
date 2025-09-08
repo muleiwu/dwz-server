@@ -10,6 +10,7 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"gorm.io/gorm"
 )
 
@@ -18,10 +19,10 @@ type ABTestService struct {
 	shortLinkDao *dao.ShortLinkDao
 }
 
-func NewABTestService() *ABTestService {
+func NewABTestService(helper interfaces.GetHelperInterface) *ABTestService {
 	return &ABTestService{
-		abTestDao:    &dao.ABTestDao{},
-		shortLinkDao: &dao.ShortLinkDao{},
+		abTestDao:    &dao.ABTestDao{Helper: helper},
+		shortLinkDao: &dao.ShortLinkDao{Helper: helper},
 	}
 }
 

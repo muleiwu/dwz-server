@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"cnb.cool/mliev/open/dwz-server/helper/install"
+	"cnb.cool/mliev/open/dwz-server/pkg/install"
 	"github.com/gin-gonic/gin"
 )
 

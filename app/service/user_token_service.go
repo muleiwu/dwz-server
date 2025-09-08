@@ -6,6 +6,7 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"gorm.io/gorm"
 )
 
@@ -14,10 +15,10 @@ type UserTokenService struct {
 	userDAO  *dao.UserDAO
 }
 
-func NewUserTokenService() *UserTokenService {
+func NewUserTokenService(helper interfaces.GetHelperInterface) *UserTokenService {
 	return &UserTokenService{
-		tokenDAO: dao.NewUserTokenDAO(),
-		userDAO:  dao.NewUserDAO(),
+		tokenDAO: dao.NewUserTokenDAO(helper),
+		userDAO:  dao.NewUserDAO(helper),
 	}
 }
 

@@ -4,10 +4,11 @@ import (
 	"strconv"
 	"strings"
 
+	"cnb.cool/mliev/open/dwz-server/app/constants"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/middleware"
 	"cnb.cool/mliev/open/dwz-server/app/service"
-	"cnb.cool/mliev/open/dwz-server/constants"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,14 +17,14 @@ type UserController struct {
 }
 
 // Login 用户登录
-func (ctrl UserController) Login(c *gin.Context) {
+func (ctrl UserController) Login(c *gin.Context, helper interfaces.GetHelperInterface) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
 
-	userService := service.NewUserService()
+	userService := service.NewUserService(helper)
 	response, err := userService.Login(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -34,14 +35,14 @@ func (ctrl UserController) Login(c *gin.Context) {
 }
 
 // CreateUser 创建用户
-func (ctrl UserController) CreateUser(c *gin.Context) {
+func (ctrl UserController) CreateUser(c *gin.Context, helper interfaces.GetHelperInterface) {
 	var req dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
 
-	userService := service.NewUserService()
+	userService := service.NewUserService(helper)
 	response, err := userService.CreateUser(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -52,7 +53,7 @@ func (ctrl UserController) CreateUser(c *gin.Context) {
 }
 
 // GetUser 获取用户详情
-func (ctrl UserController) GetUser(c *gin.Context) {
+func (ctrl UserController) GetUser(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -60,7 +61,7 @@ func (ctrl UserController) GetUser(c *gin.Context) {
 		return
 	}
 
-	userService := service.NewUserService()
+	userService := service.NewUserService(helper)
 	response, err := userService.GetUser(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -75,7 +76,7 @@ func (ctrl UserController) GetUser(c *gin.Context) {
 }
 
 // UpdateUser 更新用户
-func (ctrl UserController) UpdateUser(c *gin.Context) {
+func (ctrl UserController) UpdateUser(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -89,7 +90,7 @@ func (ctrl UserController) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	userService := service.NewUserService()
+	userService := service.NewUserService(helper)
 	response, err := userService.UpdateUser(id, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -104,7 +105,7 @@ func (ctrl UserController) UpdateUser(c *gin.Context) {
 }
 
 // DeleteUser 删除用户
-func (ctrl UserController) DeleteUser(c *gin.Context) {
+func (ctrl UserController) DeleteUser(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -112,7 +113,7 @@ func (ctrl UserController) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	userService := service.NewUserService()
+	userService := service.NewUserService(helper)
 	err = userService.DeleteUser(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -127,14 +128,14 @@ func (ctrl UserController) DeleteUser(c *gin.Context) {
 }
 
 // GetUserList 获取用户列表
-func (ctrl UserController) GetUserList(c *gin.Context) {
+func (ctrl UserController) GetUserList(c *gin.Context, helper interfaces.GetHelperInterface) {
 	var req dto.UserListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
 
-	userService := service.NewUserService()
+	userService := service.NewUserService(helper)
 	response, err := userService.GetUserList(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -145,7 +146,7 @@ func (ctrl UserController) GetUserList(c *gin.Context) {
 }
 
 // ChangePassword 修改密码
-func (ctrl UserController) ChangePassword(c *gin.Context) {
+func (ctrl UserController) ChangePassword(c *gin.Context, helper interfaces.GetHelperInterface) {
 	// 获取当前用户ID
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
@@ -159,7 +160,7 @@ func (ctrl UserController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	userService := service.NewUserService()
+	userService := service.NewUserService(helper)
 	err := userService.ChangePassword(currentUser.ID, &req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -170,7 +171,7 @@ func (ctrl UserController) ChangePassword(c *gin.Context) {
 }
 
 // ResetPassword 重置密码
-func (ctrl UserController) ResetPassword(c *gin.Context) {
+func (ctrl UserController) ResetPassword(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -184,7 +185,7 @@ func (ctrl UserController) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	userService := service.NewUserService()
+	userService := service.NewUserService(helper)
 	err = userService.ResetPassword(id, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -199,20 +200,20 @@ func (ctrl UserController) ResetPassword(c *gin.Context) {
 }
 
 // GetCurrentUser 获取当前用户信息
-func (ctrl UserController) GetCurrentUser(c *gin.Context) {
+func (ctrl UserController) GetCurrentUser(c *gin.Context, helper interfaces.GetHelperInterface) {
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
 		ctrl.Error(c, constants.ErrCodeUnauthorized, "用户未登录")
 		return
 	}
 
-	userService := service.NewUserService()
+	userService := service.NewUserService(helper)
 	userInfo := userService.ConvertToUserInfo(currentUser)
 	ctrl.Success(c, userInfo)
 }
 
 // CreateToken 创建Token
-func (ctrl UserController) CreateToken(c *gin.Context) {
+func (ctrl UserController) CreateToken(c *gin.Context, helper interfaces.GetHelperInterface) {
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
 		ctrl.Error(c, constants.ErrCodeUnauthorized, "用户未登录")
@@ -225,7 +226,7 @@ func (ctrl UserController) CreateToken(c *gin.Context) {
 		return
 	}
 
-	tokenService := service.NewUserTokenService()
+	tokenService := service.NewUserTokenService(helper)
 	response, err := tokenService.CreateToken(currentUser.ID, &req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -236,7 +237,7 @@ func (ctrl UserController) CreateToken(c *gin.Context) {
 }
 
 // GetTokenList 获取Token列表
-func (ctrl UserController) GetTokenList(c *gin.Context) {
+func (ctrl UserController) GetTokenList(c *gin.Context, helper interfaces.GetHelperInterface) {
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
 		ctrl.Error(c, constants.ErrCodeUnauthorized, "用户未登录")
@@ -249,7 +250,7 @@ func (ctrl UserController) GetTokenList(c *gin.Context) {
 		return
 	}
 
-	tokenService := service.NewUserTokenService()
+	tokenService := service.NewUserTokenService(helper)
 	response, err := tokenService.GetTokenList(currentUser.ID, &req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -260,7 +261,7 @@ func (ctrl UserController) GetTokenList(c *gin.Context) {
 }
 
 // DeleteToken 删除Token
-func (ctrl UserController) DeleteToken(c *gin.Context) {
+func (ctrl UserController) DeleteToken(c *gin.Context, helper interfaces.GetHelperInterface) {
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
 		ctrl.Error(c, constants.ErrCodeUnauthorized, "用户未登录")
@@ -274,7 +275,7 @@ func (ctrl UserController) DeleteToken(c *gin.Context) {
 		return
 	}
 
-	tokenService := service.NewUserTokenService()
+	tokenService := service.NewUserTokenService(helper)
 	err = tokenService.DeleteToken(currentUser.ID, tokenId)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") || strings.Contains(err.Error(), "无权限") {
@@ -289,14 +290,14 @@ func (ctrl UserController) DeleteToken(c *gin.Context) {
 }
 
 // GetOperationLogs 获取操作日志
-func (ctrl UserController) GetOperationLogs(c *gin.Context) {
+func (ctrl UserController) GetOperationLogs(c *gin.Context, helper interfaces.GetHelperInterface) {
 	var req dto.OperationLogListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
 
-	logService := service.NewOperationLogService()
+	logService := service.NewOperationLogService(helper)
 	response, err := logService.GetLogList(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())

@@ -2,7 +2,7 @@ package dao
 
 import (
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/helper/database"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"gorm.io/gorm"
 )
 
@@ -10,9 +10,9 @@ type UserTokenDAO struct {
 	db *gorm.DB
 }
 
-func NewUserTokenDAO() *UserTokenDAO {
+func NewUserTokenDAO(helper interfaces.GetHelperInterface) *UserTokenDAO {
 	return &UserTokenDAO{
-		db: database.GetDB(),
+		db: helper.GetDatabase(),
 	}
 }
 

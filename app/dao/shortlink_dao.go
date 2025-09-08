@@ -1,28 +1,29 @@
 package dao
 
 import (
-	"cnb.cool/mliev/open/dwz-server/helper/logger"
 	"time"
-
-	"cnb.cool/mliev/open/dwz-server/helper/database"
 
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/util"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	"cnb.cool/mliev/open/dwz-server/pkg/base62"
+
 	"gorm.io/gorm"
 )
 
-type ShortLinkDao struct{}
+type ShortLinkDao struct {
+	Helper interfaces.GetHelperInterface
+}
 
 // Create 创建短网址
 func (d *ShortLinkDao) Create(shortLink *model.ShortLink) error {
-	return database.GetDB().Create(shortLink).Error
+	return d.Helper.GetDatabase().Create(shortLink).Error
 }
 
 // FindByShortCode 根据短代码和域名查找短网址（兼容旧方式）
 func (d *ShortLinkDao) FindByShortCode(domain, shortCode string) (*model.ShortLink, error) {
 	var shortLink model.ShortLink
-	err := database.GetDB().Where("domain = ? AND short_code = ? AND deleted_at IS NULL", domain, shortCode).First(&shortLink).Error
+	err := d.Helper.GetDatabase().Where("domain = ? AND short_code = ? AND deleted_at IS NULL", domain, shortCode).First(&shortLink).Error
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +33,7 @@ func (d *ShortLinkDao) FindByShortCode(domain, shortCode string) (*model.ShortLi
 // FindByShortCodeDecoded 根据短代码解码后的ID查找短网址（新方式）
 func (d *ShortLinkDao) FindByShortCodeDecoded(domain, shortCode string) (*model.ShortLink, error) {
 	// 先尝试解码短代码为ID
-	converter := util.NewBase62Converter()
+	converter := base62.NewBase62()
 	id, err := converter.Decode(shortCode)
 	if err != nil {
 		// 如果解码失败，回退到旧的查找方式（用于兼容自定义短代码）
@@ -41,7 +42,7 @@ func (d *ShortLinkDao) FindByShortCodeDecoded(domain, shortCode string) (*model.
 
 	// 使用解码后的ID直接查询
 	var shortLink model.ShortLink
-	err = database.GetDB().Where("id = ? AND domain = ? AND deleted_at IS NULL", id, domain).First(&shortLink).Error
+	err = d.Helper.GetDatabase().Where("id = ? AND domain = ? AND deleted_at IS NULL", id, domain).First(&shortLink).Error
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +52,7 @@ func (d *ShortLinkDao) FindByShortCodeDecoded(domain, shortCode string) (*model.
 // FindByID 根据ID查找短网址
 func (d *ShortLinkDao) FindByID(id uint64) (*model.ShortLink, error) {
 	var shortLink model.ShortLink
-	err := database.GetDB().Where("id = ? AND deleted_at IS NULL", id).First(&shortLink).Error
+	err := d.Helper.GetDatabase().Where("id = ? AND deleted_at IS NULL", id).First(&shortLink).Error
 	if err != nil {
 		return nil, err
 	}
@@ -60,12 +61,12 @@ func (d *ShortLinkDao) FindByID(id uint64) (*model.ShortLink, error) {
 
 // Update 更新短网址
 func (d *ShortLinkDao) Update(shortLink *model.ShortLink) error {
-	return database.GetDB().Save(shortLink).Error
+	return d.Helper.GetDatabase().Save(shortLink).Error
 }
 
 // Delete 删除短网址（软删除）
 func (d *ShortLinkDao) Delete(id uint64) error {
-	return database.GetDB().Delete(&model.ShortLink{}, id).Error
+	return d.Helper.GetDatabase().Delete(&model.ShortLink{}, id).Error
 }
 
 // List 获取短网址列表
@@ -73,7 +74,7 @@ func (d *ShortLinkDao) List(offset, limit int, domain, keyword string) ([]model.
 	var shortLinks []model.ShortLink
 	var total int64
 
-	query := database.GetDB().Model(&model.ShortLink{}).Where("deleted_at IS NULL")
+	query := d.Helper.GetDatabase().Model(&model.ShortLink{}).Where("deleted_at IS NULL")
 
 	if domain != "" {
 		query = query.Where("domain = ?", domain)
@@ -96,13 +97,13 @@ func (d *ShortLinkDao) List(offset, limit int, domain, keyword string) ([]model.
 
 // IncrementClickCount 增加点击次数
 func (d *ShortLinkDao) IncrementClickCount(id uint64) error {
-	return database.GetDB().Model(&model.ShortLink{}).Where("id = ?", id).UpdateColumn("click_count", gorm.Expr("click_count + ?", 1)).Error
+	return d.Helper.GetDatabase().Model(&model.ShortLink{}).Where("id = ?", id).UpdateColumn("click_count", gorm.Expr("click_count + ?", 1)).Error
 }
 
 // GetClickStatistics 获取点击统计
 func (d *ShortLinkDao) GetClickStatistics(shortLinkID uint64, startDate, endDate time.Time) ([]model.ClickStatistic, error) {
 	var statistics []model.ClickStatistic
-	err := database.GetDB().Where("short_link_id = ? AND click_date >= ? AND click_date <= ?",
+	err := d.Helper.GetDatabase().Where("short_link_id = ? AND click_date >= ? AND click_date <= ?",
 		shortLinkID, startDate, endDate).Order("click_date DESC").Find(&statistics).Error
 	return statistics, err
 }
@@ -117,7 +118,7 @@ func (d *ShortLinkDao) GetDailyClickCount(shortLinkID uint64, days int) (map[str
 		Count int64  `json:"count"`
 	}
 
-	err := database.GetDB().Model(&model.ClickStatistic{}).
+	err := d.Helper.GetDatabase().Model(&model.ClickStatistic{}).
 		Select("DATE(click_date) as date, COUNT(*) as count").
 		Where("short_link_id = ? AND DATE(click_date) >= ? AND DATE(click_date) <= ?",
 			shortLinkID, startDate, endDate).
@@ -144,7 +145,7 @@ func (d *ShortLinkDao) GetDailyClickCount(shortLinkID uint64, days int) (map[str
 	for _, result := range results {
 		tempTime, err := time.Parse(time.RFC3339, result.Date)
 		if err != nil {
-			logger.Logger().Error(err.Error())
+			d.Helper.GetLogger().Error(err.Error())
 			continue
 		}
 		dateStr := tempTime.Format("2006-01-02")
@@ -157,7 +158,7 @@ func (d *ShortLinkDao) GetDailyClickCount(shortLinkID uint64, days int) (map[str
 // GetClickCountByDateRange 获取指定时间范围内的点击数
 func (d *ShortLinkDao) GetClickCountByDateRange(shortLinkID uint64, startDate, endDate time.Time) (int64, error) {
 	var count int64
-	err := database.GetDB().Model(&model.ClickStatistic{}).
+	err := d.Helper.GetDatabase().Model(&model.ClickStatistic{}).
 		Where("short_link_id = ? AND click_date >= ? AND click_date < ?",
 			shortLinkID, startDate, endDate).Count(&count).Error
 	return count, err
@@ -166,7 +167,7 @@ func (d *ShortLinkDao) GetClickCountByDateRange(shortLinkID uint64, startDate, e
 // ExistsByDomainAndCode 检查域名和短代码是否已存在
 func (d *ShortLinkDao) ExistsByDomainAndCode(domain, shortCode string) (bool, error) {
 	var count int64
-	err := database.GetDB().Model(&model.ShortLink{}).
+	err := d.Helper.GetDatabase().Model(&model.ShortLink{}).
 		Where("domain = ? AND short_code = ? AND deleted_at IS NULL", domain, shortCode).
 		Count(&count).Error
 	return count > 0, err
@@ -175,7 +176,7 @@ func (d *ShortLinkDao) ExistsByDomainAndCode(domain, shortCode string) (bool, er
 // ExistsByID 检查ID是否已存在
 func (d *ShortLinkDao) ExistsByID(id uint64) (bool, error) {
 	var count int64
-	err := database.GetDB().Model(&model.ShortLink{}).
+	err := d.Helper.GetDatabase().Model(&model.ShortLink{}).
 		Where("id = ? AND deleted_at IS NULL", id).
 		Count(&count).Error
 	return count > 0, err
@@ -184,7 +185,7 @@ func (d *ShortLinkDao) ExistsByID(id uint64) (bool, error) {
 // GetMaxIDByDomain 获取指定域名下的最大ID
 func (d *ShortLinkDao) GetMaxIDByDomain(domain string) (uint64, error) {
 	var maxID uint64
-	err := database.GetDB().Model(&model.ShortLink{}).
+	err := d.Helper.GetDatabase().Model(&model.ShortLink{}).
 		Where("domain = ? AND deleted_at IS NULL AND issuer_number IS NOT NULL", domain).
 		Select("COALESCE(MAX(issuer_number), 0)").
 		Row().Scan(&maxID)
@@ -195,11 +196,13 @@ func (d *ShortLinkDao) GetMaxIDByDomain(domain string) (uint64, error) {
 }
 
 // ClickStatisticDao 点击统计DAO
-type ClickStatisticDao struct{}
+type ClickStatisticDao struct {
+	Helper interfaces.GetHelperInterface
+}
 
 // Create 创建点击统计记录
 func (d *ClickStatisticDao) Create(statistic *model.ClickStatistic) error {
-	return database.GetDB().Create(statistic).Error
+	return d.Helper.GetDatabase().Create(statistic).Error
 }
 
 // List 获取点击统计列表
@@ -207,7 +210,7 @@ func (d *ClickStatisticDao) List(req *dto.ClickStatisticListRequest) ([]model.Cl
 	var statistics []model.ClickStatistic
 	var total int64
 
-	query := database.GetDB().Model(&model.ClickStatistic{})
+	query := d.Helper.GetDatabase().Model(&model.ClickStatistic{})
 
 	// 条件筛选
 	if req.ShortLinkID > 0 {
@@ -247,7 +250,7 @@ func (d *ClickStatisticDao) List(req *dto.ClickStatisticListRequest) ([]model.Cl
 
 // GetAnalysis 获取点击统计分析数据
 func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate time.Time) (*dto.ClickStatisticAnalysisResponse, error) {
-	query := database.GetDB().Model(&model.ClickStatistic{})
+	query := d.Helper.GetDatabase().Model(&model.ClickStatistic{})
 
 	if shortLinkID > 0 {
 		query = query.Where("short_link_id = ?", shortLinkID)
@@ -294,7 +297,7 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 
 	// 热门国家统计
 	var countryStats []dto.CountryStatistic
-	database.GetDB().Model(&model.ClickStatistic{}).
+	d.Helper.GetDatabase().Model(&model.ClickStatistic{}).
 		Select("country, COUNT(*) as count").
 		Where(whereSQL+" AND country != ''", whereConditions...).
 		Group("country").
@@ -305,7 +308,7 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 
 	// 热门城市统计
 	var cityStats []dto.CityStatistic
-	database.GetDB().Model(&model.ClickStatistic{}).
+	d.Helper.GetDatabase().Model(&model.ClickStatistic{}).
 		Select("city, COUNT(*) as count").
 		Where(whereSQL+" AND city != ''", whereConditions...).
 		Group("city").
@@ -316,7 +319,7 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 
 	// 热门来源统计
 	var refererStats []dto.RefererStatistic
-	database.GetDB().Model(&model.ClickStatistic{}).
+	d.Helper.GetDatabase().Model(&model.ClickStatistic{}).
 		Select("referer, COUNT(*) as count").
 		Where(whereSQL+" AND referer != ''", whereConditions...).
 		Group("referer").
@@ -327,7 +330,7 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 
 	// 小时统计
 	var hourlyStats []dto.HourlyStatistic
-	database.GetDB().Model(&model.ClickStatistic{}).
+	d.Helper.GetDatabase().Model(&model.ClickStatistic{}).
 		Select("HOUR(click_date) as hour, COUNT(*) as count").
 		Where(whereSQL, whereConditions...).
 		Group("HOUR(click_date)").
@@ -337,7 +340,7 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 
 	// 日统计
 	var dailyStats []dto.DailyStatistic
-	database.GetDB().Model(&model.ClickStatistic{}).
+	d.Helper.GetDatabase().Model(&model.ClickStatistic{}).
 		Select("DATE(click_date) as date, COUNT(*) as count").
 		Where(whereSQL, whereConditions...).
 		Group("DATE(click_date)").
@@ -349,17 +352,19 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 }
 
 // DomainDao 域名DAO
-type DomainDao struct{}
+type DomainDao struct {
+	Helper interfaces.GetHelperInterface
+}
 
 // Create 创建域名
 func (d *DomainDao) Create(domain *model.Domain) error {
-	return database.GetDB().Create(domain).Error
+	return d.Helper.GetDatabase().Create(domain).Error
 }
 
 // FindByDomain 根据域名查找
 func (d *DomainDao) FindByDomain(domain string) (*model.Domain, error) {
 	var domainModel model.Domain
-	err := database.GetDB().Where("domain = ? AND deleted_at IS NULL", domain).First(&domainModel).Error
+	err := d.Helper.GetDatabase().Where("domain = ? AND deleted_at IS NULL", domain).First(&domainModel).Error
 	if err != nil {
 		return nil, err
 	}
@@ -369,31 +374,31 @@ func (d *DomainDao) FindByDomain(domain string) (*model.Domain, error) {
 // List 获取域名列表
 func (d *DomainDao) List() ([]model.Domain, error) {
 	var domains []model.Domain
-	err := database.GetDB().Where("deleted_at IS NULL").Order("created_at DESC").Find(&domains).Error
+	err := d.Helper.GetDatabase().Where("deleted_at IS NULL").Order("created_at DESC").Find(&domains).Error
 	return domains, err
 }
 
 // Update 更新域名
 func (d *DomainDao) Update(domain *model.Domain) error {
-	return database.GetDB().Save(domain).Error
+	return d.Helper.GetDatabase().Save(domain).Error
 }
 
 // Delete 删除域名（软删除）
 func (d *DomainDao) Delete(id uint64) error {
-	return database.GetDB().Delete(&model.Domain{}, id).Error
+	return d.Helper.GetDatabase().Delete(&model.Domain{}, id).Error
 }
 
 // GetActiveDomains 获取活跃域名列表
 func (d *DomainDao) GetActiveDomains() ([]model.Domain, error) {
 	var domains []model.Domain
-	err := database.GetDB().Where("is_active = ? AND deleted_at IS NULL", true).Find(&domains).Error
+	err := d.Helper.GetDatabase().Where("is_active = ? AND deleted_at IS NULL", true).Find(&domains).Error
 	return domains, err
 }
 
 // ExistsByDomain 检查域名是否已存在
 func (d *DomainDao) ExistsByDomain(domain string) (bool, error) {
 	var count int64
-	err := database.GetDB().Model(&model.Domain{}).
+	err := d.Helper.GetDatabase().Model(&model.Domain{}).
 		Where("domain = ? AND deleted_at IS NULL", domain).Count(&count).Error
 	return count > 0, err
 }

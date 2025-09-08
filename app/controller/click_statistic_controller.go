@@ -4,9 +4,10 @@ import (
 	"strconv"
 	"time"
 
+	"cnb.cool/mliev/open/dwz-server/app/constants"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/service"
-	"cnb.cool/mliev/open/dwz-server/constants"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,7 +16,7 @@ type ClickStatisticController struct {
 }
 
 // GetClickStatisticList 获取点击统计列表
-func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context) {
+func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context, helper interfaces.GetHelperInterface) {
 	var req dto.ClickStatisticListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -33,7 +34,7 @@ func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context) {
 }
 
 // GetClickStatisticAnalysis 获取点击统计分析
-func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c *gin.Context) {
+func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c *gin.Context, helper interfaces.GetHelperInterface) {
 	shortLinkIDStr := c.Query("short_link_id")
 	daysStr := c.DefaultQuery("days", "7")
 	startDateStr := c.Query("start_date")

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/helper/database"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"gorm.io/gorm"
 )
 
@@ -12,9 +12,9 @@ type OperationLogDAO struct {
 	db *gorm.DB
 }
 
-func NewOperationLogDAO() *OperationLogDAO {
+func NewOperationLogDAO(helper interfaces.GetHelperInterface) *OperationLogDAO {
 	return &OperationLogDAO{
-		db: database.GetDB(),
+		db: helper.GetDatabase(),
 	}
 }
 

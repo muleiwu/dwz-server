@@ -6,6 +6,7 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 )
 
 type ABTestClickStatisticService struct {
@@ -14,11 +15,11 @@ type ABTestClickStatisticService struct {
 	abTestDao               *dao.ABTestDao
 }
 
-func NewABTestClickStatisticService() *ABTestClickStatisticService {
+func NewABTestClickStatisticService(helper interfaces.GetHelperInterface) *ABTestClickStatisticService {
 	return &ABTestClickStatisticService{
-		abTestClickStatisticDao: &dao.ABTestClickStatisticDao{},
-		shortLinkDao:            &dao.ShortLinkDao{},
-		abTestDao:               &dao.ABTestDao{},
+		abTestClickStatisticDao: &dao.ABTestClickStatisticDao{Helper: helper},
+		shortLinkDao:            &dao.ShortLinkDao{Helper: helper},
+		abTestDao:               &dao.ABTestDao{Helper: helper},
 	}
 }
 

@@ -4,9 +4,10 @@ import (
 	"strconv"
 	"strings"
 
+	"cnb.cool/mliev/open/dwz-server/app/constants"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/service"
-	"cnb.cool/mliev/open/dwz-server/constants"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,14 +16,14 @@ type ABTestController struct {
 }
 
 // CreateABTest 创建AB测试
-func (ctrl ABTestController) CreateABTest(c *gin.Context) {
+func (ctrl ABTestController) CreateABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
 	var req dto.CreateABTestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
 
-	abTestService := service.NewABTestService()
+	abTestService := service.NewABTestService(helper)
 	response, err := abTestService.CreateABTest(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -33,7 +34,7 @@ func (ctrl ABTestController) CreateABTest(c *gin.Context) {
 }
 
 // GetABTest 获取AB测试详情
-func (ctrl ABTestController) GetABTest(c *gin.Context) {
+func (ctrl ABTestController) GetABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -41,7 +42,7 @@ func (ctrl ABTestController) GetABTest(c *gin.Context) {
 		return
 	}
 
-	abTestService := service.NewABTestService()
+	abTestService := service.NewABTestService(helper)
 	response, err := abTestService.GetABTest(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -56,7 +57,7 @@ func (ctrl ABTestController) GetABTest(c *gin.Context) {
 }
 
 // UpdateABTest 更新AB测试
-func (ctrl ABTestController) UpdateABTest(c *gin.Context) {
+func (ctrl ABTestController) UpdateABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -70,7 +71,7 @@ func (ctrl ABTestController) UpdateABTest(c *gin.Context) {
 		return
 	}
 
-	abTestService := service.NewABTestService()
+	abTestService := service.NewABTestService(helper)
 	response, err := abTestService.UpdateABTest(id, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -85,7 +86,7 @@ func (ctrl ABTestController) UpdateABTest(c *gin.Context) {
 }
 
 // DeleteABTest 删除AB测试
-func (ctrl ABTestController) DeleteABTest(c *gin.Context) {
+func (ctrl ABTestController) DeleteABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -93,7 +94,7 @@ func (ctrl ABTestController) DeleteABTest(c *gin.Context) {
 		return
 	}
 
-	abTestService := service.NewABTestService()
+	abTestService := service.NewABTestService(helper)
 	err = abTestService.DeleteABTest(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -108,14 +109,14 @@ func (ctrl ABTestController) DeleteABTest(c *gin.Context) {
 }
 
 // GetABTestList 获取AB测试列表
-func (ctrl ABTestController) GetABTestList(c *gin.Context) {
+func (ctrl ABTestController) GetABTestList(c *gin.Context, helper interfaces.GetHelperInterface) {
 	var req dto.ABTestListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
 
-	abTestService := service.NewABTestService()
+	abTestService := service.NewABTestService(helper)
 	response, err := abTestService.GetABTestList(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -126,7 +127,7 @@ func (ctrl ABTestController) GetABTestList(c *gin.Context) {
 }
 
 // StartABTest 启动AB测试
-func (ctrl ABTestController) StartABTest(c *gin.Context) {
+func (ctrl ABTestController) StartABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -140,7 +141,7 @@ func (ctrl ABTestController) StartABTest(c *gin.Context) {
 		req = dto.StartABTestRequest{}
 	}
 
-	abTestService := service.NewABTestService()
+	abTestService := service.NewABTestService(helper)
 	response, err := abTestService.StartABTest(id, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -155,7 +156,7 @@ func (ctrl ABTestController) StartABTest(c *gin.Context) {
 }
 
 // StopABTest 停止AB测试
-func (ctrl ABTestController) StopABTest(c *gin.Context) {
+func (ctrl ABTestController) StopABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -169,7 +170,7 @@ func (ctrl ABTestController) StopABTest(c *gin.Context) {
 		req = dto.StopABTestRequest{}
 	}
 
-	abTestService := service.NewABTestService()
+	abTestService := service.NewABTestService(helper)
 	response, err := abTestService.StopABTest(id, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -184,7 +185,7 @@ func (ctrl ABTestController) StopABTest(c *gin.Context) {
 }
 
 // GetABTestStatistics 获取AB测试统计信息
-func (ctrl ABTestController) GetABTestStatistics(c *gin.Context) {
+func (ctrl ABTestController) GetABTestStatistics(c *gin.Context, helper interfaces.GetHelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -198,7 +199,7 @@ func (ctrl ABTestController) GetABTestStatistics(c *gin.Context) {
 		days = 7
 	}
 
-	abTestService := service.NewABTestService()
+	abTestService := service.NewABTestService(helper)
 	response, err := abTestService.GetABTestStatistics(id, days)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {

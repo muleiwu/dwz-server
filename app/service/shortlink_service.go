@@ -8,40 +8,38 @@ import (
 	"net/url"
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/helper/database"
-	"cnb.cool/mliev/open/dwz-server/helper/env"
-	"cnb.cool/mliev/open/dwz-server/helper/logger"
-	redis2 "cnb.cool/mliev/open/dwz-server/helper/redis"
-	"go.uber.org/zap"
-
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/util"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	"cnb.cool/mliev/open/dwz-server/pkg/distributed_id_generator"
+	"cnb.cool/mliev/open/dwz-server/utils"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type ShortLinkService struct {
+	helper            interfaces.GetHelperInterface
+	context           context.Context
 	shortLinkDao      *dao.ShortLinkDao
 	clickStatisticDao *dao.ClickStatisticDao
 	domainDao         *dao.DomainDao
-	codeGenerator     *util.ShortCodeGenerator     // 保持兼容性，用于验证自定义代码
-	idGenerator       *util.DistributedIDGenerator // 新的分布式发号器
-	abTestService     *ABTestService               // AB测试服务
+	idGenerator       *distributed_id_generator.DistributedIDGenerator // 新的分布式发号器
+	abTestService     *ABTestService                                   // AB测试服务
 }
 
 // LoggerAdapter 适配器，让zap日志符合util.Logger接口
 type LoggerAdapter struct{}
 
-func NewShortLinkService() *ShortLinkService {
+func NewShortLinkService(helper interfaces.GetHelperInterface, context context.Context) *ShortLinkService {
 	return &ShortLinkService{
+		helper:            helper,
+		context:           context,
 		shortLinkDao:      &dao.ShortLinkDao{},
 		clickStatisticDao: &dao.ClickStatisticDao{},
 		domainDao:         &dao.DomainDao{},
-		codeGenerator:     util.NewShortCodeGenerator(6), // 保持兼容性，用于验证自定义代码
-		idGenerator:       util.NewDistributedIDGenerator(redis2.GetRedis()),
-		abTestService:     NewABTestService(),
+		idGenerator:       distributed_id_generator.NewDistributedIDGenerator(helper.GetRedis()),
+		abTestService:     NewABTestService(helper),
 	}
 }
 
@@ -90,10 +88,6 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 
 	// 处理自定义短代码
 	if req.CustomCode != "" {
-		// 验证自定义短代码
-		if !s.codeGenerator.ValidateCustomCode(req.CustomCode) {
-			return nil, errors.New("自定义短代码格式无效")
-		}
 
 		// 检查自定义短代码是否已存在
 		exists, err := s.shortLinkDao.ExistsByDomainAndCode(domain, req.CustomCode)
@@ -108,7 +102,7 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 		shortLink.IsCustomCode = true
 	} else {
 		// 使用分布式发号器生成短代码
-		generatedCode, issuerNumber, err := s.idGenerator.GenerateShortCode(domainInfo.ID)
+		generatedCode, issuerNumber, err := s.idGenerator.GenerateShortCode(domainInfo.ID, s.context)
 		if err != nil {
 			return nil, fmt.Errorf("生成短代码失败: %v", err)
 		}
@@ -237,10 +231,6 @@ func (s *ShortLinkService) GetShortLinkList(req *dto.ShortLinkListRequest) (*dto
 
 // RedirectShortLink 短网址跳转并记录统计
 func (s *ShortLinkService) RedirectShortLink(domain, shortCode, clientIP, userAgent, referer, queryParams string) (string, error) {
-	// 先验证短代码格式
-	if !s.idGenerator.ValidateShortCode(shortCode) && !s.codeGenerator.ValidateCustomCode(shortCode) {
-		return "", errors.New("无效的短代码格式")
-	}
 
 	// 先从缓存查找
 	shortLink, err := s.getShortLinkFromCache(domain, shortCode)
@@ -279,10 +269,6 @@ func (s *ShortLinkService) RedirectShortLink(domain, shortCode, clientIP, userAg
 
 // RedirectShortLinkWithQuery 短网址跳转并记录统计（支持GET参数透传）
 func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientIP, userAgent, referer, queryString string) (string, error) {
-	// 先验证短代码格式
-	if !s.idGenerator.ValidateShortCode(shortCode) && !s.codeGenerator.ValidateCustomCode(shortCode) {
-		return "", errors.New("无效的短代码格式")
-	}
 
 	// 先从缓存查找
 	shortLink, err := s.getShortLinkFromCache(domain, shortCode)
@@ -376,7 +362,7 @@ func (s *ShortLinkService) findShortLinkByCode(domain, shortCode string) (*model
 	// 策略1：直接通过custom_code字段查找（适用于自定义代码和新的分布式发号器代码）
 	var shortLink model.ShortLink
 	link := model.ShortLink{}
-	err := database.GetDB().Table(link.TableName()).Where("domain = ? AND short_code = ? AND deleted_at IS NULL", domain, shortCode).First(&shortLink).Error
+	err := s.helper.GetDatabase().Table(link.TableName()).Where("domain = ? AND short_code = ? AND deleted_at IS NULL", domain, shortCode).First(&shortLink).Error
 	if err != nil {
 		return nil, gorm.ErrRecordNotFound
 	}
@@ -428,13 +414,13 @@ func (s *ShortLinkService) GetShortLinkStatistics(id uint64, days int) (*dto.Sho
 }
 
 // BatchCreateShortLinks 批量创建短网址
-func (s *ShortLinkService) BatchCreateShortLinks(req *dto.BatchCreateShortLinkRequest, creatorIP string) (*dto.BatchCreateShortLinkResponse, error) {
+func (s *ShortLinkService) BatchCreateShortLinks(req *dto.BatchCreateShortLinkRequest, creatorIP string, helper interfaces.GetHelperInterface) (*dto.BatchCreateShortLinkResponse, error) {
 	success := make([]dto.ShortLinkResponse, 0)
 	failed := make([]dto.BatchFailedItem, 0)
 
 	domain := req.Domain
 	if domain == "" {
-		domain = env.EnvString("shortlink_domain", "http://localhost:8080")
+		domain = s.helper.GetEnv().GetString("shortlink_domain", "http://localhost:8080")
 	}
 
 	for _, originalURL := range req.URLs {
@@ -464,7 +450,7 @@ func (s *ShortLinkService) BatchCreateShortLinks(req *dto.BatchCreateShortLinkRe
 
 // validateDomain 验证域名
 func (s *ShortLinkService) validateDomain(domain string) error {
-	return util.ValidateDomain(domain)
+	return utils.ValidateDomain(domain)
 }
 
 // cacheShortLink 缓存短网址到Redis
@@ -476,11 +462,11 @@ func (s *ShortLinkService) cacheShortLink(shortLink *model.ShortLink) {
 	marshal, err := json.Marshal(*shortLink)
 
 	if err != nil {
-		logger.Logger().Error("缓存短网址失败", zap.Error(err))
+		s.helper.GetLogger().Error(fmt.Sprintf("缓存短网址失败: %s", err.Error()))
 		return
 	}
 
-	redis2.GetRedis().Set(ctx, key, marshal, time.Hour)
+	s.helper.GetRedis().Set(ctx, key, marshal, time.Hour)
 }
 
 // getShortLinkFromCache 从Redis缓存获取短网址
@@ -488,7 +474,7 @@ func (s *ShortLinkService) getShortLinkFromCache(domain, shortCode string) (*mod
 	ctx := context.Background()
 	key := fmt.Sprintf("shortlink:%s:%s", domain, shortCode)
 
-	result := redis2.GetRedis().Get(ctx, key)
+	result := s.helper.GetRedis().Get(ctx, key)
 	if result.Err() != nil {
 		if errors.Is(result.Err(), redis.Nil) {
 			return nil, nil
@@ -511,7 +497,7 @@ func (s *ShortLinkService) getShortLinkFromCache(domain, shortCode string) (*mod
 	err = json.Unmarshal([]byte(data), &shortLink)
 
 	if err != nil {
-		logger.Logger().Error("反序列化短网址失败", zap.Error(err))
+		s.helper.GetLogger().Error(fmt.Sprintf("反序列化短网址失败: %s", err.Error()))
 		return nil, err
 	}
 
@@ -522,17 +508,17 @@ func (s *ShortLinkService) getShortLinkFromCache(domain, shortCode string) (*mod
 func (s *ShortLinkService) removeCacheShortLink(domain, shortCode string) {
 	ctx := context.Background()
 	key := fmt.Sprintf("shortlink:%s:%s", domain, shortCode)
-	redis2.GetRedis().Del(ctx, key)
+	s.helper.GetRedis().Del(ctx, key)
 }
 
 // recordClickStatistic 记录点击统计
 func (s *ShortLinkService) recordClickStatistic(shortLinkID uint64, clientIP, userAgent, referer string, queryParams string) {
 	statistic := &model.ClickStatistic{
 		ShortLinkID: shortLinkID,
-		IP:          util.TruncateString(clientIP, 45),
-		UserAgent:   util.TruncateString(userAgent, 1024),
-		Referer:     util.TruncateString(referer, 2048),
-		QueryParams: util.TruncateString(queryParams, 2048), // 截断过长的参数
+		IP:          utils.TruncateString(clientIP, 45),
+		UserAgent:   utils.TruncateString(userAgent, 1024),
+		Referer:     utils.TruncateString(referer, 2048),
+		QueryParams: utils.TruncateString(queryParams, 2048), // 截断过长的参数
 		ClickDate:   time.Now(),
 	}
 

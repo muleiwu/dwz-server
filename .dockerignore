@@ -1,6 +1,6 @@
 # 忽略测试和文档目录
 test/
-docs/
+temp/docs/
 
 # 忽略版本控制
 .git/

@@ -1,11 +1,12 @@
 package service
 
 import (
+	"errors"
+
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/util"
-	"errors"
+	"cnb.cool/mliev/open/dwz-server/utils"
 	"gorm.io/gorm"
 )
 
@@ -22,7 +23,7 @@ func NewDomainService() *DomainService {
 // CreateDomain 创建域名配置
 func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainResponse, error) {
 	// 验证域名格式
-	if err := util.ValidateDomain(req.Domain); err != nil {
+	if err := utils.ValidateDomain(req.Domain); err != nil {
 		return nil, errors.New("无效的域名格式")
 	}
 
@@ -74,7 +75,7 @@ func (s *DomainService) GetDomainList() (*dto.DomainListResponse, error) {
 // UpdateDomain 更新域名
 func (s *DomainService) UpdateDomain(id uint64, req *dto.DomainRequest) (*dto.DomainResponse, error) {
 
-	if err := util.ValidateDomain(req.Domain); err != nil {
+	if err := utils.ValidateDomain(req.Domain); err != nil {
 		return nil, errors.New("无效的域名格式")
 	}
 
