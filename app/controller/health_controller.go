@@ -27,7 +27,7 @@ func (receiver HealthController) GetHealth(c *gin.Context, helper interfaces.Get
 	healthStatus.Services["database"] = dbStatus
 
 	// 检查Redis连接
-	redisStatus := receiver.checkRedis(helper)
+	redisStatus := receiver.checkRedis(helper, c.Request.Context())
 	healthStatus.Services["redis"] = redisStatus
 
 	// 如果任何服务不健康，整体状态设为DOWN
@@ -83,7 +83,7 @@ func (receiver HealthController) checkDatabase(helper interfaces.GetHelperInterf
 }
 
 // checkRedis 检查Redis连接
-func (receiver HealthController) checkRedis(helper interfaces.GetHelperInterface) dto.ServiceStatus {
+func (receiver HealthController) checkRedis(helper interfaces.GetHelperInterface, ctx context.Context) dto.ServiceStatus {
 	redisHelper := helper.GetRedis()
 	if redisHelper == nil {
 		return dto.ServiceStatus{
@@ -91,8 +91,8 @@ func (receiver HealthController) checkRedis(helper interfaces.GetHelperInterface
 			Message: "Redis连接失败",
 		}
 	}
-	ctx := context.Background()
-	if err := redisHelper.Ping(ctx); err != nil {
+	if err := redisHelper.Ping(ctx); err.Err() != nil {
+		helper.GetLogger().Error(err.Err().Error())
 		return dto.ServiceStatus{
 			Status:  "DOWN",
 			Message: "Redis ping失败: " + err.Err().Error(),
