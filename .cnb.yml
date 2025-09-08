@@ -29,7 +29,7 @@ develop:
         - name: docker build && push
           script: |
             docker buildx build --platform linux/amd64,linux/arm64 -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH} . --push
-            docker buildx build --platform linux/loong64 -f Dockerfile.loong64 -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}-loong64 . --push
+#            docker buildx build --platform linux/loong64 -f Dockerfile.loong64 -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}-loong64 . --push
 $:
   tag_push:
     - runner:
@@ -49,8 +49,8 @@ $:
               -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest \
               --push .
 
-            docker buildx build --platform linux/loong64 \
-              -f Dockerfile.loong64 \
-              -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}-loong64 \
-              -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest-loong64 \
-              --push .
+#            docker buildx build --platform linux/loong64 \
+#              -f Dockerfile.loong64 \
+#              -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}-loong64 \
+#              -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest-loong64 \
+#              --push .
