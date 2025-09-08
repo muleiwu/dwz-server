@@ -19,7 +19,7 @@ func (receiver Router) InitConfig(helper envInterface.GetHelperInterface) map[st
 			regexRouter := ginregex.New(router, nil)
 
 			// 添加安装检查中间件
-			router.Use(middleware.InstallMiddleware())
+			router.Use(middleware.InstallMiddleware(helper))
 
 			router.Any("/favicon.ico", func(c *gin.Context) {
 				c.Status(204) // 返回204 No Content

@@ -3,17 +3,21 @@ package impl
 import (
 	"os"
 	"sync"
+
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 )
 
 type Installed struct {
+	helper         interfaces.HelperInterface
 	isInstalled    bool
 	installMutex   sync.RWMutex
 	lockFilePath   string
 	configFilePath string
 }
 
-func NewInstalled(lockFilePath, configFilePath string) *Installed {
+func NewInstalled(lockFilePath, configFilePath string, helper interfaces.HelperInterface) *Installed {
 	i := &Installed{
+		helper:         helper,
 		lockFilePath:   lockFilePath,
 		configFilePath: configFilePath,
 	}
@@ -24,8 +28,10 @@ func NewInstalled(lockFilePath, configFilePath string) *Installed {
 func (receiver *Installed) Init() {
 	if receiver.fileExists(receiver.lockFilePath) && receiver.fileExists(receiver.configFilePath) {
 		receiver.isInstalled = true
+		receiver.helper.GetLogger().Info("dwz-server is installed")
 	} else {
 		receiver.isInstalled = false
+		receiver.helper.GetLogger().Warn("dwz-server is not installed")
 	}
 }
 

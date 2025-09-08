@@ -35,6 +35,7 @@ func (d *HttpDeps) getHttpDeps(traceId string) interfaces.HelperInterface {
 	h.SetRedis(d.helper.GetRedis())
 	h.SetConfig(d.helper.GetConfig())
 	h.SetEnv(d.helper.GetEnv())
+	h.SetInstalled(d.helper.GetInstalled())
 	return h
 }
 

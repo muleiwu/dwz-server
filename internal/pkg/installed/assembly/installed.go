@@ -13,7 +13,7 @@ var lockFilePath = "./config/install.lock"
 var configFilePath = "./config/config.yaml"
 
 func (receiver *Installed) Assembly() error {
-	installed := impl.NewInstalled(lockFilePath, configFilePath)
+	installed := impl.NewInstalled(lockFilePath, configFilePath, receiver.Helper)
 	receiver.Helper.SetInstalled(installed)
 	return nil
 }

@@ -4,17 +4,17 @@ import (
 	"net/http"
 	"strings"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/install"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/gin-gonic/gin"
 )
 
 // InstallMiddleware 安装检查中间件
-func InstallMiddleware() gin.HandlerFunc {
+func InstallMiddleware(helper interfaces.GetHelperInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 
 		// 如果系统已经安装，继续处理
-		if install.IsInstalled() {
+		if helper.GetInstalled().IsInstalled() {
 			c.Next()
 			return
 		}
