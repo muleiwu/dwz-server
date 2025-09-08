@@ -11,6 +11,7 @@ type GetHelperInterface interface {
 	GetLogger() LoggerInterface
 	GetRedis() *redis.Client
 	GetDatabase() *gorm.DB
+	GetInstalled() Installed
 }
 
 type SetHelperInterface interface {
@@ -19,6 +20,7 @@ type SetHelperInterface interface {
 	SetLogger(logger LoggerInterface)
 	SetRedis(redis *redis.Client)
 	SetDatabase(database *gorm.DB)
+	SetInstalled(installed Installed)
 }
 
 type HelperInterface interface {

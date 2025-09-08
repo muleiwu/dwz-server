@@ -7,11 +7,12 @@ import (
 )
 
 type Helper struct {
-	env      interfaces.EnvInterface
-	config   interfaces.ConfigInterface
-	logger   interfaces.LoggerInterface
-	redis    *redis.Client
-	database *gorm.DB
+	env       interfaces.EnvInterface
+	config    interfaces.ConfigInterface
+	logger    interfaces.LoggerInterface
+	redis     *redis.Client
+	database  *gorm.DB
+	installed interfaces.Installed
 }
 
 func (receiver *Helper) GetEnv() interfaces.EnvInterface {
@@ -34,6 +35,10 @@ func (receiver *Helper) GetDatabase() *gorm.DB {
 	return receiver.database
 }
 
+func (receiver *Helper) GetInstalled() interfaces.Installed {
+	return receiver.installed
+}
+
 func (receiver *Helper) SetEnv(env interfaces.EnvInterface) {
 	receiver.env = env
 }
@@ -52,4 +57,8 @@ func (receiver *Helper) SetRedis(redis *redis.Client) {
 
 func (receiver *Helper) SetDatabase(database *gorm.DB) {
 	receiver.database = database
+}
+
+func (receiver *Helper) SetInstalled(installed interfaces.Installed) {
+	receiver.installed = installed
 }
