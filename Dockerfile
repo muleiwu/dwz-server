@@ -42,7 +42,7 @@ RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
 WORKDIR /app
 
 # 从构建阶段复制二进制文件
-COPY --from=builder /temp/app/dwz .
+COPY --from=builder /app/dwz .
 
 # 创建日志目录
 RUN mkdir -p logs && \
