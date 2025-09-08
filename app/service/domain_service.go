@@ -17,7 +17,7 @@ type DomainService struct {
 
 func NewDomainService(helper interfaces.GetHelperInterface) *DomainService {
 	return &DomainService{
-		domainDao: &dao.DomainDao{Helper: helper},
+		domainDao: dao.NewDomainDao(helper),
 	}
 }
 

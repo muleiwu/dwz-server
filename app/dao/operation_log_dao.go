@@ -5,28 +5,27 @@ import (
 
 	"cnb.cool/mliev/open/dwz-server/app/model"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	"gorm.io/gorm"
 )
 
 type OperationLogDAO struct {
-	db *gorm.DB
+	helper interfaces.GetHelperInterface
 }
 
 func NewOperationLogDAO(helper interfaces.GetHelperInterface) *OperationLogDAO {
 	return &OperationLogDAO{
-		db: helper.GetDatabase(),
+		helper: helper,
 	}
 }
 
 // Create 创建操作日志
 func (dao *OperationLogDAO) Create(log *model.OperationLog) error {
-	return dao.db.Create(log).Error
+	return dao.helper.GetDatabase().Create(log).Error
 }
 
 // GetByID 根据ID获取日志
 func (dao *OperationLogDAO) GetByID(id uint64) (*model.OperationLog, error) {
 	var log model.OperationLog
-	err := dao.db.Preload("User").Where("id = ?", id).First(&log).Error
+	err := dao.helper.GetDatabase().Preload("User").Where("id = ?", id).First(&log).Error
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +37,7 @@ func (dao *OperationLogDAO) GetList(offset, limit int, userID *uint64, username,
 	var logs []model.OperationLog
 	var total int64
 
-	query := dao.db.Model(&model.OperationLog{})
+	query := dao.helper.GetDatabase().Model(&model.OperationLog{})
 
 	if userID != nil {
 		query = query.Where("user_id = ?", *userID)
@@ -78,5 +77,5 @@ func (dao *OperationLogDAO) GetList(offset, limit int, userID *uint64, username,
 // DeleteOldLogs 删除过期日志（物理删除）
 func (dao *OperationLogDAO) DeleteOldLogs(days int) error {
 	cutoffTime := time.Now().AddDate(0, 0, -days)
-	return dao.db.Unscoped().Where("created_at < ?", cutoffTime).Delete(&model.OperationLog{}).Error
+	return dao.helper.GetDatabase().Unscoped().Where("created_at < ?", cutoffTime).Delete(&model.OperationLog{}).Error
 }

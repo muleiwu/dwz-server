@@ -33,7 +33,7 @@ func (receiver IndexController) GetIndex(c *gin.Context, helper interfaces.GetHe
 	copyright := helper.GetEnv().GetString("website.copyright", "")
 	// 默认数据
 	pageData := IndexPageData{
-		SiteName:     "",
+		SiteName:     "木雷短网址",
 		ICPNumber:    "",
 		PoliceNumber: "",
 		Domain:       host,

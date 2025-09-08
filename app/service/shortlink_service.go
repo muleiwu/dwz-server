@@ -35,9 +35,9 @@ func NewShortLinkService(helper interfaces.GetHelperInterface, context context.C
 	return &ShortLinkService{
 		helper:            helper,
 		context:           context,
-		shortLinkDao:      &dao.ShortLinkDao{},
-		clickStatisticDao: &dao.ClickStatisticDao{},
-		domainDao:         &dao.DomainDao{},
+		shortLinkDao:      dao.NewShortLinkDao(helper),
+		clickStatisticDao: dao.NewClickStatisticDao(helper),
+		domainDao:         dao.NewDomainDao(helper),
 		idGenerator:       distributed_id_generator.NewDistributedIDGenerator(helper.GetRedis()),
 		abTestService:     NewABTestService(helper),
 	}

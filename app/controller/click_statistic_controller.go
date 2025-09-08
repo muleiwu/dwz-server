@@ -23,7 +23,7 @@ func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context, helpe
 		return
 	}
 
-	clickStatisticService := service.NewClickStatisticService()
+	clickStatisticService := service.NewClickStatisticService(helper)
 	response, err := clickStatisticService.GetClickStatisticList(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -51,7 +51,7 @@ func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c *gin.Context, h
 		}
 	}
 
-	clickStatisticService := service.NewClickStatisticService()
+	clickStatisticService := service.NewClickStatisticService(helper)
 
 	// 如果指定了日期范围，优先使用日期范围
 	if startDateStr != "" && endDateStr != "" {

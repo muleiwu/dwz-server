@@ -17,9 +17,9 @@ type ABTestClickStatisticService struct {
 
 func NewABTestClickStatisticService(helper interfaces.GetHelperInterface) *ABTestClickStatisticService {
 	return &ABTestClickStatisticService{
-		abTestClickStatisticDao: &dao.ABTestClickStatisticDao{Helper: helper},
-		shortLinkDao:            &dao.ShortLinkDao{Helper: helper},
-		abTestDao:               &dao.ABTestDao{Helper: helper},
+		abTestClickStatisticDao: dao.NewABTestClickStatisticDao(helper),
+		shortLinkDao:            dao.NewShortLinkDao(helper),
+		abTestDao:               dao.NewABTestDao(helper),
 	}
 }
 

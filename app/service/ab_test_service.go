@@ -21,8 +21,8 @@ type ABTestService struct {
 
 func NewABTestService(helper interfaces.GetHelperInterface) *ABTestService {
 	return &ABTestService{
-		abTestDao:    &dao.ABTestDao{Helper: helper},
-		shortLinkDao: &dao.ShortLinkDao{Helper: helper},
+		abTestDao:    dao.NewABTestDao(helper),
+		shortLinkDao: dao.NewShortLinkDao(helper),
 	}
 }
 
