@@ -22,7 +22,7 @@ func NewInstalled(lockFilePath, configFilePath string) *Installed {
 }
 
 func (receiver *Installed) Init() {
-	if receiver.fileExists(lockFilePath) && receiver.fileExists(configFilePath) {
+	if receiver.fileExists(receiver.lockFilePath) && receiver.fileExists(receiver.configFilePath) {
 		receiver.isInstalled = true
 	} else {
 		receiver.isInstalled = false
