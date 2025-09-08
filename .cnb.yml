@@ -17,7 +17,7 @@ master:
 develop:
   push:
     - runner:
-        tags: cnb:arch:amd64:containerd-snapshotter
+        tags: cnb:arch:amd64
       services:
         # 流水线中启用 docker 服务
         - docker
@@ -33,7 +33,7 @@ develop:
 $:
   tag_push:
     - runner:
-        tags: cnb:arch:amd64:containerd-snapshotter
+        tags: cnb:arch:amd64
       services:
         # 流水线中启用 docker 服务
         - docker
