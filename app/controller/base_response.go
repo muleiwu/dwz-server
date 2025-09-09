@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"cnb.cool/mliev/open/dwz-server/app/dto"
-	"cnb.cool/mliev/open/dwz-server/constants"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"cnb.cool/mliev/open/dwz-server/app/constants"
+	"cnb.cool/mliev/open/dwz-server/app/dto"
+	"github.com/gin-gonic/gin"
 )
 
 type BaseResponse struct {

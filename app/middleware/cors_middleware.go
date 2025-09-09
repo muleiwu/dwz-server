@@ -1,10 +1,12 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"strings"
+
+	envInterface "cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	"github.com/gin-gonic/gin"
 )
 
 // CorsConfig 配置CORS中间件的选项
@@ -30,7 +32,7 @@ func DefaultCorsConfig() CorsConfig {
 }
 
 // CorsMiddleware 使用默认配置创建CORS中间件
-func CorsMiddleware() gin.HandlerFunc {
+func CorsMiddleware(helper envInterface.HelperInterface) gin.HandlerFunc {
 	return CorsWithConfig(DefaultCorsConfig())
 }
 

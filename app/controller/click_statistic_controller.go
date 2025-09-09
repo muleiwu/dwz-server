@@ -4,9 +4,10 @@ import (
 	"strconv"
 	"time"
 
+	"cnb.cool/mliev/open/dwz-server/app/constants"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/service"
-	"cnb.cool/mliev/open/dwz-server/constants"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,14 +16,14 @@ type ClickStatisticController struct {
 }
 
 // GetClickStatisticList 获取点击统计列表
-func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context) {
+func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.ClickStatisticListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
 
-	clickStatisticService := service.NewClickStatisticService()
+	clickStatisticService := service.NewClickStatisticService(helper)
 	response, err := clickStatisticService.GetClickStatisticList(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -33,7 +34,7 @@ func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context) {
 }
 
 // GetClickStatisticAnalysis 获取点击统计分析
-func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c *gin.Context) {
+func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c *gin.Context, helper interfaces.HelperInterface) {
 	shortLinkIDStr := c.Query("short_link_id")
 	daysStr := c.DefaultQuery("days", "7")
 	startDateStr := c.Query("start_date")
@@ -50,7 +51,7 @@ func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c *gin.Context) {
 		}
 	}
 
-	clickStatisticService := service.NewClickStatisticService()
+	clickStatisticService := service.NewClickStatisticService(helper)
 
 	// 如果指定了日期范围，优先使用日期范围
 	if startDateStr != "" && endDateStr != "" {

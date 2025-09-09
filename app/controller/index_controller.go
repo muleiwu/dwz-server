@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"cnb.cool/mliev/open/dwz-server/app/service"
-	"cnb.cool/mliev/open/dwz-server/helper/env"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"cnb.cool/mliev/open/dwz-server/app/service"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	"github.com/gin-gonic/gin"
 )
 
 type IndexController struct {
@@ -20,19 +21,19 @@ type IndexPageData struct {
 	Copyright    string
 }
 
-func (receiver IndexController) GetIndex(c *gin.Context) {
+func (receiver IndexController) GetIndex(c *gin.Context, helper interfaces.HelperInterface) {
 	// 获取当前访问的域名
 	host := c.Request.Host
 
 	// 获取域名信息
-	domainService := service.NewDomainService()
+	domainService := service.NewDomainService(helper)
 	domain, err := domainService.GetDomainByName(host)
 
-	siteName := env.EnvString("website.name", "短网址服务")
-	copyright := env.EnvString("website.copyright", "")
+	siteName := helper.GetEnv().GetString("website.name", "短网址服务")
+	copyright := helper.GetEnv().GetString("website.copyright", "")
 	// 默认数据
 	pageData := IndexPageData{
-		SiteName:     "",
+		SiteName:     "木雷短网址",
 		ICPNumber:    "",
 		PoliceNumber: "",
 		Domain:       host,

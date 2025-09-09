@@ -2,6 +2,7 @@ package main
 
 import (
 	"cnb.cool/mliev/open/dwz-server/cmd"
+
 	"embed"
 )
 
@@ -9,5 +10,8 @@ import (
 var templateFS embed.FS
 
 func main() {
-	cmd.Start(templateFS)
+	staticFs := map[string]embed.FS{
+		"templates": templateFS,
+	}
+	cmd.Start(staticFs)
 }

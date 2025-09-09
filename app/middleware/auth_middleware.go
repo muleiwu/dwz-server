@@ -6,22 +6,23 @@ import (
 	"strconv"
 	"strings"
 
+	"cnb.cool/mliev/open/dwz-server/app/constants"
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/constants"
+	envInterface "cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/gin-gonic/gin"
 )
 
 // AuthMiddleware 用户认证中间件
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(helper envInterface.HelperInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, err := extractToken(c)
+		token, err := extractToken(c, helper)
 		if err != nil {
 			respondUnauthorized(c, err.Error())
 			return
 		}
 
-		user, err := validateToken(token)
+		user, err := validateToken(token, helper)
 		if err != nil {
 			respondUnauthorized(c, "Token验证失败: "+err.Error())
 			return
@@ -33,7 +34,7 @@ func AuthMiddleware() gin.HandlerFunc {
 }
 
 // extractToken 从请求中提取Token
-func extractToken(c *gin.Context) (string, error) {
+func extractToken(c *gin.Context, helper envInterface.HelperInterface) (string, error) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
 		return "", errors.New("缺少认证信息")
@@ -53,19 +54,19 @@ func extractToken(c *gin.Context) (string, error) {
 }
 
 // validateToken 验证Token并返回用户信息
-func validateToken(tokenString string) (*model.User, error) {
+func validateToken(tokenString string, helper envInterface.HelperInterface) (*model.User, error) {
 	// 尝试验证API Token
-	if user, err := validateAPIToken(tokenString); err == nil {
+	if user, err := validateAPIToken(tokenString, helper); err == nil {
 		return user, nil
 	}
 
 	// 尝试验证登录Token
-	return validateLoginToken(tokenString)
+	return validateLoginToken(tokenString, helper)
 }
 
 // validateAPIToken 验证API Token
-func validateAPIToken(tokenString string) (*model.User, error) {
-	tokenDAO := dao.NewUserTokenDAO()
+func validateAPIToken(tokenString string, helper envInterface.HelperInterface) (*model.User, error) {
+	tokenDAO := dao.NewUserTokenDAO(helper)
 	token, err := tokenDAO.GetByToken(tokenString)
 	if err != nil {
 		return nil, err
@@ -87,7 +88,7 @@ func validateAPIToken(tokenString string) (*model.User, error) {
 }
 
 // validateLoginToken 验证登录Token（简化版）
-func validateLoginToken(tokenString string) (*model.User, error) {
+func validateLoginToken(tokenString string, helper envInterface.HelperInterface) (*model.User, error) {
 	if !strings.HasPrefix(tokenString, "user_") {
 		return nil, errors.New("无效的Token格式")
 	}
@@ -102,7 +103,7 @@ func validateLoginToken(tokenString string) (*model.User, error) {
 		return nil, errors.New("无效的用户ID")
 	}
 
-	userDAO := dao.NewUserDAO()
+	userDAO := dao.NewUserDAO(helper)
 	user, err := userDAO.GetByID(userID)
 	if err != nil {
 		return nil, err

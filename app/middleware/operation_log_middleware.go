@@ -10,9 +10,8 @@ import (
 	"time"
 
 	"cnb.cool/mliev/open/dwz-server/app/service"
-	"cnb.cool/mliev/open/dwz-server/helper/logger"
+	envInterface "cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 // OperationLogConfig 操作日志配置
@@ -58,7 +57,7 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 }
 
 // OperationLogMiddleware 操作日志记录中间件
-func OperationLogMiddleware(config ...*OperationLogConfig) gin.HandlerFunc {
+func OperationLogMiddleware(helper envInterface.HelperInterface, config ...*OperationLogConfig) gin.HandlerFunc {
 	// 使用传入的配置或默认配置
 	cfg := &DefaultOperationLogConfig
 	if len(config) > 0 && config[0] != nil {
@@ -137,6 +136,7 @@ func OperationLogMiddleware(config ...*OperationLogConfig) gin.HandlerFunc {
 		// 创建日志记录函数
 		logFunc := func() {
 			if err := createOperationLog(
+				helper,
 				&userID,
 				username,
 				operation,
@@ -151,7 +151,7 @@ func OperationLogMiddleware(config ...*OperationLogConfig) gin.HandlerFunc {
 				c.Writer.Status(),
 				executeTime,
 			); err != nil {
-				logger.Logger().Error("记录操作日志失败", zap.Error(err))
+				helper.GetLogger().Error(fmt.Sprintf("记录操作日志失败: %s", err.Error()))
 			}
 		}
 
@@ -262,8 +262,8 @@ func maskJSONSensitiveFields(data map[string]interface{}, sensitiveFields []stri
 }
 
 // createOperationLog 创建操作日志
-func createOperationLog(userID *uint64, username, operation, resource, resourceID, method, path, requestBody, responseBody, ip, userAgent string, responseCode int, executeTime int64) error {
-	logService := service.NewOperationLogService()
+func createOperationLog(helper envInterface.HelperInterface, userID *uint64, username, operation, resource, resourceID, method, path, requestBody, responseBody, ip, userAgent string, responseCode int, executeTime int64) error {
+	logService := service.NewOperationLogService(helper)
 
 	status := int8(1) // 成功
 	errorMessage := ""

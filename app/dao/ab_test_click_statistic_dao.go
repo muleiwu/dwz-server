@@ -5,14 +5,20 @@ import (
 
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/helper/database"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 )
 
-type ABTestClickStatisticDao struct{}
+type ABTestClickStatisticDao struct {
+	helper interfaces.HelperInterface
+}
+
+func NewABTestClickStatisticDao(helper interfaces.HelperInterface) *ABTestClickStatisticDao {
+	return &ABTestClickStatisticDao{helper: helper}
+}
 
 // Create 创建AB测试点击统计记录
 func (d *ABTestClickStatisticDao) Create(statistic *model.ABTestClickStatistic) error {
-	return database.GetDB().Create(statistic).Error
+	return d.helper.GetDatabase().Create(statistic).Error
 }
 
 // List 获取AB测试点击统计列表
@@ -20,7 +26,7 @@ func (d *ABTestClickStatisticDao) List(req *dto.ABTestClickStatisticListRequest)
 	var statistics []model.ABTestClickStatistic
 	var total int64
 
-	query := database.GetDB().Model(&model.ABTestClickStatistic{}).
+	query := d.helper.GetDatabase().Model(&model.ABTestClickStatistic{}).
 		Preload("ABTest").
 		Preload("Variant").
 		Preload("ShortLink")
@@ -71,7 +77,7 @@ func (d *ABTestClickStatisticDao) List(req *dto.ABTestClickStatisticListRequest)
 
 // GetAnalysis 获取AB测试点击统计分析数据
 func (d *ABTestClickStatisticDao) GetAnalysis(abTestID uint64, startDate, endDate time.Time) (*dto.ABTestClickStatisticAnalysisResponse, error) {
-	query := database.GetDB().Model(&model.ABTestClickStatistic{})
+	query := d.helper.GetDatabase().Model(&model.ABTestClickStatistic{})
 
 	if abTestID > 0 {
 		query = query.Where("ab_test_id = ?", abTestID)
@@ -98,7 +104,7 @@ func (d *ABTestClickStatisticDao) GetAnalysis(abTestID uint64, startDate, endDat
 
 	// 版本统计
 	var variantStats []dto.ABTestVariantStatistic
-	database.GetDB().Table("ab_test_click_statistics").
+	d.helper.GetDatabase().Table("ab_test_click_statistics").
 		Select(`variant_id, 
 				(SELECT name FROM ab_test_variants WHERE id = variant_id) as variant_name,
 				(SELECT target_url FROM ab_test_variants WHERE id = variant_id) as target_url,
@@ -118,7 +124,7 @@ func (d *ABTestClickStatisticDao) GetAnalysis(abTestID uint64, startDate, endDat
 
 	// 热门国家统计
 	var countryStats []dto.CountryStatistic
-	database.GetDB().Model(&model.ABTestClickStatistic{}).
+	d.helper.GetDatabase().Model(&model.ABTestClickStatistic{}).
 		Select("country, COUNT(*) as count").
 		Where("ab_test_id = ? AND country != ''", abTestID).
 		Group("country").
@@ -129,7 +135,7 @@ func (d *ABTestClickStatisticDao) GetAnalysis(abTestID uint64, startDate, endDat
 
 	// 热门城市统计
 	var cityStats []dto.CityStatistic
-	database.GetDB().Model(&model.ABTestClickStatistic{}).
+	d.helper.GetDatabase().Model(&model.ABTestClickStatistic{}).
 		Select("city, COUNT(*) as count").
 		Where("ab_test_id = ? AND city != ''", abTestID).
 		Group("city").
@@ -140,7 +146,7 @@ func (d *ABTestClickStatisticDao) GetAnalysis(abTestID uint64, startDate, endDat
 
 	// 热门来源统计
 	var refererStats []dto.RefererStatistic
-	database.GetDB().Model(&model.ABTestClickStatistic{}).
+	d.helper.GetDatabase().Model(&model.ABTestClickStatistic{}).
 		Select("referer, COUNT(*) as count").
 		Where("ab_test_id = ? AND referer != ''", abTestID).
 		Group("referer").
@@ -151,7 +157,7 @@ func (d *ABTestClickStatisticDao) GetAnalysis(abTestID uint64, startDate, endDat
 
 	// 小时统计
 	var hourlyStats []dto.HourlyStatistic
-	database.GetDB().Model(&model.ABTestClickStatistic{}).
+	d.helper.GetDatabase().Model(&model.ABTestClickStatistic{}).
 		Select("HOUR(click_date) as hour, COUNT(*) as count").
 		Where("ab_test_id = ?", abTestID).
 		Group("HOUR(click_date)").
@@ -161,7 +167,7 @@ func (d *ABTestClickStatisticDao) GetAnalysis(abTestID uint64, startDate, endDat
 
 	// 日统计
 	var dailyStats []dto.DailyStatistic
-	database.GetDB().Model(&model.ABTestClickStatistic{}).
+	d.helper.GetDatabase().Model(&model.ABTestClickStatistic{}).
 		Select("DATE(click_date) as date, COUNT(*) as count").
 		Where("ab_test_id = ?", abTestID).
 		Group("DATE(click_date)").
@@ -188,7 +194,7 @@ func (d *ABTestClickStatisticDao) GetAnalysis(abTestID uint64, startDate, endDat
 func (d *ABTestClickStatisticDao) GetVariantStatistics(abTestID uint64, startDate, endDate time.Time) ([]dto.ABTestVariantStatistic, error) {
 	var stats []dto.ABTestVariantStatistic
 
-	query := database.GetDB().Table("ab_test_click_statistics").
+	query := d.helper.GetDatabase().Table("ab_test_click_statistics").
 		Select(`variant_id, 
 				(SELECT name FROM ab_test_variants WHERE id = variant_id) as variant_name,
 				(SELECT target_url FROM ab_test_variants WHERE id = variant_id) as target_url,
@@ -224,7 +230,7 @@ func (d *ABTestClickStatisticDao) GetVariantStatistics(abTestID uint64, startDat
 // GetCountryStatistics 获取国家统计
 func (d *ABTestClickStatisticDao) GetCountryStatistics(abTestID uint64, startDate, endDate time.Time, limit int) ([]dto.CountryStatistic, error) {
 	var stats []dto.CountryStatistic
-	query := database.GetDB().Model(&model.ABTestClickStatistic{}).
+	query := d.helper.GetDatabase().Model(&model.ABTestClickStatistic{}).
 		Select("country, COUNT(*) as count").
 		Where("country != ''")
 
@@ -247,7 +253,7 @@ func (d *ABTestClickStatisticDao) GetCountryStatistics(abTestID uint64, startDat
 // GetTotalCount 获取总点击数
 func (d *ABTestClickStatisticDao) GetTotalCount(abTestID uint64, startDate, endDate time.Time) (int64, error) {
 	var count int64
-	query := database.GetDB().Model(&model.ABTestClickStatistic{})
+	query := d.helper.GetDatabase().Model(&model.ABTestClickStatistic{})
 
 	if abTestID > 0 {
 		query = query.Where("ab_test_id = ?", abTestID)
@@ -268,7 +274,7 @@ func (d *ABTestClickStatisticDao) GetTotalCount(abTestID uint64, startDate, endD
 // GetUniqueIPCount 获取独立IP数
 func (d *ABTestClickStatisticDao) GetUniqueIPCount(abTestID uint64, startDate, endDate time.Time) (int64, error) {
 	var count int64
-	query := database.GetDB().Model(&model.ABTestClickStatistic{})
+	query := d.helper.GetDatabase().Model(&model.ABTestClickStatistic{})
 
 	if abTestID > 0 {
 		query = query.Where("ab_test_id = ?", abTestID)
@@ -289,7 +295,7 @@ func (d *ABTestClickStatisticDao) GetUniqueIPCount(abTestID uint64, startDate, e
 // GetUniqueSessionCount 获取独立会话数
 func (d *ABTestClickStatisticDao) GetUniqueSessionCount(abTestID uint64, startDate, endDate time.Time) (int64, error) {
 	var count int64
-	query := database.GetDB().Model(&model.ABTestClickStatistic{})
+	query := d.helper.GetDatabase().Model(&model.ABTestClickStatistic{})
 
 	if abTestID > 0 {
 		query = query.Where("ab_test_id = ?", abTestID)

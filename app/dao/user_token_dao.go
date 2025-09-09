@@ -2,29 +2,29 @@ package dao
 
 import (
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/helper/database"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"gorm.io/gorm"
 )
 
 type UserTokenDAO struct {
-	db *gorm.DB
+	helper interfaces.HelperInterface
 }
 
-func NewUserTokenDAO() *UserTokenDAO {
+func NewUserTokenDAO(helper interfaces.HelperInterface) *UserTokenDAO {
 	return &UserTokenDAO{
-		db: database.GetDB(),
+		helper: helper,
 	}
 }
 
 // Create 创建Token
 func (dao *UserTokenDAO) Create(token *model.UserToken) error {
-	return dao.db.Create(token).Error
+	return dao.helper.GetDatabase().Create(token).Error
 }
 
 // GetByID 根据ID获取Token
 func (dao *UserTokenDAO) GetByID(id uint64) (*model.UserToken, error) {
 	var token model.UserToken
-	err := dao.db.Preload("User").Where("id = ?", id).First(&token).Error
+	err := dao.helper.GetDatabase().Preload("User").Where("id = ?", id).First(&token).Error
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (dao *UserTokenDAO) GetByID(id uint64) (*model.UserToken, error) {
 // GetByToken 根据Token值获取Token信息
 func (dao *UserTokenDAO) GetByToken(token string) (*model.UserToken, error) {
 	var userToken model.UserToken
-	err := dao.db.Preload("User").Where("token = ? AND status = 1", token).First(&userToken).Error
+	err := dao.helper.GetDatabase().Preload("User").Where("token = ? AND status = 1", token).First(&userToken).Error
 	if err != nil {
 		return nil, err
 	}
@@ -43,12 +43,12 @@ func (dao *UserTokenDAO) GetByToken(token string) (*model.UserToken, error) {
 
 // Update 更新Token
 func (dao *UserTokenDAO) Update(token *model.UserToken) error {
-	return dao.db.Save(token).Error
+	return dao.helper.GetDatabase().Save(token).Error
 }
 
 // Delete 删除Token（软删除）
 func (dao *UserTokenDAO) Delete(id uint64) error {
-	return dao.db.Where("id = ?", id).Delete(&model.UserToken{}).Error
+	return dao.helper.GetDatabase().Where("id = ?", id).Delete(&model.UserToken{}).Error
 }
 
 // GetListByUserID 根据用户ID获取Token列表
@@ -56,7 +56,7 @@ func (dao *UserTokenDAO) GetListByUserID(userID uint64, offset, limit int, token
 	var tokens []model.UserToken
 	var total int64
 
-	query := dao.db.Model(&model.UserToken{}).Where("user_id = ?", userID)
+	query := dao.helper.GetDatabase().Model(&model.UserToken{}).Where("user_id = ?", userID)
 
 	if tokenName != "" {
 		query = query.Where("token_name LIKE ?", "%"+tokenName+"%")
@@ -77,10 +77,10 @@ func (dao *UserTokenDAO) GetListByUserID(userID uint64, offset, limit int, token
 
 // UpdateLastUsed 更新最后使用时间
 func (dao *UserTokenDAO) UpdateLastUsed(id uint64) error {
-	return dao.db.Model(&model.UserToken{}).Where("id = ?", id).Update("last_used_at", gorm.Expr("NOW()")).Error
+	return dao.helper.GetDatabase().Model(&model.UserToken{}).Where("id = ?", id).Update("last_used_at", gorm.Expr("NOW()")).Error
 }
 
 // DeleteByUserID 删除用户的所有Token
 func (dao *UserTokenDAO) DeleteByUserID(userID uint64) error {
-	return dao.db.Where("user_id = ?", userID).Delete(&model.UserToken{}).Error
+	return dao.helper.GetDatabase().Where("user_id = ?", userID).Delete(&model.UserToken{}).Error
 }

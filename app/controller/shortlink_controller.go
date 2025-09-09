@@ -1,14 +1,15 @@
 package controller
 
 import (
-	"cnb.cool/mliev/open/dwz-server/helper/env"
+	"cnb.cool/mliev/open/dwz-server/app/constants"
+	"cnb.cool/mliev/open/dwz-server/app/dto"
+	"cnb.cool/mliev/open/dwz-server/app/service"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+
 	"net/http"
 	"strconv"
 	"strings"
 
-	"cnb.cool/mliev/open/dwz-server/app/dto"
-	"cnb.cool/mliev/open/dwz-server/app/service"
-	"cnb.cool/mliev/open/dwz-server/constants"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,17 +18,16 @@ type ShortLinkController struct {
 }
 
 // CreateShortLink 创建短网址
-func (ctrl ShortLinkController) CreateShortLink(c *gin.Context) {
+func (ctrl ShortLinkController) CreateShortLink(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.CreateShortLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
-
 	// 获取客户端IP
 	clientIP := c.ClientIP()
 
-	shortLinkService := service.NewShortLinkService()
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
 	response, err := shortLinkService.CreateShortLink(&req, clientIP)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -38,7 +38,7 @@ func (ctrl ShortLinkController) CreateShortLink(c *gin.Context) {
 }
 
 // GetShortLink 获取短网址详情
-func (ctrl ShortLinkController) GetShortLink(c *gin.Context) {
+func (ctrl ShortLinkController) GetShortLink(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -46,7 +46,7 @@ func (ctrl ShortLinkController) GetShortLink(c *gin.Context) {
 		return
 	}
 
-	shortLinkService := service.NewShortLinkService()
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
 	response, err := shortLinkService.GetShortLink(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -61,7 +61,7 @@ func (ctrl ShortLinkController) GetShortLink(c *gin.Context) {
 }
 
 // UpdateShortLink 更新短网址
-func (ctrl ShortLinkController) UpdateShortLink(c *gin.Context) {
+func (ctrl ShortLinkController) UpdateShortLink(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -74,7 +74,7 @@ func (ctrl ShortLinkController) UpdateShortLink(c *gin.Context) {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
-	shortLinkService := service.NewShortLinkService()
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
 	response, err := shortLinkService.UpdateShortLink(id, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -89,14 +89,14 @@ func (ctrl ShortLinkController) UpdateShortLink(c *gin.Context) {
 }
 
 // DeleteShortLink 删除短网址
-func (ctrl ShortLinkController) DeleteShortLink(c *gin.Context) {
+func (ctrl ShortLinkController) DeleteShortLink(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "无效的ID格式")
 		return
 	}
-	shortLinkService := service.NewShortLinkService()
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
 	err = shortLinkService.DeleteShortLink(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -111,13 +111,13 @@ func (ctrl ShortLinkController) DeleteShortLink(c *gin.Context) {
 }
 
 // GetShortLinkList 获取短网址列表
-func (ctrl ShortLinkController) GetShortLinkList(c *gin.Context) {
+func (ctrl ShortLinkController) GetShortLinkList(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.ShortLinkListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
 	}
-	shortLinkService := service.NewShortLinkService()
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
 	response, err := shortLinkService.GetShortLinkList(&req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -128,7 +128,7 @@ func (ctrl ShortLinkController) GetShortLinkList(c *gin.Context) {
 }
 
 // GetShortLinkStatistics 获取短网址统计信息
-func (ctrl ShortLinkController) GetShortLinkStatistics(c *gin.Context) {
+func (ctrl ShortLinkController) GetShortLinkStatistics(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -141,7 +141,7 @@ func (ctrl ShortLinkController) GetShortLinkStatistics(c *gin.Context) {
 	if err != nil || days < 1 || days > 365 {
 		days = 7
 	}
-	shortLinkService := service.NewShortLinkService()
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
 	response, err := shortLinkService.GetShortLinkStatistics(id, days)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -156,7 +156,7 @@ func (ctrl ShortLinkController) GetShortLinkStatistics(c *gin.Context) {
 }
 
 // BatchCreateShortLinks 批量创建短网址
-func (ctrl ShortLinkController) BatchCreateShortLinks(c *gin.Context) {
+func (ctrl ShortLinkController) BatchCreateShortLinks(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.BatchCreateShortLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -165,8 +165,8 @@ func (ctrl ShortLinkController) BatchCreateShortLinks(c *gin.Context) {
 
 	// 获取客户端IP
 	clientIP := c.ClientIP()
-	shortLinkService := service.NewShortLinkService()
-	response, err := shortLinkService.BatchCreateShortLinks(&req, clientIP)
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
+	response, err := shortLinkService.BatchCreateShortLinks(&req, clientIP, helper)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -185,11 +185,11 @@ type ErrorPageData struct {
 }
 
 // RedirectShortLink 短网址跳转
-func (ctrl ShortLinkController) RedirectShortLink(c *gin.Context) {
+func (ctrl ShortLinkController) RedirectShortLink(c *gin.Context, helper interfaces.HelperInterface) {
 	shortCode := c.Param("code")
 	if shortCode == "" {
 		// 当shortCode为空时，渲染404页面
-		ctrl.render404Page(c, c.Request.Host)
+		ctrl.render404Page(c, helper, c.Request.Host)
 		return
 	}
 
@@ -203,25 +203,25 @@ func (ctrl ShortLinkController) RedirectShortLink(c *gin.Context) {
 
 	// 获取查询参数字符串
 	queryString := c.Request.URL.RawQuery
-	shortLinkService := service.NewShortLinkService()
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
 	// 进行跳转（使用新的支持GET参数透传的方法）
 	originalURL, err := shortLinkService.RedirectShortLinkWithQuery(domain, shortCode, clientIP, userAgent, referer, queryString)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			// 渲染404页面而不是返回JSON错误
-			ctrl.render404Page(c, domain)
+			ctrl.render404Page(c, helper, domain)
 		} else if strings.Contains(err.Error(), "无效") {
 			// 渲染过期页面而不是返回JSON错误
-			ctrl.render404Page(c, domain)
+			ctrl.render404Page(c, helper, domain)
 		} else if strings.Contains(err.Error(), "过期") {
 			// 渲染过期页面而不是返回JSON错误
-			ctrl.renderExpiredPage(c, domain)
+			ctrl.renderExpiredPage(c, helper, domain)
 		} else if strings.Contains(err.Error(), "禁用") {
 			// 渲染禁用页面而不是返回JSON错误
-			ctrl.renderDisabledPage(c, domain)
+			ctrl.renderDisabledPage(c, helper, domain)
 		} else {
 			// 渲染通用错误页面而不是返回JSON错误
-			ctrl.renderInternalErrorPage(c, domain)
+			ctrl.renderInternalErrorPage(c, helper, domain)
 		}
 		return
 	}
@@ -231,33 +231,33 @@ func (ctrl ShortLinkController) RedirectShortLink(c *gin.Context) {
 }
 
 // render404Page 渲染404页面
-func (ctrl ShortLinkController) render404Page(c *gin.Context, domain string) {
-	ctrl.renderErrorPage(c, domain, "404.html", http.StatusNotFound)
+func (ctrl ShortLinkController) render404Page(c *gin.Context, helper interfaces.HelperInterface, domain string) {
+	ctrl.renderErrorPage(c, helper, domain, "404.html", http.StatusNotFound)
 }
 
 // renderExpiredPage 渲染过期页面
-func (ctrl ShortLinkController) renderExpiredPage(c *gin.Context, domain string) {
-	ctrl.renderErrorPage(c, domain, "expired.html", 410) // 410 Gone
+func (ctrl ShortLinkController) renderExpiredPage(c *gin.Context, helper interfaces.HelperInterface, domain string) {
+	ctrl.renderErrorPage(c, helper, domain, "expired.html", 410) // 410 Gone
 }
 
 // renderDisabledPage 渲染禁用页面
-func (ctrl ShortLinkController) renderDisabledPage(c *gin.Context, domain string) {
-	ctrl.renderErrorPage(c, domain, "disabled.html", http.StatusForbidden)
+func (ctrl ShortLinkController) renderDisabledPage(c *gin.Context, helper interfaces.HelperInterface, domain string) {
+	ctrl.renderErrorPage(c, helper, domain, "disabled.html", http.StatusForbidden)
 }
 
 // renderInternalErrorPage 渲染通用错误页面
-func (ctrl ShortLinkController) renderInternalErrorPage(c *gin.Context, domain string) {
-	ctrl.renderErrorPage(c, domain, "error.html", http.StatusInternalServerError)
+func (ctrl ShortLinkController) renderInternalErrorPage(c *gin.Context, helper interfaces.HelperInterface, domain string) {
+	ctrl.renderErrorPage(c, helper, domain, "error.html", http.StatusInternalServerError)
 }
 
 // renderErrorPage 通用错误页面渲染方法
-func (ctrl ShortLinkController) renderErrorPage(c *gin.Context, domain, template string, statusCode int) {
+func (ctrl ShortLinkController) renderErrorPage(c *gin.Context, helper interfaces.HelperInterface, domain, template string, statusCode int) {
 	// 获取域名信息
-	domainService := service.NewDomainService()
+	domainService := service.NewDomainService(helper)
 	domainInfo, err := domainService.GetDomainByName(domain)
 
-	siteName := env.EnvString("website.name", "短网址服务")
-	copyright := env.EnvString("website.copyright", "")
+	siteName := helper.GetEnv().GetString("website.name", "短网址服务")
+	copyright := helper.GetEnv().GetString("website.copyright", "")
 	// 默认数据
 	pageData := ErrorPageData{
 		SiteName:     siteName,
@@ -281,7 +281,7 @@ func (ctrl ShortLinkController) renderErrorPage(c *gin.Context, domain, template
 }
 
 // PreviewShortLink 预览短网址信息（不计入统计）
-func (ctrl ShortLinkController) PreviewShortLink(c *gin.Context) {
+func (ctrl ShortLinkController) PreviewShortLink(c *gin.Context, helper interfaces.HelperInterface) {
 	shortCode := c.Param("code")
 	if shortCode == "" {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "短网址代码不能为空")
@@ -293,7 +293,7 @@ func (ctrl ShortLinkController) PreviewShortLink(c *gin.Context) {
 	if c.Request.TLS != nil {
 		domain = "https://" + c.Request.Host
 	}
-	shortLinkService := service.NewShortLinkService()
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
 	// 预览时不传递IP信息，这样就不会记录统计，也不传递查询参数
 	originalURL, err := shortLinkService.RedirectShortLinkWithQuery(domain, shortCode, "", "", "", "")
 	if err != nil {

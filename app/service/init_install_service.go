@@ -1,7 +1,6 @@
 package service
 
 import (
-	"cnb.cool/mliev/open/dwz-server/helper/install"
 	"context"
 	"database/sql"
 	"fmt"
@@ -10,89 +9,89 @@ import (
 
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/config"
-	"cnb.cool/mliev/open/dwz-server/config/database"
-	database2 "cnb.cool/mliev/open/dwz-server/config/database"
-	redis3 "cnb.cool/mliev/open/dwz-server/config/redis"
-	database1 "cnb.cool/mliev/open/dwz-server/helper/database"
-	"cnb.cool/mliev/open/dwz-server/helper/logger"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	database2 "cnb.cool/mliev/open/dwz-server/internal/pkg/database/config"
+	config2 "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/config"
 	"github.com/redis/go-redis/v9"
 )
 
 type InitInstallService struct {
+	helper interfaces.HelperInterface
 }
 
 const lockFile = "./config/install.lock"
 const configFile = "./config/config.yaml"
 
-func NewInitInstallService() *InitInstallService {
-	return &InitInstallService{}
+func NewInitInstallService(helper interfaces.HelperInterface) *InitInstallService {
+	return &InitInstallService{
+		helper: helper,
+	}
 }
 
 func (receiver *InitInstallService) AutoInstall() {
 	// 自动安装流程
 	databaseConfig := database2.DatabaseConfig{
-		Driver:   config.GetString("database.driver", ""),
-		Host:     config.GetString("database.host", ""),
-		Port:     config.GetInt("database.port", 0),
-		DBName:   config.GetString("database.dbname", ""),
-		Username: config.GetString("database.username", ""),
-		Password: config.GetString("database.password", ""),
+		Driver:   receiver.helper.GetConfig().GetString("database.driver", ""),
+		Host:     receiver.helper.GetConfig().GetString("database.host", ""),
+		Port:     receiver.helper.GetConfig().GetInt("database.port", 0),
+		DBName:   receiver.helper.GetConfig().GetString("database.dbname", ""),
+		Username: receiver.helper.GetConfig().GetString("database.username", ""),
+		Password: receiver.helper.GetConfig().GetString("database.password", ""),
 	}
 
-	redisConfig := redis3.RedisConfig{
-		Host:     config.GetString("redis.host", ""),
-		Port:     config.GetInt("redis.port", 0),
-		Password: config.GetString("redis.password", ""),
-		DB:       config.GetInt("redis.db", 0),
+	redisConfig := config2.RedisConfig{
+		Host:     receiver.helper.GetConfig().GetString("redis.host", ""),
+		Port:     receiver.helper.GetConfig().GetInt("redis.port", 0),
+		Password: receiver.helper.GetConfig().GetString("redis.password", ""),
+		DB:       receiver.helper.GetConfig().GetInt("redis.db", 0),
 	}
 
 	err := receiver.TestDatabaseConnection(databaseConfig)
 	if err != nil {
-		logger.Logger().Error(fmt.Sprintf("[自动安装] 检查数据库连接失败, 原因: %s", err.Error()))
+		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 检查数据库连接失败, 原因: %s", err.Error()))
 		os.Exit(1)
 	}
 
 	err = receiver.TestRedisConnection(redisConfig)
 	if err != nil {
-		logger.Logger().Error(fmt.Sprintf("[自动安装] 检查Redis连接失败, 原因: %s", err.Error()))
+		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 检查Redis连接失败, 原因: %s", err.Error()))
 		os.Exit(1)
 	}
 
 	err = receiver.CreateConfigFile(databaseConfig, redisConfig)
 	if err != nil {
-		logger.Logger().Error(fmt.Sprintf("[自动安装] 写入配置文件失败, 原因: %s", err.Error()))
+		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 写入配置文件失败, 原因: %s", err.Error()))
 		os.Exit(1)
 	}
 
 	// 未安装，且配置自动初始化
-	err = database1.AutoMigrate()
+	err = receiver.helper.GetDatabase().AutoMigrate()
 	if err != nil {
-		logger.Logger().Error(fmt.Sprintf("[自动安装] 数据库迁移失败, 原因: %s", err.Error()))
+		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 数据库迁移失败, 原因: %s", err.Error()))
 		os.Exit(1)
 	}
 
 	err = receiver.CreateInstallLock()
 
 	if err != nil {
-		logger.Logger().Error(fmt.Sprintf("[自动安装] 写入安装成功锁定文件失败, 原因: %s", err.Error()))
+		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 写入安装成功锁定文件失败, 原因: %s", err.Error()))
 		os.Exit(1)
 	}
 
 	err = receiver.CreateAdminUser("admin", "admin", "system@system.local", "", "admin")
 
 	if err != nil {
-		logger.Logger().Error(fmt.Sprintf("[自动安装] 自动添默认用户失败, 原因: %s", err.Error()))
+		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 自动添默认用户失败, 原因: %s", err.Error()))
 		os.Exit(1)
 	}
 
 	// 标记系统为已安装
-	install.MarkAsInstalled()
+	receiver.helper.GetInstalled().SetInstalled(true)
 
-	logger.Logger().Info(fmt.Sprintf("【自动安装】成功， 用户名：admin 密码：admin"))
-	logger.Logger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
-	logger.Logger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
-	logger.Logger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
+	receiver.helper.GetLogger().Info(fmt.Sprintf("【自动安装】成功， 用户名：admin 密码：admin"))
+	receiver.helper.GetLogger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
+	receiver.helper.GetLogger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
+	receiver.helper.GetLogger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
 }
 
 func (receiver *InitInstallService) CreateAdminUser(username, realName, email, phone, password string) error {
@@ -113,13 +112,13 @@ func (receiver *InitInstallService) CreateAdminUser(username, realName, email, p
 		return err
 	}
 
-	userDAO := dao.NewUserDAO()
+	userDAO := dao.NewUserDAO(receiver.helper)
 	// 保存到数据库
 	if err := userDAO.Create(user); err != nil {
 		return err
 	}
 
-	logger.Logger().Info(fmt.Sprintf("管理员账户创建完成: %s\n", username))
+	receiver.helper.GetLogger().Info(fmt.Sprintf("管理员账户创建完成: %s\n", username))
 
 	return nil
 }
@@ -135,7 +134,7 @@ func (receiver *InitInstallService) CreateInstallLock() error {
 	return nil
 }
 
-func (receiver *InitInstallService) CreateConfigFile(databaseInfo database.DatabaseConfig, redisInfo redis3.RedisConfig) error {
+func (receiver *InitInstallService) CreateConfigFile(databaseInfo database2.DatabaseConfig, redisInfo config2.RedisConfig) error {
 
 	configContent := fmt.Sprintf(`# 短网址服务配置文件
 # 由安装向导自动生成于 %s
@@ -219,7 +218,7 @@ migration:
 	return nil
 }
 
-func (receiver *InitInstallService) TestDatabaseConnection(config database.DatabaseConfig) error {
+func (receiver *InitInstallService) TestDatabaseConnection(config database2.DatabaseConfig) error {
 	var dsn string
 	var driver string
 
@@ -255,7 +254,7 @@ func (receiver *InitInstallService) TestDatabaseConnection(config database.Datab
 	for i := 0; i < maxRetries; i++ {
 		if err := db.Ping(); err != nil {
 			lastErr = err
-			logger.Logger().Warn(fmt.Sprintf("数据库连接测试失败 (第%d次重试): %v", i+1, err))
+			receiver.helper.GetLogger().Warn(fmt.Sprintf("数据库连接测试失败 (第%d次重试): %v", i+1, err))
 
 			// 如果不是最后一次重试，等待后重试
 			if i < maxRetries-1 {
@@ -263,7 +262,7 @@ func (receiver *InitInstallService) TestDatabaseConnection(config database.Datab
 			}
 		} else {
 			// 连接成功
-			logger.Logger().Info("数据库连接测试成功")
+			receiver.helper.GetLogger().Info("数据库连接测试成功")
 			return nil
 		}
 	}
@@ -271,7 +270,7 @@ func (receiver *InitInstallService) TestDatabaseConnection(config database.Datab
 	return fmt.Errorf("数据库连接测试失败 (已重试%d次): %v", maxRetries, lastErr)
 }
 
-func (receiver *InitInstallService) TestRedisConnection(config redis3.RedisConfig) error {
+func (receiver *InitInstallService) TestRedisConnection(config config2.RedisConfig) error {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
 		Password: config.Password,
@@ -291,7 +290,7 @@ func (receiver *InitInstallService) TestRedisConnection(config redis3.RedisConfi
 		_, err := rdb.Ping(ctx).Result()
 		if err != nil {
 			lastErr = err
-			logger.Logger().Warn(fmt.Sprintf("Redis连接测试失败 (第%d次重试): %v", i+1, err))
+			receiver.helper.GetLogger().Warn(fmt.Sprintf("Redis连接测试失败 (第%d次重试): %v", i+1, err))
 
 			// 如果不是最后一次重试，等待后重试
 			if i < maxRetries-1 {
@@ -299,7 +298,7 @@ func (receiver *InitInstallService) TestRedisConnection(config redis3.RedisConfi
 			}
 		} else {
 			// 连接成功
-			logger.Logger().Info("Redis连接测试成功")
+			receiver.helper.GetLogger().Info("Redis连接测试成功")
 			return nil
 		}
 	}

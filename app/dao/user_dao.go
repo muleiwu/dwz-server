@@ -2,29 +2,29 @@ package dao
 
 import (
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/helper/database"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"gorm.io/gorm"
 )
 
 type UserDAO struct {
-	db *gorm.DB
+	helper interfaces.HelperInterface
 }
 
-func NewUserDAO() *UserDAO {
+func NewUserDAO(helper interfaces.HelperInterface) *UserDAO {
 	return &UserDAO{
-		db: database.GetDB(),
+		helper: helper,
 	}
 }
 
 // Create 创建用户
 func (dao *UserDAO) Create(user *model.User) error {
-	return dao.db.Create(user).Error
+	return dao.helper.GetDatabase().Create(user).Error
 }
 
 // GetByID 根据ID获取用户
 func (dao *UserDAO) GetByID(id uint64) (*model.User, error) {
 	var user model.User
-	err := dao.db.Where("id = ?", id).First(&user).Error
+	err := dao.helper.GetDatabase().Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (dao *UserDAO) GetByID(id uint64) (*model.User, error) {
 // GetByUsername 根据用户名获取用户
 func (dao *UserDAO) GetByUsername(username string) (*model.User, error) {
 	var user model.User
-	err := dao.db.Where("username = ?", username).First(&user).Error
+	err := dao.helper.GetDatabase().Where("username = ?", username).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (dao *UserDAO) GetByUsername(username string) (*model.User, error) {
 // GetByEmail 根据邮箱获取用户
 func (dao *UserDAO) GetByEmail(email string) (*model.User, error) {
 	var user model.User
-	err := dao.db.Where("email = ?", email).First(&user).Error
+	err := dao.helper.GetDatabase().Where("email = ?", email).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -53,12 +53,12 @@ func (dao *UserDAO) GetByEmail(email string) (*model.User, error) {
 
 // Update 更新用户
 func (dao *UserDAO) Update(user *model.User) error {
-	return dao.db.Save(user).Error
+	return dao.helper.GetDatabase().Save(user).Error
 }
 
 // Delete 删除用户（软删除）
 func (dao *UserDAO) Delete(id uint64) error {
-	return dao.db.Where("id = ?", id).Delete(&model.User{}).Error
+	return dao.helper.GetDatabase().Where("id = ?", id).Delete(&model.User{}).Error
 }
 
 // GetList 获取用户列表
@@ -66,7 +66,7 @@ func (dao *UserDAO) GetList(offset, limit int, username, realName string, status
 	var users []model.User
 	var total int64
 
-	query := dao.db.Model(&model.User{})
+	query := dao.helper.GetDatabase().Model(&model.User{})
 
 	if username != "" {
 		query = query.Where("username LIKE ?", "%"+username+"%")
@@ -90,13 +90,13 @@ func (dao *UserDAO) GetList(offset, limit int, username, realName string, status
 
 // UpdateLastLogin 更新最后登录时间
 func (dao *UserDAO) UpdateLastLogin(id uint64) error {
-	return dao.db.Model(&model.User{}).Where("id = ?", id).Update("last_login", gorm.Expr("NOW()")).Error
+	return dao.helper.GetDatabase().Model(&model.User{}).Where("id = ?", id).Update("last_login", gorm.Expr("NOW()")).Error
 }
 
 // CheckUsernameExists 检查用户名是否存在
 func (dao *UserDAO) CheckUsernameExists(username string, excludeID uint64) (bool, error) {
 	var count int64
-	query := dao.db.Model(&model.User{}).Where("username = ?", username)
+	query := dao.helper.GetDatabase().Model(&model.User{}).Where("username = ?", username)
 	if excludeID > 0 {
 		query = query.Where("id != ?", excludeID)
 	}
@@ -110,7 +110,7 @@ func (dao *UserDAO) CheckEmailExists(email string, excludeID uint64) (bool, erro
 		return false, nil
 	}
 	var count int64
-	query := dao.db.Model(&model.User{}).Where("email = ?", email)
+	query := dao.helper.GetDatabase().Model(&model.User{}).Where("email = ?", email)
 	if excludeID > 0 {
 		query = query.Where("id != ?", excludeID)
 	}

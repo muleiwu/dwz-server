@@ -8,16 +8,19 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
+	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"gorm.io/gorm"
 )
 
 type UserService struct {
 	userDAO *dao.UserDAO
+	helper  interfaces.HelperInterface
 }
 
-func NewUserService() *UserService {
+func NewUserService(helper interfaces.HelperInterface) *UserService {
 	return &UserService{
-		userDAO: dao.NewUserDAO(),
+		helper:  helper,
+		userDAO: dao.NewUserDAO(helper),
 	}
 }
 
@@ -160,7 +163,7 @@ func (s *UserService) DeleteUser(id uint64) error {
 	}
 
 	// 删除用户的所有Token
-	tokenDAO := dao.NewUserTokenDAO()
+	tokenDAO := dao.NewUserTokenDAO(s.helper)
 	if err := tokenDAO.DeleteByUserID(id); err != nil {
 		// 记录日志但不中断删除流程
 	}

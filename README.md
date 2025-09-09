@@ -1,7 +1,8 @@
 # 木雷短网址 - 企业级短链接服务平台
 
-[![Go Version](https://img.shields.io/github/go-mod/go-version/your-org/dwz-server)](https://golang.org/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Go Version](https://img.shields.io/badge/Go-1.25.0-blue.svg)](https://golang.org)
+[![Gin Framework](https://img.shields.io/badge/Gin-v1.10.1-green.svg)](https://github.com/gin-gonic/gin)
+[![GORM](https://img.shields.io/badge/Gorm-v1.30.3-orange.svg)](https://gorm.io)
 
 > 🚀 木雷坞开源的一个功能完善、高性能的企业级短链接服务平台，支持多域名、AB测试、用户管理、实时统计等功能。
 
@@ -20,11 +21,11 @@
 
 ###  📞 加群获取帮助
 
- 1. QQ群：
-    - 1021660914 [点击链接加入群聊【木雷坞开源家】](https://n3.ink/lmKc)
+|                                     QQ                                      |                                 企业微信                                       |
+|:---------------------------------------------------------------------------:|:--------------------------------------------------------------------------:|
+| ![wechat_qr_code.png](https://static.1ms.run/dwz/image/httpsn3.inklmKc.png) | ![wechat_qr_code.png](https://static.1ms.run/dwz/image/wechat_qr_code.png) |
+|       QQ群号：1021660914 <br /> [点击链接加入群聊【木雷坞开源家】](https://n3.ink/lmKc)        |                                扫描上方二维码加入微信群                                |
 
- 2. 企业微信群
-    - ![wechat_qr_code.png](https://static.1ms.run/dwz/image/wechat_qr_code.png)
 
 
 ## ✨ 功能特性
@@ -418,7 +419,7 @@ POST /api/v1/ab_tests
 GET /api/v1/ab_tests/{id}/statistics
 ```
 
-详细的API文档请参考 [API.md](docs/API.md)
+详细的API文档请参考 [API.md](temp/docs/API.md)
 
 ## 🔧 配置说明
 
