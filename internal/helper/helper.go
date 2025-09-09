@@ -1,10 +1,15 @@
 package helper
 
 import (
+	"sync"
+
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
+
+var helperOnce sync.Once
+var helperData interfaces.HelperInterface
 
 type Helper struct {
 	env       interfaces.EnvInterface
@@ -13,6 +18,13 @@ type Helper struct {
 	redis     *redis.Client
 	database  *gorm.DB
 	installed interfaces.Installed
+}
+
+func GetHelper() interfaces.HelperInterface {
+	helperOnce.Do(func() {
+		helperData = &Helper{}
+	})
+	return helperData
 }
 
 func (receiver *Helper) GetEnv() interfaces.EnvInterface {

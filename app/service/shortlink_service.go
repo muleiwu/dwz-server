@@ -11,8 +11,8 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
+	helper2 "cnb.cool/mliev/open/dwz-server/internal/helper"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/distributed_id_generator"
 	"cnb.cool/mliev/open/dwz-server/pkg/domain_validate"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -24,8 +24,8 @@ type ShortLinkService struct {
 	shortLinkDao      *dao.ShortLinkDao
 	clickStatisticDao *dao.ClickStatisticDao
 	domainDao         *dao.DomainDao
-	idGenerator       *distributed_id_generator.DistributedIDGenerator // 新的分布式发号器
-	abTestService     *ABTestService                                   // AB测试服务
+	idGenerator       interfaces.IDGenerator // 新的分布式发号器
+	abTestService     *ABTestService         // AB测试服务
 }
 
 // LoggerAdapter 适配器，让zap日志符合util.Logger接口
@@ -38,7 +38,7 @@ func NewShortLinkService(helper interfaces.HelperInterface, context context.Cont
 		shortLinkDao:      dao.NewShortLinkDao(helper),
 		clickStatisticDao: dao.NewClickStatisticDao(helper),
 		domainDao:         dao.NewDomainDao(helper),
-		idGenerator:       distributed_id_generator.NewDistributedIDGenerator(helper.GetRedis()),
+		idGenerator:       helper2.GetIdGenerator(),
 		abTestService:     NewABTestService(helper),
 	}
 }
