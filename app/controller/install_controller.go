@@ -6,7 +6,9 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/service"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	database2 "cnb.cool/mliev/open/dwz-server/internal/pkg/database/config"
+	"cnb.cool/mliev/open/dwz-server/internal/pkg/database/impl"
 	redis2 "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/config"
+	impl2 "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/impl"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -198,7 +200,7 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 	}
 
 	// 初始化数据库
-	if err := receiver.initializeDatabase(req.Database, helper); err != nil {
+	if err := receiver.initializeDatabase(req.Database, req.Redis, helper); err != nil {
 		receiver.Error(c, http.StatusInternalServerError, "数据库初始化失败: "+err.Error())
 		return
 	}
@@ -273,16 +275,26 @@ func (receiver InstallController) createConfigFile(req InstallRequest, helper in
 }
 
 // initializeDatabase 初始化数据库
-func (receiver InstallController) initializeDatabase(config DatabaseConfig, helper interfaces.HelperInterface) error {
+func (receiver InstallController) initializeDatabase(databaseConfig DatabaseConfig, redisConfig RedisConfig, helper interfaces.HelperInterface) error {
 
-	err := helper.GetDatabase().AutoMigrate()
-
+	database, err := impl.NewDatabase(helper, databaseConfig.Type, databaseConfig.Host, databaseConfig.Port, databaseConfig.Name, databaseConfig.User, databaseConfig.Password)
 	if err != nil {
 		return err
 	}
 
-	// 初始化Redis连接
-	helper.GetRedis()
+	helper.SetDatabase(database)
+
+	redis, err := impl2.NewRedis(helper, redisConfig.Host, redisConfig.Port, redisConfig.DB, redisConfig.Password)
+
+	if err != nil {
+		return err
+	}
+	helper.SetRedis(redis)
+
+	err = helper.GetDatabase().AutoMigrate()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
