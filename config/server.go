@@ -1,6 +1,7 @@
 package config
 
 import (
+	"cnb.cool/mliev/open/dwz-server/config/autoload"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"cnb.cool/mliev/open/dwz-server/internal/pkg/http_server/service"
 	"cnb.cool/mliev/open/dwz-server/internal/service/migration"
@@ -14,7 +15,7 @@ func (receiver Server) Get() []interfaces.ServerInterface {
 	return []interfaces.ServerInterface{
 		&migration.Migration{
 			Helper:    receiver.Helper,
-			Migration: Migration{}.Get(),
+			Migration: autoload.Migration{}.Get(),
 		},
 		&service.HttpServer{
 			Helper: receiver.Helper,

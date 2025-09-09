@@ -291,7 +291,9 @@ func (receiver InstallController) initializeDatabase(databaseConfig DatabaseConf
 	}
 	helper.SetRedis(redis)
 
-	err = helper.GetDatabase().AutoMigrate()
+	migration := helper.GetConfig().Get("database.migration", []any{}).([]any)
+
+	err = helper.GetDatabase().AutoMigrate(migration...)
 	if err != nil {
 		return err
 	}
