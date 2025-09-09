@@ -9,7 +9,7 @@ import (
 type StaticFs struct {
 }
 
-func (receiver StaticFs) InitConfig(helper envInterface.GetHelperInterface) map[string]any {
+func (receiver StaticFs) InitConfig(helper envInterface.HelperInterface) map[string]any {
 	return map[string]any{
 		"static.fs": func() map[string]embed.FS {
 			return map[string]embed.FS{

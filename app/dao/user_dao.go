@@ -7,10 +7,10 @@ import (
 )
 
 type UserDAO struct {
-	helper interfaces.GetHelperInterface
+	helper interfaces.HelperInterface
 }
 
-func NewUserDAO(helper interfaces.GetHelperInterface) *UserDAO {
+func NewUserDAO(helper interfaces.HelperInterface) *UserDAO {
 	return &UserDAO{
 		helper: helper,
 	}

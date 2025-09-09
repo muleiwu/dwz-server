@@ -14,7 +14,7 @@ type ClickStatisticService struct {
 	shortLinkDao      *dao.ShortLinkDao
 }
 
-func NewClickStatisticService(helper interfaces.GetHelperInterface) *ClickStatisticService {
+func NewClickStatisticService(helper interfaces.HelperInterface) *ClickStatisticService {
 	return &ClickStatisticService{
 		clickStatisticDao: dao.NewClickStatisticDao(helper),
 		shortLinkDao:      dao.NewShortLinkDao(helper),

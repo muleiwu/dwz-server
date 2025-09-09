@@ -19,7 +19,7 @@ import (
 )
 
 type ShortLinkService struct {
-	helper            interfaces.GetHelperInterface
+	helper            interfaces.HelperInterface
 	context           context.Context
 	shortLinkDao      *dao.ShortLinkDao
 	clickStatisticDao *dao.ClickStatisticDao
@@ -31,7 +31,7 @@ type ShortLinkService struct {
 // LoggerAdapter 适配器，让zap日志符合util.Logger接口
 type LoggerAdapter struct{}
 
-func NewShortLinkService(helper interfaces.GetHelperInterface, context context.Context) *ShortLinkService {
+func NewShortLinkService(helper interfaces.HelperInterface, context context.Context) *ShortLinkService {
 	return &ShortLinkService{
 		helper:            helper,
 		context:           context,
@@ -414,7 +414,7 @@ func (s *ShortLinkService) GetShortLinkStatistics(id uint64, days int) (*dto.Sho
 }
 
 // BatchCreateShortLinks 批量创建短网址
-func (s *ShortLinkService) BatchCreateShortLinks(req *dto.BatchCreateShortLinkRequest, creatorIP string, helper interfaces.GetHelperInterface) (*dto.BatchCreateShortLinkResponse, error) {
+func (s *ShortLinkService) BatchCreateShortLinks(req *dto.BatchCreateShortLinkRequest, creatorIP string, helper interfaces.HelperInterface) (*dto.BatchCreateShortLinkResponse, error) {
 	success := make([]dto.ShortLinkResponse, 0)
 	failed := make([]dto.BatchFailedItem, 0)
 

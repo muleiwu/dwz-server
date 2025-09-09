@@ -17,7 +17,7 @@ type UserController struct {
 }
 
 // Login 用户登录
-func (ctrl UserController) Login(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) Login(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -35,7 +35,7 @@ func (ctrl UserController) Login(c *gin.Context, helper interfaces.GetHelperInte
 }
 
 // CreateUser 创建用户
-func (ctrl UserController) CreateUser(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) CreateUser(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -53,7 +53,7 @@ func (ctrl UserController) CreateUser(c *gin.Context, helper interfaces.GetHelpe
 }
 
 // GetUser 获取用户详情
-func (ctrl UserController) GetUser(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) GetUser(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -76,7 +76,7 @@ func (ctrl UserController) GetUser(c *gin.Context, helper interfaces.GetHelperIn
 }
 
 // UpdateUser 更新用户
-func (ctrl UserController) UpdateUser(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) UpdateUser(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -105,7 +105,7 @@ func (ctrl UserController) UpdateUser(c *gin.Context, helper interfaces.GetHelpe
 }
 
 // DeleteUser 删除用户
-func (ctrl UserController) DeleteUser(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) DeleteUser(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -128,7 +128,7 @@ func (ctrl UserController) DeleteUser(c *gin.Context, helper interfaces.GetHelpe
 }
 
 // GetUserList 获取用户列表
-func (ctrl UserController) GetUserList(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) GetUserList(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.UserListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -146,7 +146,7 @@ func (ctrl UserController) GetUserList(c *gin.Context, helper interfaces.GetHelp
 }
 
 // ChangePassword 修改密码
-func (ctrl UserController) ChangePassword(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) ChangePassword(c *gin.Context, helper interfaces.HelperInterface) {
 	// 获取当前用户ID
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
@@ -171,7 +171,7 @@ func (ctrl UserController) ChangePassword(c *gin.Context, helper interfaces.GetH
 }
 
 // ResetPassword 重置密码
-func (ctrl UserController) ResetPassword(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) ResetPassword(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -200,7 +200,7 @@ func (ctrl UserController) ResetPassword(c *gin.Context, helper interfaces.GetHe
 }
 
 // GetCurrentUser 获取当前用户信息
-func (ctrl UserController) GetCurrentUser(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) GetCurrentUser(c *gin.Context, helper interfaces.HelperInterface) {
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
 		ctrl.Error(c, constants.ErrCodeUnauthorized, "用户未登录")
@@ -213,7 +213,7 @@ func (ctrl UserController) GetCurrentUser(c *gin.Context, helper interfaces.GetH
 }
 
 // CreateToken 创建Token
-func (ctrl UserController) CreateToken(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) CreateToken(c *gin.Context, helper interfaces.HelperInterface) {
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
 		ctrl.Error(c, constants.ErrCodeUnauthorized, "用户未登录")
@@ -237,7 +237,7 @@ func (ctrl UserController) CreateToken(c *gin.Context, helper interfaces.GetHelp
 }
 
 // GetTokenList 获取Token列表
-func (ctrl UserController) GetTokenList(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) GetTokenList(c *gin.Context, helper interfaces.HelperInterface) {
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
 		ctrl.Error(c, constants.ErrCodeUnauthorized, "用户未登录")
@@ -261,7 +261,7 @@ func (ctrl UserController) GetTokenList(c *gin.Context, helper interfaces.GetHel
 }
 
 // DeleteToken 删除Token
-func (ctrl UserController) DeleteToken(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) DeleteToken(c *gin.Context, helper interfaces.HelperInterface) {
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {
 		ctrl.Error(c, constants.ErrCodeUnauthorized, "用户未登录")
@@ -290,7 +290,7 @@ func (ctrl UserController) DeleteToken(c *gin.Context, helper interfaces.GetHelp
 }
 
 // GetOperationLogs 获取操作日志
-func (ctrl UserController) GetOperationLogs(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl UserController) GetOperationLogs(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.OperationLogListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())

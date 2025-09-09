@@ -14,7 +14,7 @@ type OperationLogService struct {
 	logDAO *dao.OperationLogDAO
 }
 
-func NewOperationLogService(helper interfaces.GetHelperInterface) *OperationLogService {
+func NewOperationLogService(helper interfaces.HelperInterface) *OperationLogService {
 	return &OperationLogService{
 		logDAO: dao.NewOperationLogDAO(helper),
 	}

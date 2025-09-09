@@ -7,10 +7,10 @@ import (
 )
 
 type ABTestDao struct {
-	helper interfaces.GetHelperInterface
+	helper interfaces.HelperInterface
 }
 
-func NewABTestDao(helper interfaces.GetHelperInterface) *ABTestDao {
+func NewABTestDao(helper interfaces.HelperInterface) *ABTestDao {
 	return &ABTestDao{helper: helper}
 }
 

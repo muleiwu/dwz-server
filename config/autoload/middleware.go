@@ -9,7 +9,7 @@ import (
 type Middleware struct {
 }
 
-func (receiver Middleware) InitConfig(helper envInterface.GetHelperInterface) map[string]any {
+func (receiver Middleware) InitConfig(helper envInterface.HelperInterface) map[string]any {
 	return map[string]any{
 		"http.middleware": []gin.HandlerFunc{
 			middleware.CorsMiddleware(helper),

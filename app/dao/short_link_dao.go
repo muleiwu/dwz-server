@@ -11,10 +11,10 @@ import (
 )
 
 type ShortLinkDao struct {
-	helper interfaces.GetHelperInterface
+	helper interfaces.HelperInterface
 }
 
-func NewShortLinkDao(helper interfaces.GetHelperInterface) *ShortLinkDao {
+func NewShortLinkDao(helper interfaces.HelperInterface) *ShortLinkDao {
 	return &ShortLinkDao{helper: helper}
 }
 

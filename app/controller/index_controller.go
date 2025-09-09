@@ -21,7 +21,7 @@ type IndexPageData struct {
 	Copyright    string
 }
 
-func (receiver IndexController) GetIndex(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (receiver IndexController) GetIndex(c *gin.Context, helper interfaces.HelperInterface) {
 	// 获取当前访问的域名
 	host := c.Request.Host
 

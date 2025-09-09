@@ -14,7 +14,7 @@ import (
 )
 
 // AuthMiddleware 用户认证中间件
-func AuthMiddleware(helper envInterface.GetHelperInterface) gin.HandlerFunc {
+func AuthMiddleware(helper envInterface.HelperInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := extractToken(c, helper)
 		if err != nil {
@@ -34,7 +34,7 @@ func AuthMiddleware(helper envInterface.GetHelperInterface) gin.HandlerFunc {
 }
 
 // extractToken 从请求中提取Token
-func extractToken(c *gin.Context, helper envInterface.GetHelperInterface) (string, error) {
+func extractToken(c *gin.Context, helper envInterface.HelperInterface) (string, error) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
 		return "", errors.New("缺少认证信息")
@@ -54,7 +54,7 @@ func extractToken(c *gin.Context, helper envInterface.GetHelperInterface) (strin
 }
 
 // validateToken 验证Token并返回用户信息
-func validateToken(tokenString string, helper envInterface.GetHelperInterface) (*model.User, error) {
+func validateToken(tokenString string, helper envInterface.HelperInterface) (*model.User, error) {
 	// 尝试验证API Token
 	if user, err := validateAPIToken(tokenString, helper); err == nil {
 		return user, nil
@@ -65,7 +65,7 @@ func validateToken(tokenString string, helper envInterface.GetHelperInterface) (
 }
 
 // validateAPIToken 验证API Token
-func validateAPIToken(tokenString string, helper envInterface.GetHelperInterface) (*model.User, error) {
+func validateAPIToken(tokenString string, helper envInterface.HelperInterface) (*model.User, error) {
 	tokenDAO := dao.NewUserTokenDAO(helper)
 	token, err := tokenDAO.GetByToken(tokenString)
 	if err != nil {
@@ -88,7 +88,7 @@ func validateAPIToken(tokenString string, helper envInterface.GetHelperInterface
 }
 
 // validateLoginToken 验证登录Token（简化版）
-func validateLoginToken(tokenString string, helper envInterface.GetHelperInterface) (*model.User, error) {
+func validateLoginToken(tokenString string, helper envInterface.HelperInterface) (*model.User, error) {
 	if !strings.HasPrefix(tokenString, "user_") {
 		return nil, errors.New("无效的Token格式")
 	}

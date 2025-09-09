@@ -16,7 +16,7 @@ type ABTestController struct {
 }
 
 // CreateABTest 创建AB测试
-func (ctrl ABTestController) CreateABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ABTestController) CreateABTest(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.CreateABTestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -34,7 +34,7 @@ func (ctrl ABTestController) CreateABTest(c *gin.Context, helper interfaces.GetH
 }
 
 // GetABTest 获取AB测试详情
-func (ctrl ABTestController) GetABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ABTestController) GetABTest(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -57,7 +57,7 @@ func (ctrl ABTestController) GetABTest(c *gin.Context, helper interfaces.GetHelp
 }
 
 // UpdateABTest 更新AB测试
-func (ctrl ABTestController) UpdateABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ABTestController) UpdateABTest(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -86,7 +86,7 @@ func (ctrl ABTestController) UpdateABTest(c *gin.Context, helper interfaces.GetH
 }
 
 // DeleteABTest 删除AB测试
-func (ctrl ABTestController) DeleteABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ABTestController) DeleteABTest(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -109,7 +109,7 @@ func (ctrl ABTestController) DeleteABTest(c *gin.Context, helper interfaces.GetH
 }
 
 // GetABTestList 获取AB测试列表
-func (ctrl ABTestController) GetABTestList(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ABTestController) GetABTestList(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.ABTestListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -127,7 +127,7 @@ func (ctrl ABTestController) GetABTestList(c *gin.Context, helper interfaces.Get
 }
 
 // StartABTest 启动AB测试
-func (ctrl ABTestController) StartABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ABTestController) StartABTest(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -156,7 +156,7 @@ func (ctrl ABTestController) StartABTest(c *gin.Context, helper interfaces.GetHe
 }
 
 // StopABTest 停止AB测试
-func (ctrl ABTestController) StopABTest(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ABTestController) StopABTest(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -185,7 +185,7 @@ func (ctrl ABTestController) StopABTest(c *gin.Context, helper interfaces.GetHel
 }
 
 // GetABTestStatistics 获取AB测试统计信息
-func (ctrl ABTestController) GetABTestStatistics(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ABTestController) GetABTestStatistics(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {

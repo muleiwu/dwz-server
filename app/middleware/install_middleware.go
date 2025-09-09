@@ -9,7 +9,7 @@ import (
 )
 
 // InstallMiddleware 安装检查中间件
-func InstallMiddleware(helper interfaces.GetHelperInterface) gin.HandlerFunc {
+func InstallMiddleware(helper interfaces.HelperInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 

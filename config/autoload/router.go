@@ -12,7 +12,7 @@ import (
 type Router struct {
 }
 
-func (receiver Router) InitConfig(helper envInterface.GetHelperInterface) map[string]any {
+func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[string]any {
 	return map[string]any{
 		"http.router": func(router *gin.Engine, deps *impl.HttpDeps) {
 
@@ -28,14 +28,15 @@ func (receiver Router) InitConfig(helper envInterface.GetHelperInterface) map[st
 			// 健康检查接口
 			router.GET("/health", deps.WrapHandler(controller.HealthController{}.GetHealth))
 			router.GET("/health/simple", deps.WrapHandler(controller.HealthController{}.GetHealthSimple))
-			//router.GET("/install.cgi", deps.WrapHandler(controller.InstallController{}.GetInstall))
-			//
-			//// 安装接口路由（不需要认证）
-			//installRoutes := router.Group("/api/v1/install")
-			//{
-			//	installRoutes.POST("/test-db", deps.WrapHandler(controller.InstallController{}.TestConnection)) // 测试数据库连接
-			//	installRoutes.POST("", deps.WrapHandler(controller.InstallController{}.Install))                // 执行安装
-			//}
+
+			router.GET("/install.cgi", deps.WrapHandler(controller.InstallController{}.GetInstall))
+
+			// 安装接口路由（不需要认证）
+			installRoutes := router.Group("/api/v1/install")
+			{
+				installRoutes.POST("/test-db", deps.WrapHandler(controller.InstallController{}.TestConnection)) // 测试数据库连接
+				installRoutes.POST("", deps.WrapHandler(controller.InstallController{}.Install))                // 执行安装
+			}
 
 			// 首页
 			router.GET("/", deps.WrapHandler(controller.IndexController{}.GetIndex))

@@ -5,7 +5,7 @@ import envInterface "cnb.cool/mliev/open/dwz-server/internal/interfaces"
 type Database struct {
 }
 
-func (receiver Database) InitConfig(helper envInterface.GetHelperInterface) map[string]any {
+func (receiver Database) InitConfig(helper envInterface.HelperInterface) map[string]any {
 	return map[string]any{
 		"database.driver":   helper.GetEnv().GetString("database.driver", "mysql"),
 		"database.host":     helper.GetEnv().GetString("database.host", "127.0.0.1"),

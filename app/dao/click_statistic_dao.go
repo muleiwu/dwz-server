@@ -10,10 +10,10 @@ import (
 
 // ClickStatisticDao 点击统计DAO
 type ClickStatisticDao struct {
-	helper interfaces.GetHelperInterface
+	helper interfaces.HelperInterface
 }
 
-func NewClickStatisticDao(helper interfaces.GetHelperInterface) *ClickStatisticDao {
+func NewClickStatisticDao(helper interfaces.HelperInterface) *ClickStatisticDao {
 	return &ClickStatisticDao{helper: helper}
 }
 

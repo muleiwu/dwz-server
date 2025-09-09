@@ -8,10 +8,10 @@ import (
 )
 
 type OperationLogDAO struct {
-	helper interfaces.GetHelperInterface
+	helper interfaces.HelperInterface
 }
 
-func NewOperationLogDAO(helper interfaces.GetHelperInterface) *OperationLogDAO {
+func NewOperationLogDAO(helper interfaces.HelperInterface) *OperationLogDAO {
 	return &OperationLogDAO{
 		helper: helper,
 	}

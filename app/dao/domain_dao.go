@@ -7,10 +7,10 @@ import (
 
 // DomainDao 域名DAO
 type DomainDao struct {
-	helper interfaces.GetHelperInterface
+	helper interfaces.HelperInterface
 }
 
-func NewDomainDao(helper interfaces.GetHelperInterface) *DomainDao {
+func NewDomainDao(helper interfaces.HelperInterface) *DomainDao {
 	return &DomainDao{helper: helper}
 }
 

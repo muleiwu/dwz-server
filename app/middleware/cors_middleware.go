@@ -32,7 +32,7 @@ func DefaultCorsConfig() CorsConfig {
 }
 
 // CorsMiddleware 使用默认配置创建CORS中间件
-func CorsMiddleware(helper envInterface.GetHelperInterface) gin.HandlerFunc {
+func CorsMiddleware(helper envInterface.HelperInterface) gin.HandlerFunc {
 	return CorsWithConfig(DefaultCorsConfig())
 }
 

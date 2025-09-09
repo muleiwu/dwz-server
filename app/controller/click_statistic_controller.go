@@ -16,7 +16,7 @@ type ClickStatisticController struct {
 }
 
 // GetClickStatisticList 获取点击统计列表
-func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.ClickStatisticListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -34,7 +34,7 @@ func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context, helpe
 }
 
 // GetClickStatisticAnalysis 获取点击统计分析
-func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c *gin.Context, helper interfaces.HelperInterface) {
 	shortLinkIDStr := c.Query("short_link_id")
 	daysStr := c.DefaultQuery("days", "7")
 	startDateStr := c.Query("start_date")

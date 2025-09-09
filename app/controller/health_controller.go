@@ -15,7 +15,7 @@ type HealthController struct {
 }
 
 // GetHealth 健康检查接口
-func (receiver HealthController) GetHealth(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (receiver HealthController) GetHealth(c *gin.Context, helper interfaces.HelperInterface) {
 	healthStatus := dto.HealthStatus{
 		Status:    "UP",
 		Timestamp: time.Now().Unix(),
@@ -43,7 +43,7 @@ func (receiver HealthController) GetHealth(c *gin.Context, helper interfaces.Get
 }
 
 // GetHealthSimple 简单健康检查接口
-func (receiver HealthController) GetHealthSimple(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (receiver HealthController) GetHealthSimple(c *gin.Context, helper interfaces.HelperInterface) {
 	var baseResponse BaseResponse
 	baseResponse.Success(c, gin.H{
 		"status":    "UP",
@@ -52,7 +52,7 @@ func (receiver HealthController) GetHealthSimple(c *gin.Context, helper interfac
 }
 
 // checkDatabase 检查数据库连接
-func (receiver HealthController) checkDatabase(helper interfaces.GetHelperInterface) dto.ServiceStatus {
+func (receiver HealthController) checkDatabase(helper interfaces.HelperInterface) dto.ServiceStatus {
 
 	gormDB := helper.GetDatabase()
 	if gormDB == nil {
@@ -83,7 +83,7 @@ func (receiver HealthController) checkDatabase(helper interfaces.GetHelperInterf
 }
 
 // checkRedis 检查Redis连接
-func (receiver HealthController) checkRedis(helper interfaces.GetHelperInterface, ctx context.Context) dto.ServiceStatus {
+func (receiver HealthController) checkRedis(helper interfaces.HelperInterface, ctx context.Context) dto.ServiceStatus {
 	redisHelper := helper.GetRedis()
 	if redisHelper == nil {
 		return dto.ServiceStatus{

@@ -16,7 +16,7 @@ type DomainController struct {
 }
 
 // CreateDomain 创建域名
-func (ctrl DomainController) CreateDomain(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl DomainController) CreateDomain(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.DomainRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -38,7 +38,7 @@ func (ctrl DomainController) CreateDomain(c *gin.Context, helper interfaces.GetH
 }
 
 // GetDomainList 获取域名列表
-func (ctrl DomainController) GetDomainList(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl DomainController) GetDomainList(c *gin.Context, helper interfaces.HelperInterface) {
 	response, err := service.NewDomainService(helper).GetDomainList()
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -49,7 +49,7 @@ func (ctrl DomainController) GetDomainList(c *gin.Context, helper interfaces.Get
 }
 
 // UpdateDomain 更新域名
-func (ctrl DomainController) UpdateDomain(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl DomainController) UpdateDomain(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -79,7 +79,7 @@ func (ctrl DomainController) UpdateDomain(c *gin.Context, helper interfaces.GetH
 }
 
 // DeleteDomain 删除域名
-func (ctrl DomainController) DeleteDomain(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl DomainController) DeleteDomain(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -101,7 +101,7 @@ func (ctrl DomainController) DeleteDomain(c *gin.Context, helper interfaces.GetH
 }
 
 // GetActiveDomains 获取活跃域名列表
-func (ctrl DomainController) GetActiveDomains(c *gin.Context, helper interfaces.GetHelperInterface) {
+func (ctrl DomainController) GetActiveDomains(c *gin.Context, helper interfaces.HelperInterface) {
 	response, err := service.NewDomainService(helper).GetActiveDomains()
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())

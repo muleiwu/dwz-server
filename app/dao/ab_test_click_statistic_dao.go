@@ -9,10 +9,10 @@ import (
 )
 
 type ABTestClickStatisticDao struct {
-	helper interfaces.GetHelperInterface
+	helper interfaces.HelperInterface
 }
 
-func NewABTestClickStatisticDao(helper interfaces.GetHelperInterface) *ABTestClickStatisticDao {
+func NewABTestClickStatisticDao(helper interfaces.HelperInterface) *ABTestClickStatisticDao {
 	return &ABTestClickStatisticDao{helper: helper}
 }
 

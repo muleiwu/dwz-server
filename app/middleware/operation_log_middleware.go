@@ -57,7 +57,7 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 }
 
 // OperationLogMiddleware 操作日志记录中间件
-func OperationLogMiddleware(helper envInterface.GetHelperInterface, config ...*OperationLogConfig) gin.HandlerFunc {
+func OperationLogMiddleware(helper envInterface.HelperInterface, config ...*OperationLogConfig) gin.HandlerFunc {
 	// 使用传入的配置或默认配置
 	cfg := &DefaultOperationLogConfig
 	if len(config) > 0 && config[0] != nil {
@@ -262,7 +262,7 @@ func maskJSONSensitiveFields(data map[string]interface{}, sensitiveFields []stri
 }
 
 // createOperationLog 创建操作日志
-func createOperationLog(helper envInterface.GetHelperInterface, userID *uint64, username, operation, resource, resourceID, method, path, requestBody, responseBody, ip, userAgent string, responseCode int, executeTime int64) error {
+func createOperationLog(helper envInterface.HelperInterface, userID *uint64, username, operation, resource, resourceID, method, path, requestBody, responseBody, ip, userAgent string, responseCode int, executeTime int64) error {
 	logService := service.NewOperationLogService(helper)
 
 	status := int8(1) // 成功

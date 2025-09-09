@@ -19,7 +19,7 @@ type ABTestService struct {
 	shortLinkDao *dao.ShortLinkDao
 }
 
-func NewABTestService(helper interfaces.GetHelperInterface) *ABTestService {
+func NewABTestService(helper interfaces.HelperInterface) *ABTestService {
 	return &ABTestService{
 		abTestDao:    dao.NewABTestDao(helper),
 		shortLinkDao: dao.NewShortLinkDao(helper),

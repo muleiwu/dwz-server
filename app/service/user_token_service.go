@@ -15,7 +15,7 @@ type UserTokenService struct {
 	userDAO  *dao.UserDAO
 }
 
-func NewUserTokenService(helper interfaces.GetHelperInterface) *UserTokenService {
+func NewUserTokenService(helper interfaces.HelperInterface) *UserTokenService {
 	return &UserTokenService{
 		tokenDAO: dao.NewUserTokenDAO(helper),
 		userDAO:  dao.NewUserDAO(helper),

@@ -18,7 +18,7 @@ func NewHttpDeps(helper interfaces.HelperInterface, engine *gin.Engine) *HttpDep
 }
 
 // WrapHandler 使用闭包包装处理函数
-func (d *HttpDeps) WrapHandler(handler func(*gin.Context, interfaces.GetHelperInterface)) gin.HandlerFunc {
+func (d *HttpDeps) WrapHandler(handler func(*gin.Context, interfaces.HelperInterface)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		handler(c, d.getHttpDeps(d.getTraceId(c)))
 	}

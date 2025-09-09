@@ -31,7 +31,7 @@ func getSqliteSQLDSN(host string, port int, username string, password string, db
 	return host
 }
 
-func NewDatabase(helper interfaces.GetHelperInterface, driver string, host string, port int, dbName string, username string, password string) (*gorm.DB, error) {
+func NewDatabase(helper interfaces.HelperInterface, driver string, host string, port int, dbName string, username string, password string) (*gorm.DB, error) {
 	var dialector gorm.Dialector
 	if driver == "postgresql" {
 		dialector = postgres.New(postgres.Config{

@@ -14,10 +14,10 @@ import (
 
 type UserService struct {
 	userDAO *dao.UserDAO
-	helper  interfaces.GetHelperInterface
+	helper  interfaces.HelperInterface
 }
 
-func NewUserService(helper interfaces.GetHelperInterface) *UserService {
+func NewUserService(helper interfaces.HelperInterface) *UserService {
 	return &UserService{
 		helper:  helper,
 		userDAO: dao.NewUserDAO(helper),
