@@ -67,7 +67,7 @@ func (g *IdGeneratorRedis) InitializeDomainCounter(domainID uint64, startValue u
 			return err
 		}
 
-		if uint64(current) < startValue {
+		if uint64(current) <= startValue {
 			err = g.redis.Set(ctx, key, startValue, 0).Err()
 			if err != nil {
 				return err

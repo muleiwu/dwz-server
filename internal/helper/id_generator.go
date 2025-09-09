@@ -79,14 +79,12 @@ func initializeDomainCounters(helper interfaces.HelperInterface) (interfaces.IDG
 			return nil, fmt.Errorf("查询域名%s最大ID失败: %v", domain.Domain, err)
 		}
 
-		startValue := maxID
-
-		// 初始化Redis计数器
-		if err := idGeneratorHelper.InitializeDomainCounter(domain.ID, startValue); err != nil {
+		// 初始化计数器
+		if err := idGeneratorHelper.InitializeDomainCounter(domain.ID, maxID); err != nil {
 			return nil, fmt.Errorf("初始化域名%s Redis计数器失败: %v", domain.Domain, err)
 		}
 
-		helper.GetLogger().Info(fmt.Sprintf("域名%s(ID:%d)计数器初始化完成，起始值:%d", domain.Domain, domain.ID, startValue))
+		helper.GetLogger().Info(fmt.Sprintf("域名%s(ID:%d)计数器初始化完成，起始值:%d", domain.Domain, domain.ID, maxID))
 	}
 
 	helper.GetLogger().Info("所有域名计数器初始化完成")
