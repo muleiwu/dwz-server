@@ -1,8 +1,6 @@
 package dao
 
 import (
-	"errors"
-
 	"cnb.cool/mliev/open/dwz-server/app/model"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 )
@@ -51,11 +49,7 @@ func (d *DomainDao) Delete(id uint64) error {
 // GetActiveDomains 获取活跃域名列表
 func (d *DomainDao) GetActiveDomains() ([]model.Domain, error) {
 	var domains []model.Domain
-	database := d.helper.GetDatabase()
-	if database != nil {
-		return nil, errors.New("database Connect Error")
-	}
-	err := database.Where("is_active = ? AND deleted_at IS NULL", true).Find(&domains).Error
+	err := d.helper.GetDatabase().Where("is_active = ? AND deleted_at IS NULL", true).Find(&domains).Error
 	return domains, err
 }
 
