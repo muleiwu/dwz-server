@@ -13,7 +13,7 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/model"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"cnb.cool/mliev/open/dwz-server/pkg/distributed_id_generator"
-	"cnb.cool/mliev/open/dwz-server/utils"
+	"cnb.cool/mliev/open/dwz-server/pkg/domain_validate"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
@@ -450,7 +450,7 @@ func (s *ShortLinkService) BatchCreateShortLinks(req *dto.BatchCreateShortLinkRe
 
 // validateDomain 验证域名
 func (s *ShortLinkService) validateDomain(domain string) error {
-	return utils.ValidateDomain(domain)
+	return domain_validate.ValidateDomain(domain)
 }
 
 // cacheShortLink 缓存短网址到Redis
@@ -515,10 +515,10 @@ func (s *ShortLinkService) removeCacheShortLink(domain, shortCode string) {
 func (s *ShortLinkService) recordClickStatistic(shortLinkID uint64, clientIP, userAgent, referer string, queryParams string) {
 	statistic := &model.ClickStatistic{
 		ShortLinkID: shortLinkID,
-		IP:          utils.TruncateString(clientIP, 45),
-		UserAgent:   utils.TruncateString(userAgent, 1024),
-		Referer:     utils.TruncateString(referer, 2048),
-		QueryParams: utils.TruncateString(queryParams, 2048), // 截断过长的参数
+		IP:          domain_validate.TruncateString(clientIP, 45),
+		UserAgent:   domain_validate.TruncateString(userAgent, 1024),
+		Referer:     domain_validate.TruncateString(referer, 2048),
+		QueryParams: domain_validate.TruncateString(queryParams, 2048), // 截断过长的参数
 		ClickDate:   time.Now(),
 	}
 
