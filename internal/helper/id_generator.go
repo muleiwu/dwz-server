@@ -79,8 +79,7 @@ func initializeDomainCounters(helper interfaces.HelperInterface) (interfaces.IDG
 			return nil, fmt.Errorf("查询域名%s最大ID失败: %v", domain.Domain, err)
 		}
 
-		// 设置起始值为maxID + 1，确保新生成的ID不会冲突
-		startValue := maxID + 1
+		startValue := maxID
 
 		// 初始化Redis计数器
 		if err := idGeneratorHelper.InitializeDomainCounter(domain.ID, startValue); err != nil {
