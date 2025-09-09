@@ -88,7 +88,7 @@ $:
       services:
         - docker
       env:
-        IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest-linux-amd64
+        IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:linux-amd64
       stages:
         - name: docker login
           script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
@@ -106,7 +106,7 @@ $:
       services:
         - docker
       env:
-        IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest-linux-arm64
+        IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:linux-arm64
       stages:
         - name: docker login
           script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
@@ -121,8 +121,6 @@ $:
 
     - services:
         - docker
-      env:
-        IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
       stages:
         - name: await the amd64
           type: cnb:await
@@ -132,11 +130,19 @@ $:
           type: cnb:await
           options:
             key: build-arm64
-        - name: manifest
+        - name: manifest latest
           image: cnbcool/manifest
           settings:
-            target: ${IMAGE_TAG}
-            template: ${IMAGE_TAG}-OS-ARCH
+            target: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
+            template: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:OS-ARCH
+            platforms:
+              - linux/amd64
+              - linux/arm64
+        - name: manifest version
+          image: cnbcool/manifest
+          settings:
+            target: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}
+            template: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:OS-ARCH
             platforms:
               - linux/amd64
               - linux/arm64
