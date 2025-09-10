@@ -46,13 +46,13 @@ func (receiver *InitInstallService) AutoInstall() {
 		DB:       receiver.helper.GetConfig().GetInt("redis.db", 0),
 	}
 
-	err := receiver.TestDatabaseConnection(databaseConfig)
+	err := receiver.TestDatabaseConnection(databaseConfig, 10)
 	if err != nil {
 		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 检查数据库连接失败, 原因: %s", err.Error()))
 		os.Exit(1)
 	}
 
-	err = receiver.TestRedisConnection(redisConfig)
+	err = receiver.TestRedisConnection(redisConfig, 60)
 	if err != nil {
 		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 检查Redis连接失败, 原因: %s", err.Error()))
 		os.Exit(1)
@@ -218,7 +218,7 @@ migration:
 	return nil
 }
 
-func (receiver *InitInstallService) TestDatabaseConnection(config database2.DatabaseConfig) error {
+func (receiver *InitInstallService) TestDatabaseConnection(config database2.DatabaseConfig, maxRetries int) error {
 	var dsn string
 	var driver string
 
@@ -246,8 +246,6 @@ func (receiver *InitInstallService) TestDatabaseConnection(config database2.Data
 	db.SetMaxIdleConns(1)
 	db.SetConnMaxLifetime(time.Second * 10)
 
-	// 测试连接 - 添加重试机制
-	maxRetries := 60
 	retryInterval := 2 * time.Second
 	var lastErr error
 
@@ -270,7 +268,7 @@ func (receiver *InitInstallService) TestDatabaseConnection(config database2.Data
 	return fmt.Errorf("数据库连接测试失败 (已重试%d次): %v", maxRetries, lastErr)
 }
 
-func (receiver *InitInstallService) TestRedisConnection(config config2.RedisConfig) error {
+func (receiver *InitInstallService) TestRedisConnection(config config2.RedisConfig, maxRetries int) error {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
 		Password: config.Password,
@@ -281,8 +279,6 @@ func (receiver *InitInstallService) TestRedisConnection(config config2.RedisConf
 
 	ctx := context.Background()
 
-	// 添加重试机制
-	maxRetries := 60
 	retryInterval := 2 * time.Second
 	var lastErr error
 
