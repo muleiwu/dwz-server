@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"cnb.cool/mliev/open/dwz-server/app/service"
+	helper2 "cnb.cool/mliev/open/dwz-server/internal/helper"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	database2 "cnb.cool/mliev/open/dwz-server/internal/pkg/database/config"
 	"cnb.cool/mliev/open/dwz-server/internal/pkg/database/impl"
@@ -282,18 +283,18 @@ func (receiver InstallController) initializeDatabase(databaseConfig DatabaseConf
 		return err
 	}
 
-	helper.SetDatabase(database)
+	helper2.GetHelper().SetDatabase(database)
 
 	redis, err := impl2.NewRedis(helper, redisConfig.Host, redisConfig.Port, redisConfig.DB, redisConfig.Password)
 
 	if err != nil {
 		return err
 	}
-	helper.SetRedis(redis)
+	helper2.GetHelper().SetRedis(redis)
 
 	migration := helper.GetConfig().Get("database.migration", []any{}).([]any)
 
-	err = helper.GetDatabase().AutoMigrate(migration...)
+	err = helper2.GetHelper().GetDatabase().AutoMigrate(migration...)
 	if err != nil {
 		return err
 	}
