@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -40,6 +41,7 @@ func InitIdGenerator(helper interfaces.HelperInterface) (interfaces.IDGenerator,
 	})
 
 	if errMsg != nil {
+		helper.GetLogger().Error(errMsg.Error())
 		helper.GetLogger().Error("ID generator initialization failed, retrying...")
 		// Reset once to allow retrying initialization
 		idGeneratorOnce = sync.Once{}
@@ -58,6 +60,10 @@ func initializeDomainCounters(helper interfaces.HelperInterface) (interfaces.IDG
 		idGeneratorHelper = redis.NewIdGeneratorRedis(helper)
 	} else {
 		idGeneratorHelper = base.NewIdGeneratorBase()
+	}
+
+	if helper.GetDatabase() == nil {
+		return nil, errors.New("数据库连接获取失败，初始化失败")
 	}
 
 	domainDao := dao.NewDomainDao(helper)
