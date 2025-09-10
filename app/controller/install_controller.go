@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"cnb.cool/mliev/open/dwz-server/app/service"
+	helper2 "cnb.cool/mliev/open/dwz-server/internal/helper"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	database2 "cnb.cool/mliev/open/dwz-server/internal/pkg/database/config"
 	"cnb.cool/mliev/open/dwz-server/internal/pkg/database/impl"
@@ -70,36 +71,30 @@ type TestConnectionRequest struct {
 // GetDefaultDatabaseConfig 从环境变量获取默认数据库配置
 func (receiver InstallController) GetDefaultDatabaseConfig(helper interfaces.HelperInterface) DatabaseConfig {
 
-	// 从环境变量获取数据库类型，默认mysql
-	dbType := helper.GetConfig().GetString("database.type", "mysql")
-	if dbType == "postgres" {
-		dbType = "postgresql"
-	}
-
-	// 根据数据库类型设置默认端口
-	defaultPort := 3306
-	if dbType == "postgresql" {
-		defaultPort = 5432
-	}
+	env := helper.GetEnv()
+	config := helper.GetConfig()
 
 	return DatabaseConfig{
-		Type:     dbType,
-		Host:     helper.GetConfig().GetString("database.host", "localhost"),
-		Port:     helper.GetConfig().GetInt("database.port", defaultPort),
-		Name:     helper.GetConfig().GetString("database.dbname", "dwz"),
-		User:     helper.GetConfig().GetString("database.username", "dwz"),
-		Password: helper.GetConfig().GetString("database.password", "dwz"),
+		Type:     env.GetString("database.driver", config.GetString("database.driver", "mysql")),
+		Host:     env.GetString("database.host", config.GetString("database.host", "localhost")),
+		Port:     env.GetInt("database.port", config.GetInt("database.port", 3306)),
+		Name:     env.GetString("database.dbname", config.GetString("database.dbname", "dwz")),
+		User:     env.GetString("database.username", config.GetString("database.username", "dwz")),
+		Password: env.GetString("database.password", config.GetString("database.password", "dwz")),
 	}
 }
 
 // GetDefaultRedisConfig 从环境变量获取默认Redis配置
 func (receiver InstallController) GetDefaultRedisConfig(helper interfaces.HelperInterface) RedisConfig {
 
+	env := helper.GetEnv()
+	config := helper.GetConfig()
+
 	return RedisConfig{
-		Host:     helper.GetConfig().GetString("redis.host", "localhost"),
-		Port:     helper.GetConfig().GetInt("redis.port", 6379),
-		Password: helper.GetConfig().GetString("redis.password", ""),
-		DB:       helper.GetConfig().GetInt("redis.db", 0),
+		Host:     env.GetString("redis.host", config.GetString("redis.host", "localhost")),
+		Port:     env.GetInt("redis.port", config.GetInt("redis.port", 6379)),
+		Password: env.GetString("redis.password", config.GetString("redis.password", "")),
+		DB:       env.GetInt("redis.db", config.GetInt("redis.db", 0)),
 	}
 }
 
@@ -282,18 +277,18 @@ func (receiver InstallController) initializeDatabase(databaseConfig DatabaseConf
 		return err
 	}
 
-	helper.SetDatabase(database)
+	helper2.GetHelper().SetDatabase(database)
 
 	redis, err := impl2.NewRedis(helper, redisConfig.Host, redisConfig.Port, redisConfig.DB, redisConfig.Password)
 
 	if err != nil {
 		return err
 	}
-	helper.SetRedis(redis)
+	helper2.GetHelper().SetRedis(redis)
 
 	migration := helper.GetConfig().Get("database.migration", []any{}).([]any)
 
-	err = helper.GetDatabase().AutoMigrate(migration...)
+	err = helper2.GetHelper().GetDatabase().AutoMigrate(migration...)
 	if err != nil {
 		return err
 	}
