@@ -46,7 +46,7 @@ func (receiver *InitInstallService) AutoInstall() {
 		DB:       receiver.helper.GetConfig().GetInt("redis.db", 0),
 	}
 
-	err := receiver.TestDatabaseConnection(databaseConfig, 10)
+	err := receiver.TestDatabaseConnection(databaseConfig, 60)
 	if err != nil {
 		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 检查数据库连接失败, 原因: %s", err.Error()))
 		os.Exit(1)
