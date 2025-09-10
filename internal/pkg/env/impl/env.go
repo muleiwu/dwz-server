@@ -28,6 +28,8 @@ func NewEnv() *Env {
 		viper.AddConfigPath("./config")
 
 		// 支持读取环境变量
+		replace := strings.NewReplacer(".", "_") // 替换点为下划线
+		viper.SetEnvKeyReplacer(replace)         // 设置环境变量的替换器
 		viper.AutomaticEnv()
 
 		// 尝试读取配置文件
