@@ -3,6 +3,7 @@ package migration
 import (
 	"fmt"
 
+	"cnb.cool/mliev/open/dwz-server/app/service"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 )
 
@@ -20,6 +21,12 @@ func (receiver *Migration) Run() error {
 	autoInstall := receiver.Helper.GetEnv().GetString("AUTO_INSTALL", "")
 
 	if !receiver.Helper.GetInstalled().IsInstalled() && autoInstall != "install" {
+		return nil
+	}
+
+	if !receiver.Helper.GetInstalled().IsInstalled() && autoInstall == "install" {
+		installService := service.NewInitInstallService(receiver.Helper)
+		installService.AutoInstall()
 		return nil
 	}
 
