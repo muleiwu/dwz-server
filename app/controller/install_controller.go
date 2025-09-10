@@ -231,7 +231,7 @@ func (receiver InstallController) testDatabaseConnection(config DatabaseConfig, 
 		DBName:   config.Name,
 	}
 
-	return installService.TestDatabaseConnection(databaseConfig)
+	return installService.TestDatabaseConnection(databaseConfig, 1)
 }
 
 // testRedisConnection 测试Redis连接
@@ -244,7 +244,7 @@ func (receiver InstallController) testRedisConnection(config RedisConfig, helper
 		Password: config.Password,
 		DB:       config.DB,
 	}
-	return installService.TestRedisConnection(redisConfig)
+	return installService.TestRedisConnection(redisConfig, 2)
 }
 
 // createConfigFile 创建配置文件
