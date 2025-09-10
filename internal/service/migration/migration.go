@@ -17,6 +17,12 @@ func (receiver *Migration) Run() error {
 		return fmt.Errorf("[db migration err: database is nil]")
 	}
 
+	autoInstall := receiver.Helper.GetEnv().GetString("AUTO_INSTALL", "")
+
+	if !receiver.Helper.GetInstalled().IsInstalled() && autoInstall != "install" {
+		return nil
+	}
+
 	if len(receiver.Migration) > 0 {
 		err := receiver.Helper.GetDatabase().AutoMigrate(receiver.Migration...)
 		if err != nil {
