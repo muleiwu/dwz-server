@@ -40,6 +40,8 @@ func NewDatabase(helper interfaces.HelperInterface, driver string, host string, 
 		})
 	} else if driver == "mysql" {
 		dialector = mysql.Open(getMySQLDSN(host, port, username, password, dbName))
+	} else if driver == "mariadb" {
+		dialector = mysql.Open(getMySQLDSN(host, port, username, password, dbName))
 	} else if driver == "sqlite" {
 		dialector = sqlite.Open(getSqliteSQLDSN(host, port, username, password, dbName))
 	} else if driver == "memory" {
