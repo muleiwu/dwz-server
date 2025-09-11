@@ -28,7 +28,7 @@ func NewInitInstallService(helper interfaces.HelperInterface) *InitInstallServic
 	}
 }
 
-func (receiver *InitInstallService) AutoInstall() {
+func (receiver *InitInstallService) AutoInstall(migration []any) {
 	// 自动安装流程
 	databaseConfig := database2.DatabaseConfig{
 		Driver:   receiver.helper.GetConfig().GetString("database.driver", ""),
@@ -65,7 +65,7 @@ func (receiver *InitInstallService) AutoInstall() {
 	}
 
 	// 未安装，且配置自动初始化
-	err = receiver.helper.GetDatabase().AutoMigrate()
+	err = receiver.helper.GetDatabase().AutoMigrate(migration...)
 	if err != nil {
 		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 数据库迁移失败, 原因: %s", err.Error()))
 		os.Exit(1)
