@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"strconv"
 	"time"
 )
 
@@ -46,6 +47,12 @@ func (c *Config) GetInt(key string, defaultValue int) int {
 		return int(v)
 	case float64:
 		return int(v)
+	case string:
+		tv, err := strconv.Atoi(val.(string))
+		if err != nil {
+			return defaultValue
+		}
+		return tv
 	default:
 		return defaultValue
 	}
