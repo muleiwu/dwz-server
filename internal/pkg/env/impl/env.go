@@ -2,6 +2,7 @@ package impl
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -133,10 +134,24 @@ func (receiver *Env) GetBool(key string, defaultValue bool) bool {
 
 func (receiver *Env) GetInt(key string, defaultValue int) int {
 	val := receiver.Get(key, defaultValue)
-	if str, ok := val.(int); ok {
-		return str
+	switch v := val.(type) {
+	case int:
+		return v
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
+	case float64:
+		return int(v)
+	case string:
+		tv, err := strconv.Atoi(val.(string))
+		if err != nil {
+			return defaultValue
+		}
+		return tv
+	default:
+		return defaultValue
 	}
-	return defaultValue
 }
 
 func (receiver *Env) GetInt32(key string, defaultValue int32) int32 {
