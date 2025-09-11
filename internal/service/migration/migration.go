@@ -26,7 +26,7 @@ func (receiver *Migration) Run() error {
 
 	if !receiver.Helper.GetInstalled().IsInstalled() && autoInstall == "install" {
 		installService := service.NewInitInstallService(receiver.Helper)
-		installService.AutoInstall()
+		installService.AutoInstall(receiver.Migration)
 		return nil
 	}
 
