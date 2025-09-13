@@ -200,6 +200,9 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 		return
 	}
 
+	// 数据库初始化成功后成功重新赋值
+	helper = helper2.GetHelper()
+
 	// 创建管理员账户
 	if err := receiver.createAdminUser(req.Admin, helper); err != nil {
 		receiver.Error(c, http.StatusInternalServerError, "管理员账户创建失败: "+err.Error())
