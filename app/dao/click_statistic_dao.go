@@ -167,3 +167,19 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 
 	return analysis, nil
 }
+
+// CountAll 获取所有点击统计数量
+func (d *ClickStatisticDao) CountAll() (int64, error) {
+	var count int64
+	err := d.helper.GetDatabase().Model(&model.ClickStatistic{}).Count(&count).Error
+	return count, err
+}
+
+// CountByDateRange 获取指定时间范围内的点击统计数量
+func (d *ClickStatisticDao) CountByDateRange(startDate, endDate time.Time) (int64, error) {
+	var count int64
+	err := d.helper.GetDatabase().Model(&model.ClickStatistic{}).
+		Where("click_date >= ? AND click_date < ?", startDate, endDate).
+		Count(&count).Error
+	return count, err
+}

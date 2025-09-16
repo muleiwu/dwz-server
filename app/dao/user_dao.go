@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"time"
+
 	"cnb.cool/mliev/open/dwz-server/app/model"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"gorm.io/gorm"
@@ -116,4 +118,30 @@ func (dao *UserDAO) CheckEmailExists(email string, excludeID uint64) (bool, erro
 	}
 	err := query.Count(&count).Error
 	return count > 0, err
+}
+
+// CountAll 获取所有用户数量
+func (dao *UserDAO) CountAll() (int64, error) {
+	var count int64
+	err := dao.helper.GetDatabase().Model(&model.User{}).Count(&count).Error
+	return count, err
+}
+
+// CountActive 获取活跃用户数量（30天内登录）
+func (dao *UserDAO) CountActive() (int64, error) {
+	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
+	var count int64
+	err := dao.helper.GetDatabase().Model(&model.User{}).
+		Where("last_login >= ?", thirtyDaysAgo).
+		Count(&count).Error
+	return count, err
+}
+
+// CountActiveByDateRange 获取指定时间范围内活跃的用户数量
+func (dao *UserDAO) CountActiveByDateRange(startDate, endDate time.Time) (int64, error) {
+	var count int64
+	err := dao.helper.GetDatabase().Model(&model.User{}).
+		Where("last_login >= ? AND last_login < ?", startDate, endDate).
+		Count(&count).Error
+	return count, err
 }

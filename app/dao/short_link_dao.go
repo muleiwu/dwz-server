@@ -197,3 +197,32 @@ func (d *ShortLinkDao) GetMaxIDByDomain(domain string) (uint64, error) {
 	}
 	return maxID, nil
 }
+
+// CountAll 获取所有短链接数量
+func (d *ShortLinkDao) CountAll() (int64, error) {
+	var count int64
+	err := d.helper.GetDatabase().Model(&model.ShortLink{}).
+		Where("deleted_at IS NULL").
+		Count(&count).Error
+	return count, err
+}
+
+// CountByDateRange 获取指定时间范围内创建的短链接数量
+func (d *ShortLinkDao) CountByDateRange(startDate, endDate time.Time) (int64, error) {
+	var count int64
+	err := d.helper.GetDatabase().Model(&model.ShortLink{}).
+		Where("deleted_at IS NULL AND created_at >= ? AND created_at < ?", startDate, endDate).
+		Count(&count).Error
+	return count, err
+}
+
+// GetTopClicked 获取点击量最高的短链接
+func (d *ShortLinkDao) GetTopClicked(limit int) ([]model.ShortLink, error) {
+	var shortLinks []model.ShortLink
+	err := d.helper.GetDatabase().Model(&model.ShortLink{}).
+		Where("deleted_at IS NULL").
+		Order("click_count DESC").
+		Limit(limit).
+		Find(&shortLinks).Error
+	return shortLinks, err
+}
