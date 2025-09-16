@@ -21,7 +21,7 @@ func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[strin
 			// 添加安装检查中间件
 			router.Use(middleware.InstallMiddleware(helper))
 
-			router.Any("/favicon.ico", func(c *gin.Context) {
+			router.GET("/favicon.ico", func(c *gin.Context) {
 				c.Status(204) // 返回204 No Content
 			})
 
