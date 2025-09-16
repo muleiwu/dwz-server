@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"strconv"
 	"time"
 
+	"cnb.cool/mliev/open/dwz-server/app/constants"
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/model"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
@@ -205,9 +207,68 @@ func (s StatisticsController) GetDashboard(c *gin.Context, helper interfaces.Hel
 }
 
 func (s StatisticsController) GetShortLinks(c *gin.Context, helper interfaces.HelperInterface) {
-	// 创建短链接服务实例
-	// shortLinkService := service.NewShortLinkService(helper, c)
+	// 创建短链接DAO实例
+	shortLinkDao := dao.NewShortLinkDao(helper)
 
-	// days := c.DefaultQuery("days", "30")
+	// 获取查询参数
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("page_size", "10")
 
+	pageInt := 1
+	if p, err := strconv.Atoi(page); err == nil && p > 0 {
+		pageInt = p
+	}
+
+	pageSizeInt := 10
+	if ps, err := strconv.Atoi(pageSize); err == nil && ps > 0 && ps <= 100 {
+		pageSizeInt = ps
+	}
+
+	// 计算分页偏移量
+	offset := (pageInt - 1) * pageSizeInt
+
+	// 获取短链接列表
+	shortLinks, total, err := shortLinkDao.List(offset, pageSizeInt, "", "")
+	if err != nil {
+		s.Error(c, constants.ErrCodeInternal, "获取短链接列表失败")
+		return
+	}
+
+	// 构建返回的数据结构
+	type ShortLinkItem struct {
+		ID          uint64    `json:"id"`
+		ShortURL    string    `json:"short_url"`
+		Title       string    `json:"title"`
+		OriginalURL string    `json:"original_url"`
+		ClickCount  int64     `json:"click_count"`
+		CreatedAt   time.Time `json:"created_at"`
+	}
+
+	result := struct {
+		List     []ShortLinkItem `json:"list"`
+		Total    int64           `json:"total"`
+		Page     int             `json:"page"`
+		PageSize int             `json:"page_size"`
+	}{
+		Total:    total,
+		Page:     pageInt,
+		PageSize: pageSizeInt,
+		List:     make([]ShortLinkItem, 0, len(shortLinks)),
+	}
+
+	// 填充列表数据
+	for _, link := range shortLinks {
+		item := ShortLinkItem{
+			ID:          link.ID,
+			ShortURL:    link.GetFullURL(),
+			Title:       link.Title,
+			OriginalURL: link.OriginalURL,
+			ClickCount:  link.ClickCount,
+			CreatedAt:   link.CreatedAt,
+		}
+		result.List = append(result.List, item)
+	}
+
+	// 返回数据
+	s.Success(c, result)
 }
