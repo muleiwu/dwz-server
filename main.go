@@ -9,13 +9,13 @@ import (
 //go:embed templates/**
 var templateFS embed.FS
 
-//go:embed public/admin/**
-var publicAdminFs embed.FS
+//go:embed static/**
+var staticFs embed.FS
 
 func main() {
 	staticFs := map[string]embed.FS{
-		"templates":    templateFS,
-		"public/admin": publicAdminFs,
+		"templates":  templateFS,
+		"web.static": staticFs,
 	}
 	cmd.Start(staticFs)
 }

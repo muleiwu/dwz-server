@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -113,6 +112,9 @@ func (receiver *HttpServer) RunHttp() {
 		return
 	}
 
+	// 加载网站静态资源
+	receiver.loadWebStatic(engine)
+
 	// 注册中间件
 	//handlerFuncs := config.MiddlewareConfig{}.Get()
 	middlewareFuncList := receiver.Helper.GetConfig().Get("http.middleware", []gin.HandlerFunc{}).([]gin.HandlerFunc)
@@ -193,10 +195,12 @@ func (receiver *HttpServer) loadTemplates(engine *gin.Engine) error {
 	// 设置HTML模板
 	engine.SetHTMLTemplate(tmpl)
 
-	// 设置静态文件服务
-	receiver.setupStaticFileServers(engine, staticFs)
-
 	return nil
+}
+
+func (receiver *HttpServer) loadWebStatic(engine *gin.Engine) {
+	staticHandler := NewStaticHandler(receiver.Helper, engine)
+	staticHandler.setupStaticFileServers()
 }
 
 func (receiver *HttpServer) traceIdMiddleware() gin.HandlerFunc {
@@ -206,49 +210,4 @@ func (receiver *HttpServer) traceIdMiddleware() gin.HandlerFunc {
 		c.Writer.Header().Set("trace-id", uuidV4)
 		c.Next()
 	}
-}
-
-// setupStaticFileServers 为嵌入的静态文件设置HTTP服务
-func (receiver *HttpServer) setupStaticFileServers(engine *gin.Engine, staticFs map[string]embed.FS) {
-
-	// 检查并处理vue前端文件（如果有提供）
-	if vueFS, ok := staticFs["public.admin"]; ok {
-		subFS, err := fs.Sub(vueFS, "public/admin")
-		if err == nil {
-			// 将Vue前端文件映射到根路径
-			engine.StaticFS("/admin", http.FS(subFS))
-			receiver.Helper.GetLogger().Info("已启用 /admin 静态文件服务")
-
-			// 处理Vue的单页面应用请求
-			engine.NoRoute(func(c *gin.Context) {
-				if c.Request.Method == "GET" && !excludeStaticPath(c.Request.URL.Path) {
-					// 尝试提供Vue的index.html作为默认页面
-					c.FileFromFS("/index.html", http.FS(subFS))
-				}
-			})
-		} else {
-			receiver.Helper.GetLogger().Error(fmt.Sprintf("设置admin静态文件失败: %v", err))
-		}
-	}
-}
-
-// excludeStaticPath 判断是否排除某些路径不重定向到单页应用
-func excludeStaticPath(path string) bool {
-	// 排除API和admin路径
-	prefixes := []string{"/admin/"}
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(path, prefix) {
-			return true
-		}
-	}
-
-	// 排除已知的静态文件扩展名
-	extensions := []string{".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".eot"}
-	for _, ext := range extensions {
-		if strings.HasSuffix(path, ext) {
-			return true
-		}
-	}
-
-	return false
 }

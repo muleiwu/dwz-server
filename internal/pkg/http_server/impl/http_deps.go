@@ -7,13 +7,15 @@ import (
 )
 
 type HttpDeps struct {
-	helper interfaces.HelperInterface
-	engine *gin.Engine
+	helper        interfaces.HelperInterface
+	engine        *gin.Engine
+	staticHandler *StaticHandler
 }
 
 func NewHttpDeps(helper interfaces.HelperInterface, engine *gin.Engine) *HttpDeps {
 	return &HttpDeps{
 		helper: helper,
+		engine: engine,
 	}
 }
 
