@@ -122,6 +122,13 @@ func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[strin
 					clickStats.GET("/analysis", deps.WrapHandler(controller.ClickStatisticController{}.GetClickStatisticAnalysis)) // 获取点击统计分析
 				}
 
+				statistics := v1.Group("/statistics")
+				{
+					statistics.GET("/system", deps.WrapHandler(controller.StatisticsController{}.GetSystem))
+					statistics.GET("/dashboard", deps.WrapHandler(controller.StatisticsController{}.GetDashboard))
+					statistics.GET("/short-links", deps.WrapHandler(controller.StatisticsController{}.GetShortLinks))
+				}
+
 				// AB测试点击统计路由
 				abTestClickStats := v1.Group("/ab_test_click_statistics")
 				{
