@@ -109,7 +109,6 @@ func (receiver *HttpServer) RunHttp() {
 	// 加载HTML模板
 	if err := receiver.loadTemplates(engine); err != nil {
 		receiver.Helper.GetLogger().Error(fmt.Sprintf("加载模板失败: %v", err))
-		return
 	}
 
 	// 加载网站静态资源
@@ -189,8 +188,14 @@ func (receiver *HttpServer) loadTemplates(engine *gin.Engine) error {
 		return err
 	}
 
+	parseFS, err := template.New("").ParseFS(subFS, "*.html")
+
+	if err != nil {
+		return err
+	}
+
 	// 创建模板并解析所有模板文件
-	tmpl := template.Must(template.New("").ParseFS(subFS, "*.html"))
+	tmpl := template.Must(parseFS, err)
 
 	// 设置HTML模板
 	engine.SetHTMLTemplate(tmpl)
