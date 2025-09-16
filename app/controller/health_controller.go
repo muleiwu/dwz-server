@@ -25,6 +25,7 @@ func (receiver HealthController) GetHealth(c *gin.Context, helper interfaces.Hel
 	// 检查数据库连接
 	dbStatus := receiver.checkDatabase(helper)
 	healthStatus.Services["database"] = dbStatus
+	healthStatus.Services["database_driver"] = helper.GetConfig().GetString("database.driver", "")
 
 	// 检查Redis连接
 	redisStatus := receiver.checkRedis(helper, c.Request.Context())
