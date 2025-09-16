@@ -73,6 +73,19 @@ func (s *DomainService) GetDomainList() (*dto.DomainListResponse, error) {
 	}, nil
 }
 
+func (s *DomainService) UpdateStatusDomain(id uint64, req *dto.UpdateStatusDomainRequest) (bool, error) {
+	where := map[string]any{
+		"is_active": req.IsActive,
+	}
+
+	if err := s.domainDao.IdToUpdate(id, where); err != nil {
+		return false, err
+	}
+
+	return true, nil
+
+}
+
 // UpdateDomain 更新域名
 func (s *DomainService) UpdateDomain(id uint64, req *dto.DomainRequest) (*dto.DomainResponse, error) {
 

@@ -41,6 +41,11 @@ func (d *DomainDao) Update(domain *model.Domain) error {
 	return d.helper.GetDatabase().Save(domain).Error
 }
 
+// IdToUpdate 根据ID更新域名
+func (d *DomainDao) IdToUpdate(domainId uint64, where map[string]any) error {
+	return d.helper.GetDatabase().Where("id = ?", domainId).Updates(where).Error
+}
+
 // Delete 删除域名（软删除）
 func (d *DomainDao) Delete(id uint64) error {
 	return d.helper.GetDatabase().Delete(&model.Domain{}, id).Error
