@@ -78,6 +78,36 @@ func (ctrl DomainController) UpdateDomain(c *gin.Context, helper interfaces.Help
 	ctrl.Success(c, response)
 }
 
+// UpdateStatusDomain UpdateDomain 更新域名
+func (ctrl DomainController) UpdateStatusDomain(c *gin.Context, helper interfaces.HelperInterface) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		ctrl.Error(c, constants.ErrCodeBadRequest, "无效的ID格式")
+		return
+	}
+
+	var req dto.UpdateStatusDomainRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
+		return
+	}
+
+	response, err := service.NewDomainService(helper).UpdateStatusDomain(id, &req)
+	if err != nil {
+		if strings.Contains(err.Error(), "不存在") {
+			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
+		} else if strings.Contains(err.Error(), "已存在") {
+			ctrl.Error(c, constants.ErrCodeConflict, err.Error())
+		} else {
+			ctrl.Error(c, constants.ErrCodeInternal, err.Error())
+		}
+		return
+	}
+
+	ctrl.Success(c, response)
+}
+
 // DeleteDomain 删除域名
 func (ctrl DomainController) DeleteDomain(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")

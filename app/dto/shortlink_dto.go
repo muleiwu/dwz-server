@@ -128,6 +128,11 @@ type UpdateDomainRequest struct {
 	Description     string `json:"description"`
 }
 
+// UpdateStatusDomainRequest 更新域名状态请求
+type UpdateStatusDomainRequest struct {
+	IsActive bool `json:"is_active" example:"true"`
+}
+
 // DomainListResponse 域名列表响应
 type DomainListResponse struct {
 	List []DomainResponse `json:"list"`

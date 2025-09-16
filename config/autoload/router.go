@@ -62,11 +62,12 @@ func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[strin
 				// 域名管理路由
 				domains := v1.Group("/domains")
 				{
-					domains.POST("", deps.WrapHandler(controller.DomainController{}.CreateDomain))           // 创建域名配置
-					domains.GET("", deps.WrapHandler(controller.DomainController{}.GetDomainList))           // 获取域名列表
-					domains.GET("/active", deps.WrapHandler(controller.DomainController{}.GetActiveDomains)) // 获取活跃域名列表
-					domains.PUT("/:id", deps.WrapHandler(controller.DomainController{}.UpdateDomain))        // 更新域名配置
-					domains.DELETE("/:id", deps.WrapHandler(controller.DomainController{}.DeleteDomain))     // 删除域名配置
+					domains.POST("", deps.WrapHandler(controller.DomainController{}.CreateDomain))                 // 创建域名配置
+					domains.GET("", deps.WrapHandler(controller.DomainController{}.GetDomainList))                 // 获取域名列表
+					domains.GET("/active", deps.WrapHandler(controller.DomainController{}.GetActiveDomains))       // 获取活跃域名列表
+					domains.PUT("/:id", deps.WrapHandler(controller.DomainController{}.UpdateDomain))              // 更新域名配置
+					domains.PUT("/:id/status", deps.WrapHandler(controller.DomainController{}.UpdateStatusDomain)) // 更新域名状态
+					domains.DELETE("/:id", deps.WrapHandler(controller.DomainController{}.DeleteDomain))           // 删除域名配置
 				}
 
 				// AB测试管理路由
