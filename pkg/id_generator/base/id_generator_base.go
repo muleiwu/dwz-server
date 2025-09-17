@@ -8,12 +8,12 @@ import (
 	"sync"
 
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/base62"
+	"github.com/muleiwu/base_n"
 )
 
 type IdGeneratorBase struct {
 	fallbackChars string
-	base62        *base62.Base62
+	base62        *base_n.BaseN
 	counters      map[uint64]uint64 // Map of domainID -> current counter value
 	countersMutex sync.RWMutex      // Mutex for accessing the counters map
 }
@@ -22,7 +22,7 @@ type IdGeneratorBase struct {
 func NewIdGeneratorBase() interfaces.IDGenerator {
 	return &IdGeneratorBase{
 		fallbackChars: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
-		base62:        base62.NewBase62(),
+		base62:        base_n.NewBase62(),
 		counters:      make(map[uint64]uint64),
 		countersMutex: sync.RWMutex{},
 	}
@@ -107,7 +107,7 @@ func (g *IdGeneratorBase) GenerateShortCode(domainID uint64, ctx context.Context
 	}
 
 	// Convert to base62 using the base62 module
-	base62Code := g.base62.Encode(id)
+	base62Code := g.base62.Encode(int64(id))
 
 	// Add anti-guessing suffix
 	shortCode, err := g.addAntiGuessingSuffix(base62Code)
