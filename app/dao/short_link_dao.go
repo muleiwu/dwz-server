@@ -5,8 +5,6 @@ import (
 
 	"cnb.cool/mliev/open/dwz-server/app/model"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/base62"
-
 	"gorm.io/gorm"
 )
 
@@ -27,25 +25,6 @@ func (d *ShortLinkDao) Create(shortLink *model.ShortLink) error {
 func (d *ShortLinkDao) FindByShortCode(domain, shortCode string) (*model.ShortLink, error) {
 	var shortLink model.ShortLink
 	err := d.helper.GetDatabase().Where("domain = ? AND short_code = ? AND deleted_at IS NULL", domain, shortCode).First(&shortLink).Error
-	if err != nil {
-		return nil, err
-	}
-	return &shortLink, nil
-}
-
-// FindByShortCodeDecoded 根据短代码解码后的ID查找短网址（新方式）
-func (d *ShortLinkDao) FindByShortCodeDecoded(domain, shortCode string) (*model.ShortLink, error) {
-	// 先尝试解码短代码为ID
-	converter := base62.NewBase62()
-	id, err := converter.Decode(shortCode)
-	if err != nil {
-		// 如果解码失败，回退到旧的查找方式（用于兼容自定义短代码）
-		return d.FindByShortCode(domain, shortCode)
-	}
-
-	// 使用解码后的ID直接查询
-	var shortLink model.ShortLink
-	err = d.helper.GetDatabase().Where("id = ? AND domain = ? AND deleted_at IS NULL", id, domain).First(&shortLink).Error
 	if err != nil {
 		return nil, err
 	}

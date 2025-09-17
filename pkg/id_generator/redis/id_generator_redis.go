@@ -8,13 +8,13 @@ import (
 	"math/big"
 
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/base62"
+	"github.com/muleiwu/base_n"
 	"github.com/redis/go-redis/v9"
 )
 
 type IdGeneratorRedis struct {
 	redis         *redis.Client
-	base62        *base62.Base62
+	base62        *base_n.BaseN
 	logger        interfaces.LoggerInterface
 	fallbackChars string
 }
@@ -23,7 +23,7 @@ func NewIdGeneratorRedis(helper interfaces.HelperInterface) interfaces.IDGenerat
 	return &IdGeneratorRedis{
 		logger:        helper.GetLogger(),
 		redis:         helper.GetRedis(),
-		base62:        base62.NewBase62(),
+		base62:        base_n.NewBase62(),
 		fallbackChars: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
 	}
 }
@@ -102,7 +102,7 @@ func (g *IdGeneratorRedis) GenerateShortCode(domainID uint64, ctx context.Contex
 	}
 
 	// 将ID转换为62进制
-	base62Code := g.base62.Encode(id)
+	base62Code := g.base62.Encode(int64(id))
 
 	// 添加防猜测措施：两位随机后缀 + 校验码
 	shortCode, err := g.addAntiGuessingSuffix(base62Code)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/base62"
+	"github.com/muleiwu/base_n"
 	"gorm.io/gorm"
 )
 
@@ -39,8 +39,8 @@ func (s *ShortLink) GetShortCode() string {
 		return s.ShortCode
 	}
 	// 兼容旧数据：如果没有CustomCode，使用ID转换（仅用于向后兼容）
-	converter := base62.NewBase62()
-	return converter.Encode(s.ID)
+	newBase62 := base_n.NewBase62()
+	return newBase62.Encode(int64(s.ID))
 }
 
 // IsExpired 检查是否过期
