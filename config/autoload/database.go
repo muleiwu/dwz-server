@@ -10,6 +10,7 @@ type Database struct {
 func (receiver Database) InitConfig(helper envInterface.HelperInterface) map[string]any {
 	return map[string]any{
 		"database.driver":   helper.GetEnv().GetString("database.driver", "mysql"),
+		"database.filepath": helper.GetEnv().GetString("database.filepath", "./config/sqlite.db"),
 		"database.host":     helper.GetEnv().GetString("database.host", "localhost"),
 		"database.port":     helper.GetEnv().GetInt("database.port", 3306),
 		"database.dbname":   helper.GetEnv().GetString("database.dbname", "dwz"),
