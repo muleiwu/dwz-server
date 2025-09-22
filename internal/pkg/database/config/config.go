@@ -8,6 +8,7 @@ import (
 
 type DatabaseConfig struct {
 	Driver   string `json:"driver"`
+	Filepath string `json:"filepath"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Host     string `json:"host"`
@@ -18,6 +19,7 @@ type DatabaseConfig struct {
 func NewConfig(config configInterface.ConfigInterface) *DatabaseConfig {
 	return &DatabaseConfig{
 		Driver:   config.GetString("database.driver", "postgresql"),
+		Filepath: config.GetString("database.filepath", "./config/sqlite.db"),
 		Host:     config.GetString("database.host", "127.0.0.1"),
 		Port:     config.GetInt("database.port", 5432),
 		DBName:   config.GetString("database.dbname", "test"),
