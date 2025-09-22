@@ -9,6 +9,7 @@ type GetHelperInterface interface {
 	GetEnv() EnvInterface
 	GetConfig() ConfigInterface
 	GetLogger() LoggerInterface
+	GetCache() ICache
 	GetRedis() *redis.Client
 	GetDatabase() *gorm.DB
 	GetInstalled() Installed
@@ -18,6 +19,7 @@ type SetHelperInterface interface {
 	SetEnv(env EnvInterface)
 	SetConfig(config ConfigInterface)
 	SetLogger(logger LoggerInterface)
+	SetCache(cache ICache)
 	SetRedis(redis *redis.Client)
 	SetDatabase(database *gorm.DB)
 	SetInstalled(installed Installed)
