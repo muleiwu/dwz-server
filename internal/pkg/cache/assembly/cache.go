@@ -16,6 +16,7 @@ func (receiver *Cache) Assembly() error {
 
 	driver := receiver.Helper.GetConfig().GetString("cache.driver", "redis")
 
+	receiver.Helper.GetLogger().Error("加载缓存驱动" + driver)
 	if driver == "redis" {
 		cacheRedis := impl.NewCacheRedis(receiver.Helper)
 		receiver.Helper.SetCache(cacheRedis)
