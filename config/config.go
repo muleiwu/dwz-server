@@ -12,6 +12,7 @@ func (receiver Config) Get() []interfaces.InitConfig {
 	return []interfaces.InitConfig{
 		autoload.Base{},
 		autoload.Http{},
+		autoload.Config{},
 		autoload.Migration{},
 		autoload.StaticFs{},
 		autoload.Database{},

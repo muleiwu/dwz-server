@@ -275,7 +275,7 @@ func (receiver InstallController) createConfigFile(req InstallRequest, helper in
 // initializeDatabase 初始化数据库
 func (receiver InstallController) initializeDatabase(databaseConfig DatabaseConfig, redisConfig RedisConfig, helper interfaces.HelperInterface) error {
 
-	database, err := impl.NewDatabase(helper, databaseConfig.Type, databaseConfig.Host, databaseConfig.Port, databaseConfig.Name, databaseConfig.User, databaseConfig.Password)
+	database, err := impl.NewDatabase(helper, databaseConfig.Type, databaseConfig.Host, databaseConfig.Port, databaseConfig.Name, databaseConfig.User, databaseConfig.Password, "")
 	if err != nil {
 		return err
 	}
