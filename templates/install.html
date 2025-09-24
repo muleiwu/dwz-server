@@ -470,26 +470,53 @@
                         </div>
                     </div>
                     
-                    <h3>Redis配置</h3>
+                    <h3>缓存与发号器配置</h3>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label" for="redisHost">Redis主机</label>
-                            <input type="text" class="form-input" id="redisHost" name="redisHost" value="{{.RedisConfig.Host}}" required>
+                            <label class="form-label" for="cacheDriver">缓存驱动</label>
+                            <select class="form-input" id="cacheDriver" name="cacheDriver" required onchange="checkRedisRequired()">
+                                <option value="local">本地缓存</option>
+                                <option value="redis" selected>Redis</option>
+                            </select>
+                            <small class="form-help">选择缓存存储方式</small>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="redisPort">端口</label>
-                            <input type="number" class="form-input" id="redisPort" name="redisPort" value="{{.RedisConfig.Port}}" required>
+                            <label class="form-label" for="idGeneratorDriver">发号器驱动</label>
+                            <select class="form-input" id="idGeneratorDriver" name="idGeneratorDriver" required onchange="checkRedisRequired()">
+                                <option value="local">本地发号器</option>
+                                <option value="redis" selected>Redis</option>
+                            </select>
+                            <small class="form-help">选择ID生成器方式</small>
                         </div>
                     </div>
                     
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label" for="redisPassword">Redis密码</label>
-                            <input type="text" class="form-input" id="redisPassword" name="redisPassword" value="{{.RedisConfig.Password}}" placeholder="留空如无密码">
+                    <div id="redisConfig">
+                        <h3>Redis配置</h3>
+                        <div class="alert alert-info" id="redisNotice" style="display: none;">
+                            <strong>提示:</strong> 当缓存和发号器都使用本地驱动时，无需配置Redis服务。
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="redisDB">数据库索引</label>
-                            <input type="number" class="form-input" id="redisDB" name="redisDB" value="{{.RedisConfig.DB}}" min="0" max="15" required>
+                        <div id="redisConfigFields">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="redisHost">Redis主机</label>
+                                    <input type="text" class="form-input" id="redisHost" name="redisHost" value="{{.RedisConfig.Host}}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="redisPort">端口</label>
+                                    <input type="number" class="form-input" id="redisPort" name="redisPort" value="{{.RedisConfig.Port}}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="redisPassword">Redis密码</label>
+                                    <input type="text" class="form-input" id="redisPassword" name="redisPassword" value="{{.RedisConfig.Password}}" placeholder="留空如无密码">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="redisDB">数据库索引</label>
+                                    <input type="number" class="form-input" id="redisDB" name="redisDB" value="{{.RedisConfig.DB}}" min="0" max="15" required>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -571,18 +598,30 @@
                         <span class="config-value" id="summaryDbUser">-</span>
                     </div>
                     
-                    <h3>Redis配置</h3>
+                    <div id="summaryRedisConfig">
+                        <h3>Redis配置</h3>
+                        <div class="config-item">
+                            <span class="config-label">Redis主机:</span>
+                            <span class="config-value" id="summaryRedisHost">-</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-label">Redis端口:</span>
+                            <span class="config-value" id="summaryRedisPort">-</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="config-label">Redis数据库:</span>
+                            <span class="config-value" id="summaryRedisDB">-</span>
+                        </div>
+                    </div>
+                    
+                    <h3>缓存与发号器配置</h3>
                     <div class="config-item">
-                        <span class="config-label">Redis主机:</span>
-                        <span class="config-value" id="summaryRedisHost">-</span>
+                        <span class="config-label">缓存驱动:</span>
+                        <span class="config-value" id="summaryCacheDriver">-</span>
                     </div>
                     <div class="config-item">
-                        <span class="config-label">Redis端口:</span>
-                        <span class="config-value" id="summaryRedisPort">-</span>
-                    </div>
-                    <div class="config-item">
-                        <span class="config-label">Redis数据库:</span>
-                        <span class="config-value" id="summaryRedisDB">-</span>
+                        <span class="config-label">发号器驱动:</span>
+                        <span class="config-value" id="summaryIdGeneratorDriver">-</span>
                     </div>
                     
                     <h3>管理员配置</h3>
@@ -614,6 +653,37 @@
     <script>
         let currentStep = 1;
         let dbTestPassed = false;
+        
+        // 检查是否需要Redis配置
+        function checkRedisRequired() {
+            const cacheDriver = document.getElementById('cacheDriver').value;
+            const idGeneratorDriver = document.getElementById('idGeneratorDriver').value;
+            const redisConfigFields = document.getElementById('redisConfigFields');
+            const redisNotice = document.getElementById('redisNotice');
+            const redisInputs = redisConfigFields.querySelectorAll('input');
+            
+            if (cacheDriver === 'local' && idGeneratorDriver === 'local') {
+                // 都使用本地驱动，不需要Redis
+                redisConfigFields.style.display = 'none';
+                redisNotice.style.display = 'block';
+                // 移除Redis字段的required属性
+                redisInputs.forEach(input => {
+                    input.required = false;
+                });
+            } else {
+                // 至少有一个使用Redis，需要配置
+                redisConfigFields.style.display = 'block';
+                redisNotice.style.display = 'none';
+                // 恢复Redis字段的required属性
+                document.getElementById('redisHost').required = true;
+                document.getElementById('redisPort').required = true;
+                document.getElementById('redisDB').required = true;
+            }
+            
+            // 重置测试状态
+            dbTestPassed = false;
+            document.getElementById('nextStep2').disabled = true;
+        }
         
         // 数据库类型切换
         function changeDbType(resetPort = true) {
@@ -744,6 +814,9 @@
             const form = document.getElementById('dbConfigForm');
             const formData = new FormData(form);
             const dbType = formData.get('dbType');
+            const cacheDriver = formData.get('cacheDriver');
+            const idGeneratorDriver = formData.get('idGeneratorDriver');
+            const needsRedis = cacheDriver === 'redis' || idGeneratorDriver === 'redis';
             
             // 构建数据库配置对象
             let databaseConfig = {
@@ -760,6 +833,23 @@
                 databaseConfig.password = formData.get('dbPassword');
             }
             
+            // 构建请求数据
+            let requestData = {
+                database: databaseConfig,
+                cacheDriver: cacheDriver,
+                idGeneratorDriver: idGeneratorDriver
+            };
+            
+            // 只有在需要Redis时才添加Redis配置
+            if (needsRedis) {
+                requestData.redis = {
+                    host: formData.get('redisHost'),
+                    port: parseInt(formData.get('redisPort')),
+                    password: formData.get('redisPassword'),
+                    db: parseInt(formData.get('redisDB'))
+                };
+            }
+            
             // 显示加载状态
             document.getElementById('dbLoading').classList.add('show');
             document.getElementById('testDB').disabled = true;
@@ -770,20 +860,11 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        database: databaseConfig,
-                        redis: {
-                            host: formData.get('redisHost'),
-                            port: parseInt(formData.get('redisPort')),
-                            password: formData.get('redisPassword'),
-                            db: parseInt(formData.get('redisDB'))
-                        }
-                    })
+                    body: JSON.stringify(requestData)
                 });
                 
                 const result = await response.json();
-
-                debugger
+                
                 if (response.ok && result.code === 0) {
                     showAlert('dbAlert', 'success', '数据库连接测试成功！');
                     dbTestPassed = true;
@@ -832,17 +913,37 @@
         function updateSummary() {
             // 数据库配置
             const dbType = document.getElementById('dbType').value;
-            const dbTypeText = dbType === 'mysql' ? 'MySQL' : 'PostgreSQL';
+            const dbTypeText = dbType === 'mysql' ? 'MySQL' : dbType === 'postgresql' ? 'PostgreSQL' : 'SQLite';
             document.getElementById('summaryDbType').textContent = dbTypeText;
-            document.getElementById('summaryDbHost').textContent = document.getElementById('dbHost').value;
-            document.getElementById('summaryDbPort').textContent = document.getElementById('dbPort').value;
-            document.getElementById('summaryDbName').textContent = document.getElementById('dbName').value;
-            document.getElementById('summaryDbUser').textContent = document.getElementById('dbUser').value;
+            if (dbType === 'sqlite') {
+                document.getElementById('summaryDbHost').textContent = '本地文件';
+                document.getElementById('summaryDbPort').textContent = '-';
+                document.getElementById('summaryDbName').textContent = document.getElementById('dbFilepath').value;
+                document.getElementById('summaryDbUser').textContent = '-';
+            } else {
+                document.getElementById('summaryDbHost').textContent = document.getElementById('dbHost').value;
+                document.getElementById('summaryDbPort').textContent = document.getElementById('dbPort').value;
+                document.getElementById('summaryDbName').textContent = document.getElementById('dbName').value;
+                document.getElementById('summaryDbUser').textContent = document.getElementById('dbUser').value;
+            }
             
-            // Redis配置
-            document.getElementById('summaryRedisHost').textContent = document.getElementById('redisHost').value;
-            document.getElementById('summaryRedisPort').textContent = document.getElementById('redisPort').value;
-            document.getElementById('summaryRedisDB').textContent = document.getElementById('redisDB').value;
+            // 缓存与发号器配置
+            const cacheDriver = document.getElementById('cacheDriver').value;
+            const idGeneratorDriver = document.getElementById('idGeneratorDriver').value;
+            document.getElementById('summaryCacheDriver').textContent = cacheDriver === 'local' ? '本地缓存' : 'Redis';
+            document.getElementById('summaryIdGeneratorDriver').textContent = idGeneratorDriver === 'local' ? '本地发号器' : 'Redis';
+            
+            // Redis配置 - 只有需要时才显示
+            const needsRedis = cacheDriver === 'redis' || idGeneratorDriver === 'redis';
+            const summaryRedisConfig = document.getElementById('summaryRedisConfig');
+            if (needsRedis) {
+                summaryRedisConfig.style.display = 'block';
+                document.getElementById('summaryRedisHost').textContent = document.getElementById('redisHost').value;
+                document.getElementById('summaryRedisPort').textContent = document.getElementById('redisPort').value;
+                document.getElementById('summaryRedisDB').textContent = document.getElementById('redisDB').value;
+            } else {
+                summaryRedisConfig.style.display = 'none';
+            }
             
             // 管理员配置
             document.getElementById('summaryAdminUsername').textContent = document.getElementById('adminUsername').value;
@@ -853,6 +954,39 @@
         async function startInstall() {
             const dbForm = document.getElementById('dbConfigForm');
             const dbFormData = new FormData(dbForm);
+            const cacheDriver = dbFormData.get('cacheDriver');
+            const idGeneratorDriver = dbFormData.get('idGeneratorDriver');
+            const needsRedis = cacheDriver === 'redis' || idGeneratorDriver === 'redis';
+            
+            // 构建请求数据
+            let requestData = {
+                database: {
+                    type: dbFormData.get('dbType'),
+                    filepath: dbFormData.get('dbFilepath'),
+                    host: dbFormData.get('dbHost'),
+                    port: parseInt(dbFormData.get('dbPort')),
+                    name: dbFormData.get('dbName'),
+                    user: dbFormData.get('dbUser'),
+                    password: dbFormData.get('dbPassword')
+                },
+                admin: {
+                    username: document.getElementById('adminUsername').value,
+                    password: document.getElementById('adminPassword').value,
+                    email: document.getElementById('adminEmail').value
+                },
+                cacheDriver: cacheDriver,
+                idGeneratorDriver: idGeneratorDriver
+            };
+            
+            // 只有在需要Redis时才添加Redis配置
+            if (needsRedis) {
+                requestData.redis = {
+                    host: dbFormData.get('redisHost'),
+                    port: parseInt(dbFormData.get('redisPort')),
+                    password: dbFormData.get('redisPassword'),
+                    db: parseInt(dbFormData.get('redisDB'))
+                };
+            }
             
             // 显示加载状态
             document.getElementById('installLoading').classList.add('show');
@@ -865,27 +999,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        database: {
-                            type: dbFormData.get('dbType'),
-                            host: dbFormData.get('dbHost'),
-                            port: parseInt(dbFormData.get('dbPort')),
-                            name: dbFormData.get('dbName'),
-                            user: dbFormData.get('dbUser'),
-                            password: dbFormData.get('dbPassword')
-                        },
-                        redis: {
-                            host: dbFormData.get('redisHost'),
-                            port: parseInt(dbFormData.get('redisPort')),
-                            password: dbFormData.get('redisPassword'),
-                            db: parseInt(dbFormData.get('redisDB'))
-                        },
-                        admin: {
-                            username: document.getElementById('adminUsername').value,
-                            password: document.getElementById('adminPassword').value,
-                            email: document.getElementById('adminEmail').value
-                        }
-                    })
+                    body: JSON.stringify(requestData)
                 });
                 
                 const result = await response.json();
@@ -920,6 +1034,9 @@
         function initializePage() {
             // 初始化数据库类型选择（不重置端口）
             changeDbType(false); // 不重置端口，保持服务器传递的值
+            
+            // 检查是否需要Redis配置
+            checkRedisRequired();
             
             // 如果Redis密码为空，显示占位符
             const redisPassword = document.getElementById('redisPassword');

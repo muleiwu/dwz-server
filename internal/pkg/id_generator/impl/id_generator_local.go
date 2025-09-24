@@ -1,4 +1,4 @@
-package base
+package impl
 
 import (
 	"context"
@@ -11,16 +11,16 @@ import (
 	"github.com/muleiwu/base_n"
 )
 
-type IdGeneratorBase struct {
+type IDGeneratorLocal struct {
 	fallbackChars string
 	base62        *base_n.BaseN
 	counters      map[uint64]uint64 // Map of domainID -> current counter value
 	countersMutex sync.RWMutex      // Mutex for accessing the counters map
 }
 
-// NewIdGeneratorBase creates a new instance of IdGeneratorBase
-func NewIdGeneratorBase() interfaces.IDGenerator {
-	return &IdGeneratorBase{
+// NewIDGeneratorLocal creates a new instance of IDGeneratorLocal
+func NewIDGeneratorLocal() interfaces.IDGenerator {
+	return &IDGeneratorLocal{
 		fallbackChars: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
 		base62:        base_n.NewBase62(),
 		counters:      make(map[uint64]uint64),
@@ -28,7 +28,7 @@ func NewIdGeneratorBase() interfaces.IDGenerator {
 	}
 }
 
-func (g *IdGeneratorBase) GenerateID(domainID uint64, ctx context.Context) (uint64, error) {
+func (g *IDGeneratorLocal) GenerateID(domainID uint64, ctx context.Context) (uint64, error) {
 	// Check for context cancellation
 	select {
 	case <-ctx.Done():
@@ -66,7 +66,7 @@ func (g *IdGeneratorBase) GenerateID(domainID uint64, ctx context.Context) (uint
 	return newValue, nil
 }
 
-func (g *IdGeneratorBase) InitializeDomainCounter(domainID uint64, startValue uint64) error {
+func (g *IDGeneratorLocal) InitializeDomainCounter(domainID uint64, startValue uint64) error {
 	// Use a lock to ensure thread safety
 	g.countersMutex.Lock()
 	defer g.countersMutex.Unlock()
@@ -88,7 +88,7 @@ func (g *IdGeneratorBase) InitializeDomainCounter(domainID uint64, startValue ui
 	return nil
 }
 
-func (g *IdGeneratorBase) ResetDomainCounter(domainID uint64, newValue uint64) error {
+func (g *IDGeneratorLocal) ResetDomainCounter(domainID uint64, newValue uint64) error {
 	// Use a lock to ensure thread safety
 	g.countersMutex.Lock()
 	defer g.countersMutex.Unlock()
@@ -99,7 +99,7 @@ func (g *IdGeneratorBase) ResetDomainCounter(domainID uint64, newValue uint64) e
 	return nil
 }
 
-func (g *IdGeneratorBase) GenerateShortCode(domainID uint64, ctx context.Context) (string, *uint64, error) {
+func (g *IDGeneratorLocal) GenerateShortCode(domainID uint64, ctx context.Context) (string, *uint64, error) {
 	// Generate ID using our concurrent ID generator
 	id, err := g.GenerateID(domainID, ctx)
 	if err != nil {
@@ -119,7 +119,7 @@ func (g *IdGeneratorBase) GenerateShortCode(domainID uint64, ctx context.Context
 }
 
 // addAntiGuessingSuffix 添加防猜测后缀
-func (g *IdGeneratorBase) addAntiGuessingSuffix(base62Code string) (string, error) {
+func (g *IDGeneratorLocal) addAntiGuessingSuffix(base62Code string) (string, error) {
 	// 生成两位随机后缀
 	randomSuffix, err := g.generateRandomSuffix(2)
 	if err != nil {
@@ -134,7 +134,7 @@ func (g *IdGeneratorBase) addAntiGuessingSuffix(base62Code string) (string, erro
 }
 
 // generateRandomSuffix 生成指定长度的随机后缀
-func (g *IdGeneratorBase) generateRandomSuffix(length int) (string, error) {
+func (g *IDGeneratorLocal) generateRandomSuffix(length int) (string, error) {
 	result := make([]byte, length)
 	charsetLen := big.NewInt(int64(len(g.fallbackChars)))
 
@@ -150,7 +150,7 @@ func (g *IdGeneratorBase) generateRandomSuffix(length int) (string, error) {
 }
 
 // calculateChecksum 计算校验码
-func (g *IdGeneratorBase) calculateChecksum(input string) int {
+func (g *IDGeneratorLocal) calculateChecksum(input string) int {
 	checksum := 0
 	for _, char := range input {
 		checksum ^= int(char)
