@@ -1,8 +1,0 @@
-services:
-  dwz-server:
-    image: docker.cnb.cool/mliev/open/dwz-server:latest
-    restart: always
-    ports:
-      - "8080:8080"
-    volumes:
-      - "./data/config/:/app/config/"
