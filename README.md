@@ -170,7 +170,7 @@ services:
     image: docker.cnb.cool/mliev/open/dwz-server:latest
     restart: always
     ports:
-      - "8080"  # 仅暴露给容器网络
+      - "8080:8080"  # 仅暴露给容器网络
     volumes:
       - "./config/:/app/config/"
     environment:
