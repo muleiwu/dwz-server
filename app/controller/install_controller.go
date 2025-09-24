@@ -9,6 +9,7 @@ import (
 	cacheAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/cache/assembly"
 	database2 "cnb.cool/mliev/open/dwz-server/internal/pkg/database/config"
 	"cnb.cool/mliev/open/dwz-server/internal/pkg/database/impl"
+	"cnb.cool/mliev/open/dwz-server/internal/pkg/id_generator/assembly"
 	redis2 "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/config"
 	impl2 "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/impl"
 	"github.com/gin-gonic/gin"
@@ -225,7 +226,7 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 		return
 	}
 
-	if err := receiver.initializeIDGenerator(req.IDGeneratorDriver); err != nil {
+	if err := receiver.initializeIDGenerator(helper, req.IDGeneratorDriver); err != nil {
 		receiver.Error(c, http.StatusInternalServerError, "发号器初始化失败: "+err.Error())
 		return
 	}
@@ -264,7 +265,13 @@ func (receiver InstallController) initializeCache(driver string) error {
 	return nil
 }
 
-func (receiver InstallController) initializeIDGenerator(driver string) error {
+func (receiver InstallController) initializeIDGenerator(helper interfaces.HelperInterface, driver string) error {
+	idGenerator, err := assembly.GetDriver(helper, driver)
+	if err != nil {
+		return err
+	}
+
+	helper2.SetIdGenerator(idGenerator)
 	return nil
 }
 
