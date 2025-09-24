@@ -5,6 +5,7 @@ temp/docs/
 # 忽略版本控制
 .git/
 .gitignore
+.gitmodules
 
 # 忽略IDE配置
 .idea/
@@ -28,6 +29,7 @@ docker-compose.yml
 config.yaml
 
 # 忽略README和文档
+LICENSE
 README.md
 *.md
 
