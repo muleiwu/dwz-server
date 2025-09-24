@@ -96,4 +96,12 @@ cors:
   allow_headers:
     - "Origin"
     - "Content-Type"
-    - "Authorization" 
+    - "Authorization"
+
+# 缓存配置
+cache:
+  driver: redis  # local 或 redis
+
+# ID生成器配置
+id_generator:
+  driver: redis  # local 或 redis 

@@ -59,7 +59,8 @@ func (receiver *InitInstallService) AutoInstall(migration []any) {
 		os.Exit(1)
 	}
 
-	err = receiver.CreateConfigFile(databaseConfig, redisConfig)
+	// 自动安装默认使用redis作为缓存和发号器驱动
+	err = receiver.CreateConfigFile(databaseConfig, redisConfig, "redis", "redis")
 	if err != nil {
 		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 写入配置文件失败, 原因: %s", err.Error()))
 		os.Exit(1)
@@ -89,10 +90,10 @@ func (receiver *InitInstallService) AutoInstall(migration []any) {
 	// 标记系统为已安装
 	receiver.helper.GetInstalled().SetInstalled(true)
 
-	receiver.helper.GetLogger().Info(fmt.Sprintf("【自动安装】成功， 用户名：admin 密码：admin"))
-	receiver.helper.GetLogger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
-	receiver.helper.GetLogger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
-	receiver.helper.GetLogger().Info(fmt.Sprintf("【自动安装】成功， 请打开系统后，立刻修改密码！！！"))
+	receiver.helper.GetLogger().Info("【自动安装】成功， 用户名：admin 密码：admin")
+	receiver.helper.GetLogger().Info("【自动安装】成功， 请打开系统后，立刻修改密码！！！")
+	receiver.helper.GetLogger().Info("【自动安装】成功， 请打开系统后，立刻修改密码！！！")
+	receiver.helper.GetLogger().Info("【自动安装】成功， 请打开系统后，立刻修改密码！！！")
 }
 
 func (receiver *InitInstallService) CreateAdminUser(username, realName, email, phone, password string) error {
@@ -135,8 +136,9 @@ func (receiver *InitInstallService) CreateInstallLock() error {
 	return nil
 }
 
-func (receiver *InitInstallService) CreateConfigFile(databaseInfo database2.DatabaseConfig, redisInfo config2.RedisConfig) error {
+func (receiver *InitInstallService) CreateConfigFile(databaseInfo database2.DatabaseConfig, redisInfo config2.RedisConfig, cacheDriver string, idGeneratorDriver string) error {
 
+	// 基础配置内容
 	configContent := fmt.Sprintf(`# 短网址服务配置文件
 # 由安装向导自动生成于 %s
 
@@ -147,16 +149,33 @@ server:
 
 # 数据库配置
 database:
-  type: %s
+  type: %s`,
+		time.Now().Format("2006-01-02 15:04:05"),
+		databaseInfo.Driver)
+
+	// 根据数据库类型添加相应配置
+	if databaseInfo.Driver == "sqlite" {
+		configContent += fmt.Sprintf(`
+  filepath: %s`, databaseInfo.Filepath)
+	} else {
+		configContent += fmt.Sprintf(`
   host: %s
   port: %d
   dbname: %s
   username: %s
-  password: %s
+  password: %s`, databaseInfo.Host, databaseInfo.Port, databaseInfo.DBName, databaseInfo.Username, databaseInfo.Password)
+	}
+
+	configContent += `
   charset: utf8mb4
   max_open_conns: 100
   max_idle_conns: 20
-  conn_max_lifetime: 300s
+  conn_max_lifetime: 300s`
+
+	// 只有在需要Redis时才添加Redis配置
+	needsRedis := cacheDriver == "redis" || idGeneratorDriver == "redis"
+	if needsRedis {
+		configContent += fmt.Sprintf(`
 
 # Redis配置
 redis:
@@ -166,7 +185,11 @@ redis:
   db: %d
   max_idle: 10
   max_active: 100
-  idle_timeout: 300s
+  idle_timeout: 300s`, redisInfo.Host, redisInfo.Port, redisInfo.Password, redisInfo.DB)
+	}
+
+	// 继续添加其他配置
+	configContent += fmt.Sprintf(`
 
 # 日志配置
 logger:
@@ -197,19 +220,15 @@ operation_log:
 migration:
   enabled: true
   auto_migrate: true
-`,
-		time.Now().Format("2006-01-02 15:04:05"),
-		databaseInfo.Driver,
-		databaseInfo.Host,
-		databaseInfo.Port,
-		databaseInfo.DBName,
-		databaseInfo.Username,
-		databaseInfo.Password,
-		redisInfo.Host,
-		redisInfo.Port,
-		redisInfo.Password,
-		redisInfo.DB,
-	)
+
+# 缓存配置
+cache:
+  driver: %s
+
+# ID生成器配置
+id_generator:
+  driver: %s
+`, cacheDriver, idGeneratorDriver)
 
 	// 写入配置文件
 	if err := os.WriteFile(configFile, []byte(configContent), 0644); err != nil {
@@ -273,6 +292,11 @@ func (receiver *InitInstallService) TestDatabaseConnection(config database2.Data
 }
 
 func (receiver *InitInstallService) TestRedisConnection(config config2.RedisConfig, maxRetries int) error {
+	// 如果主机为空，说明不需要Redis，直接返回
+	if config.Host == "" {
+		return nil
+	}
+
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
 		Password: config.Password,

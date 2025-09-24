@@ -58,15 +58,19 @@ type AdminConfig struct {
 
 // InstallRequest 安装请求结构
 type InstallRequest struct {
-	Database DatabaseConfig `json:"database" binding:"required"`
-	Redis    RedisConfig    `json:"redis"`
-	Admin    AdminConfig    `json:"admin" binding:"required"`
+	Database          DatabaseConfig `json:"database" binding:"required"`
+	Redis             *RedisConfig   `json:"redis,omitempty"`
+	Admin             AdminConfig    `json:"admin" binding:"required"`
+	CacheDriver       string         `json:"cacheDriver" binding:"required,oneof=local redis"`
+	IDGeneratorDriver string         `json:"idGeneratorDriver" binding:"required,oneof=local redis"`
 }
 
 // TestConnectionRequest 测试连接请求结构
 type TestConnectionRequest struct {
-	Database DatabaseConfig `json:"database" binding:"required"`
-	Redis    RedisConfig    `json:"redis" binding:"required"`
+	Database          DatabaseConfig `json:"database" binding:"required"`
+	Redis             *RedisConfig   `json:"redis,omitempty"`
+	CacheDriver       string         `json:"cacheDriver" binding:"required,oneof=local redis"`
+	IDGeneratorDriver string         `json:"idGeneratorDriver" binding:"required,oneof=local redis"`
 }
 
 // GetDefaultDatabaseConfig 从环境变量获取默认数据库配置
@@ -157,10 +161,13 @@ func (receiver InstallController) TestConnection(c *gin.Context, helper interfac
 		return
 	}
 
-	// 测试Redis连接
-	if err := receiver.testRedisConnection(req.Redis, helper); err != nil {
-		receiver.Error(c, http.StatusBadRequest, "Redis连接失败: "+err.Error())
-		return
+	// 只有在需要Redis时才测试Redis连接
+	needsRedis := req.CacheDriver == "redis" || req.IDGeneratorDriver == "redis"
+	if needsRedis && req.Redis != nil {
+		if err := receiver.testRedisConnection(*req.Redis, helper); err != nil {
+			receiver.Error(c, http.StatusBadRequest, "Redis连接失败: "+err.Error())
+			return
+		}
 	}
 
 	receiver.SuccessWithMessage(c, "连接测试成功", nil)
@@ -186,9 +193,13 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 		return
 	}
 
-	if err := receiver.testRedisConnection(req.Redis, helper); err != nil {
-		receiver.Error(c, http.StatusBadRequest, "Redis连接失败: "+err.Error())
-		return
+	// 只有在需要Redis时才测试Redis连接
+	needsRedis := req.CacheDriver == "redis" || req.IDGeneratorDriver == "redis"
+	if needsRedis && req.Redis != nil {
+		if err := receiver.testRedisConnection(*req.Redis, helper); err != nil {
+			receiver.Error(c, http.StatusBadRequest, "Redis连接失败: "+err.Error())
+			return
+		}
 	}
 
 	// 创建配置文件
@@ -198,7 +209,11 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 	}
 
 	// 初始化数据库
-	if err := receiver.initializeDatabase(req.Database, req.Redis, helper); err != nil {
+	var redisConfig *RedisConfig
+	if req.Redis != nil {
+		redisConfig = req.Redis
+	}
+	if err := receiver.initializeDatabase(req.Database, redisConfig, helper); err != nil {
 		receiver.Error(c, http.StatusInternalServerError, "数据库初始化失败: "+err.Error())
 		return
 	}
@@ -259,6 +274,7 @@ func (receiver InstallController) createConfigFile(req InstallRequest, helper in
 
 	databaseConfig := database2.DatabaseConfig{
 		Driver:   req.Database.Type,
+		Filepath: req.Database.Filepath,
 		Username: req.Database.User,
 		Password: req.Database.Password,
 		Host:     req.Database.Host,
@@ -266,32 +282,46 @@ func (receiver InstallController) createConfigFile(req InstallRequest, helper in
 		DBName:   req.Database.Name,
 	}
 
+	// 如果不需要Redis，使用默认值
 	redisConfig := redis2.RedisConfig{
-		Host:     req.Redis.Host,
-		Port:     req.Redis.Port,
-		Password: req.Redis.Password,
-		DB:       req.Redis.DB,
+		Host:     "localhost",
+		Port:     6379,
+		Password: "",
+		DB:       0,
 	}
+
+	// 如果提供了Redis配置，使用提供的值
+	if req.Redis != nil {
+		redisConfig = redis2.RedisConfig{
+			Host:     req.Redis.Host,
+			Port:     req.Redis.Port,
+			Password: req.Redis.Password,
+			DB:       req.Redis.DB,
+		}
+	}
+
 	installService := service.NewInitInstallService(helper)
-	return installService.CreateConfigFile(databaseConfig, redisConfig)
+	return installService.CreateConfigFile(databaseConfig, redisConfig, req.CacheDriver, req.IDGeneratorDriver)
 }
 
 // initializeDatabase 初始化数据库
-func (receiver InstallController) initializeDatabase(databaseConfig DatabaseConfig, redisConfig RedisConfig, helper interfaces.HelperInterface) error {
+func (receiver InstallController) initializeDatabase(databaseConfig DatabaseConfig, redisConfig *RedisConfig, helper interfaces.HelperInterface) error {
 
-	database, err := impl.NewDatabase(helper, databaseConfig.Type, databaseConfig.Host, databaseConfig.Port, databaseConfig.Name, databaseConfig.User, databaseConfig.Password, "")
+	database, err := impl.NewDatabase(helper, databaseConfig.Type, databaseConfig.Host, databaseConfig.Port, databaseConfig.Name, databaseConfig.User, databaseConfig.Password, databaseConfig.Filepath)
 	if err != nil {
 		return err
 	}
 
 	helper2.GetHelper().SetDatabase(database)
 
-	redis, err := impl2.NewRedis(helper, redisConfig.Host, redisConfig.Port, redisConfig.DB, redisConfig.Password)
-
-	if err != nil {
-		return err
+	// 只有在提供了Redis配置时才初始化Redis
+	if redisConfig != nil {
+		redis, err := impl2.NewRedis(helper, redisConfig.Host, redisConfig.Port, redisConfig.DB, redisConfig.Password)
+		if err != nil {
+			return err
+		}
+		helper2.GetHelper().SetRedis(redis)
 	}
-	helper2.GetHelper().SetRedis(redis)
 
 	migration := helper.GetConfig().Get("database.migration", []any{}).([]any)
 
