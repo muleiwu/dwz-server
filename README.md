@@ -155,8 +155,6 @@ cd mliev-dwz
 
 
 启动后，后台地址是 `http://{ip}:{端口}/admin/`
-默认安装后的账号：admin
-默认安装后的密码：admin
 
 #### 创建 `docker-compose.yml` 文件：
 
@@ -170,7 +168,7 @@ services:
     image: docker.cnb.cool/mliev/open/dwz-server:latest
     restart: always
     ports:
-      - "8080:8080"  # 仅暴露给容器网络
+      - "8080:8080"
     volumes:
       - "./config/:/app/config/"
     environment:
@@ -204,7 +202,7 @@ docker-compose logs -f
 
 ### 6. 页面配置
 
-打开 `http://{您的IP}:8081` 进行继续配置（请注意8081端口放开）
+打开 `http://{您的IP}:8080` 进行继续配置（请注意8080端口放开）
 
 
 ## 🚀 二次开发
