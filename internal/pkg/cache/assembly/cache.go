@@ -1,6 +1,7 @@
 package assembly
 
 import (
+	"fmt"
 	"time"
 
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
@@ -15,17 +16,24 @@ type Cache struct {
 func (receiver *Cache) Assembly() error {
 
 	driver := receiver.Helper.GetConfig().GetString("cache.driver", "redis")
-
 	receiver.Helper.GetLogger().Error("加载缓存驱动" + driver)
+
+	cacheDriver, err := receiver.GetDriver(driver)
+	if err != nil {
+		fmt.Printf("[cache] 加载缓存驱动失败: %s", err.Error())
+	}
+	receiver.Helper.SetCache(cacheDriver)
+
+	return nil
+}
+
+func (receiver *Cache) GetDriver(driver string) (interfaces.ICache, error) {
+
 	if driver == "redis" {
-		cacheRedis := impl.NewCacheRedis(receiver.Helper)
-		receiver.Helper.SetCache(cacheRedis)
+		return impl.NewCacheRedis(receiver.Helper), nil
 	} else {
 		// 设置超时时间和清理时间
 		c := cache.New(5*time.Minute, 10*time.Minute)
-		cacheLocal := impl.NewCacheLocal(receiver.Helper, c)
-		receiver.Helper.SetCache(cacheLocal)
+		return impl.NewCacheLocal(receiver.Helper, c), nil
 	}
-
-	return nil
 }

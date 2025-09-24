@@ -6,6 +6,7 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/service"
 	helper2 "cnb.cool/mliev/open/dwz-server/internal/helper"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	cacheAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/cache/assembly"
 	database2 "cnb.cool/mliev/open/dwz-server/internal/pkg/database/config"
 	"cnb.cool/mliev/open/dwz-server/internal/pkg/database/impl"
 	redis2 "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/config"
@@ -213,8 +214,19 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 	if req.Redis != nil {
 		redisConfig = req.Redis
 	}
+
 	if err := receiver.initializeDatabase(req.Database, redisConfig, helper); err != nil {
 		receiver.Error(c, http.StatusInternalServerError, "数据库初始化失败: "+err.Error())
+		return
+	}
+
+	if err := receiver.initializeCache(req.CacheDriver); err != nil {
+		receiver.Error(c, http.StatusInternalServerError, "缓存初始化失败: "+err.Error())
+		return
+	}
+
+	if err := receiver.initializeIDGenerator(req.IDGeneratorDriver); err != nil {
+		receiver.Error(c, http.StatusInternalServerError, "发号器初始化失败: "+err.Error())
 		return
 	}
 
@@ -237,6 +249,23 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 	helper.GetInstalled().SetInstalled(true)
 
 	receiver.SuccessWithMessage(c, "安装完成", nil)
+}
+
+func (receiver InstallController) initializeCache(driver string) error {
+	cache := cacheAssembly.Cache{}
+	getDriver, err := cache.GetDriver(driver)
+
+	if err != nil {
+		return err
+	}
+
+	helper2.GetHelper().SetCache(getDriver)
+
+	return nil
+}
+
+func (receiver InstallController) initializeIDGenerator(driver string) error {
+	return nil
 }
 
 // testDatabaseConnection 测试数据库连接
