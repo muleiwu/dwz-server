@@ -9,6 +9,6 @@ type Config struct {
 
 func (receiver Config) InitConfig(helper envInterface.HelperInterface) map[string]any {
 	return map[string]any{
-		"cache.driver": helper.GetEnv().GetString("cache.driver", "redis"),
+		"cache.driver": helper.GetEnv().GetString("cache.driver", "local"),
 	}
 }

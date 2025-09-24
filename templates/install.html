@@ -429,33 +429,44 @@
                         <select class="form-input" id="dbType" name="dbType" required onchange="changeDbType()">
                             <option value="mysql" {{if eq .DatabaseConfig.Driver "mysql"}}selected{{end}}>MySQL</option>
                             <option value="postgresql" {{if eq .DatabaseConfig.Driver "postgresql"}}selected{{end}}>PostgreSQL</option>
+                            <option value="sqlite" {{if eq .DatabaseConfig.Driver "sqlite"}}selected{{end}}>SQLite</option>
                         </select>
                     </div>
                     
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label" for="dbHost">数据库主机</label>
-                            <input type="text" class="form-input" id="dbHost" name="dbHost" value="{{.DatabaseConfig.Host}}" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="dbPort">端口</label>
-                            <input type="number" class="form-input" id="dbPort" name="dbPort" value="{{.DatabaseConfig.Port}}" required>
-                        </div>
+                    <!-- SQLite 文件路径配置 -->
+                    <div class="form-group" id="sqliteConfig" style="display: none;">
+                        <label class="form-label" for="dbFilepath">数据库文件路径</label>
+                        <input type="text" class="form-input" id="dbFilepath" name="dbFilepath" value="{{.DatabaseConfig.Filepath}}" placeholder="./config/sqlite.db">
+                        <small class="form-help">SQLite数据库文件的存储路径</small>
                     </div>
                     
-                    <div class="form-group">
-                        <label class="form-label" for="dbName">数据库名称</label>
-                        <input type="text" class="form-input" id="dbName" name="dbName" value="{{.DatabaseConfig.DBName}}" required>
-                    </div>
-                    
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label" for="dbUser">用户名</label>
-                            <input type="text" class="form-input" id="dbUser" name="dbUser" value="{{.DatabaseConfig.Username}}" required>
+                    <!-- MySQL/PostgreSQL 网络配置 -->
+                    <div id="networkDbConfig">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label" for="dbHost">数据库主机</label>
+                                <input type="text" class="form-input" id="dbHost" name="dbHost" value="{{.DatabaseConfig.Host}}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="dbPort">端口</label>
+                                <input type="number" class="form-input" id="dbPort" name="dbPort" value="{{.DatabaseConfig.Port}}" required>
+                            </div>
                         </div>
+                        
                         <div class="form-group">
-                            <label class="form-label" for="dbPassword">密码</label>
-                            <input type="text" class="form-input" id="dbPassword" name="dbPassword" value="{{.DatabaseConfig.Password}}" required>
+                            <label class="form-label" for="dbName">数据库名称</label>
+                            <input type="text" class="form-input" id="dbName" name="dbName" value="{{.DatabaseConfig.DBName}}" required>
+                        </div>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label" for="dbUser">用户名</label>
+                                <input type="text" class="form-input" id="dbUser" name="dbUser" value="{{.DatabaseConfig.Username}}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="dbPassword">密码</label>
+                                <input type="text" class="form-input" id="dbPassword" name="dbPassword" value="{{.DatabaseConfig.Password}}" required>
+                            </div>
                         </div>
                     </div>
                     
@@ -608,13 +619,40 @@
         function changeDbType(resetPort = true) {
             const dbType = document.getElementById('dbType').value;
             const portInput = document.getElementById('dbPort');
+            const sqliteConfig = document.getElementById('sqliteConfig');
+            const networkDbConfig = document.getElementById('networkDbConfig');
             
-            // 只在用户主动切换时才重置端口
-            if (resetPort) {
-                if (dbType === 'mysql') {
-                    portInput.value = '3306';
-                } else if (dbType === 'postgresql') {
-                    portInput.value = '5432';
+            // 根据数据库类型显示/隐藏配置区域
+            if (dbType === 'sqlite') {
+                sqliteConfig.style.display = 'block';
+                networkDbConfig.style.display = 'none';
+                // 为SQLite设置required属性
+                document.getElementById('dbFilepath').required = true;
+                // 移除网络数据库字段的required属性
+                document.getElementById('dbHost').required = false;
+                document.getElementById('dbPort').required = false;
+                document.getElementById('dbName').required = false;
+                document.getElementById('dbUser').required = false;
+                document.getElementById('dbPassword').required = false;
+            } else {
+                sqliteConfig.style.display = 'none';
+                networkDbConfig.style.display = 'block';
+                // 移除SQLite字段的required属性
+                document.getElementById('dbFilepath').required = false;
+                // 为网络数据库设置required属性
+                document.getElementById('dbHost').required = true;
+                document.getElementById('dbPort').required = true;
+                document.getElementById('dbName').required = true;
+                document.getElementById('dbUser').required = true;
+                document.getElementById('dbPassword').required = true;
+                
+                // 只在用户主动切换时才重置端口
+                if (resetPort) {
+                    if (dbType === 'mysql') {
+                        portInput.value = '3306';
+                    } else if (dbType === 'postgresql') {
+                        portInput.value = '5432';
+                    }
                 }
             }
             
@@ -705,6 +743,22 @@
         async function testDatabaseConnection() {
             const form = document.getElementById('dbConfigForm');
             const formData = new FormData(form);
+            const dbType = formData.get('dbType');
+            
+            // 构建数据库配置对象
+            let databaseConfig = {
+                type: dbType
+            };
+            
+            if (dbType === 'sqlite') {
+                databaseConfig.filepath = formData.get('dbFilepath');
+            } else {
+                databaseConfig.host = formData.get('dbHost');
+                databaseConfig.port = parseInt(formData.get('dbPort'));
+                databaseConfig.name = formData.get('dbName');
+                databaseConfig.user = formData.get('dbUser');
+                databaseConfig.password = formData.get('dbPassword');
+            }
             
             // 显示加载状态
             document.getElementById('dbLoading').classList.add('show');
@@ -717,14 +771,7 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        database: {
-                            type: formData.get('dbType'),
-                            host: formData.get('dbHost'),
-                            port: parseInt(formData.get('dbPort')),
-                            name: formData.get('dbName'),
-                            user: formData.get('dbUser'),
-                            password: formData.get('dbPassword')
-                        },
+                        database: databaseConfig,
                         redis: {
                             host: formData.get('redisHost'),
                             port: parseInt(formData.get('redisPort')),

@@ -12,6 +12,7 @@ import (
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	database2 "cnb.cool/mliev/open/dwz-server/internal/pkg/database/config"
 	config2 "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/config"
+	_ "github.com/glebarez/sqlite"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -231,6 +232,9 @@ func (receiver *InitInstallService) TestDatabaseConnection(config database2.Data
 		dsn = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 			config.Host, config.Port, config.Username, config.Password, config.DBName)
 		driver = "postgres"
+	case "sqlite":
+		dsn = config.Filepath
+		driver = "sqlite"
 	default:
 		return fmt.Errorf("不支持的数据库类型: %s", config.Driver)
 	}

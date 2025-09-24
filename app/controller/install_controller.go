@@ -33,11 +33,12 @@ type InstallPageData struct {
 // DatabaseConfig 数据库配置结构
 type DatabaseConfig struct {
 	Type     string `json:"type" binding:"required"`
-	Host     string `json:"host" binding:"required"`
-	Port     int    `json:"port" binding:"required"`
-	Name     string `json:"name" binding:"required"`
-	User     string `json:"user" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Filepath string `json:"filepath"`
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Name     string `json:"name"`
+	User     string `json:"user"`
+	Password string `json:"password"`
 }
 
 // RedisConfig Redis配置结构
@@ -58,7 +59,7 @@ type AdminConfig struct {
 // InstallRequest 安装请求结构
 type InstallRequest struct {
 	Database DatabaseConfig `json:"database" binding:"required"`
-	Redis    RedisConfig    `json:"redis" binding:"required"`
+	Redis    RedisConfig    `json:"redis"`
 	Admin    AdminConfig    `json:"admin" binding:"required"`
 }
 
@@ -76,6 +77,7 @@ func (receiver InstallController) GetDefaultDatabaseConfig(helper interfaces.Hel
 
 	return DatabaseConfig{
 		Type:     env.GetString("database.driver", config.GetString("database.driver", "mysql")),
+		Filepath: env.GetString("database.filepath", config.GetString("database.filepath", "./config/sqlite.db")),
 		Host:     env.GetString("database.host", config.GetString("database.host", "localhost")),
 		Port:     env.GetInt("database.port", config.GetInt("database.port", 3306)),
 		Name:     env.GetString("database.dbname", config.GetString("database.dbname", "dwz")),
@@ -123,6 +125,7 @@ func (receiver InstallController) GetInstall(c *gin.Context, helper interfaces.H
 		Copyright:    copyright,
 		DatabaseConfig: database2.DatabaseConfig{
 			Driver:   defaultDbConfig.Type,
+			Filepath: defaultDbConfig.Filepath,
 			Host:     defaultDbConfig.Host,
 			Port:     defaultDbConfig.Port,
 			DBName:   defaultDbConfig.Name,
@@ -227,6 +230,7 @@ func (receiver InstallController) testDatabaseConnection(config DatabaseConfig, 
 
 	databaseConfig := database2.DatabaseConfig{
 		Driver:   config.Type,
+		Filepath: config.Filepath,
 		Username: config.User,
 		Password: config.Password,
 		Host:     config.Host,
