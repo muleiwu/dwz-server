@@ -1,5 +1,8 @@
 develop:
   push:
+    - git:
+        enable: true
+        submodules: true
     - runner:
         tags: cnb:arch:amd64
       services:
@@ -67,6 +70,9 @@ develop:
             type: docker
 $:
   tag_push:
+    - git:
+        enable: true
+        submodules: true
     - runner:
         tags: cnb:arch:amd64
       services:
