@@ -16,7 +16,7 @@ type Cache struct {
 func (receiver *Cache) Assembly() error {
 
 	driver := receiver.Helper.GetConfig().GetString("cache.driver", "redis")
-	receiver.Helper.GetLogger().Error("加载缓存驱动" + driver)
+	receiver.Helper.GetLogger().Debug("加载缓存驱动" + driver)
 
 	cacheDriver, err := receiver.GetDriver(driver)
 	if err != nil {
