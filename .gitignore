@@ -2,3 +2,4 @@
 config.yaml
 /scripts/
 /dist/
+/static/admin/

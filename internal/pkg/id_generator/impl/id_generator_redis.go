@@ -1,4 +1,4 @@
-package redis
+package impl
 
 import (
 	"context"
@@ -12,15 +12,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type IdGeneratorRedis struct {
+type IDGeneratorRedis struct {
 	redis         *redis.Client
 	base62        *base_n.BaseN
 	logger        interfaces.LoggerInterface
 	fallbackChars string
 }
 
-func NewIdGeneratorRedis(helper interfaces.HelperInterface) interfaces.IDGenerator {
-	return &IdGeneratorRedis{
+func NewIDGeneratorRedis(helper interfaces.HelperInterface) interfaces.IDGenerator {
+	return &IDGeneratorRedis{
 		logger:        helper.GetLogger(),
 		redis:         helper.GetRedis(),
 		base62:        base_n.NewBase62(),
@@ -29,7 +29,7 @@ func NewIdGeneratorRedis(helper interfaces.HelperInterface) interfaces.IDGenerat
 }
 
 // GenerateID 为指定域名生成下一个ID
-func (g *IdGeneratorRedis) GenerateID(domainID uint64, ctx context.Context) (uint64, error) {
+func (g *IDGeneratorRedis) GenerateID(domainID uint64, ctx context.Context) (uint64, error) {
 	key := fmt.Sprintf("domain_counter:%d", domainID)
 
 	// 使用Redis INCR命令获取下一个ID
@@ -43,7 +43,7 @@ func (g *IdGeneratorRedis) GenerateID(domainID uint64, ctx context.Context) (uin
 }
 
 // InitializeDomainCounter 初始化域名计数器
-func (g *IdGeneratorRedis) InitializeDomainCounter(domainID uint64, startValue uint64) error {
+func (g *IDGeneratorRedis) InitializeDomainCounter(domainID uint64, startValue uint64) error {
 	ctx := context.Background()
 	key := fmt.Sprintf("domain_counter:%d", domainID)
 
@@ -80,7 +80,7 @@ func (g *IdGeneratorRedis) InitializeDomainCounter(domainID uint64, startValue u
 }
 
 // ResetDomainCounter 重置域名计数器（谨慎使用）
-func (g *IdGeneratorRedis) ResetDomainCounter(domainID uint64, newValue uint64) error {
+func (g *IDGeneratorRedis) ResetDomainCounter(domainID uint64, newValue uint64) error {
 	ctx := context.Background()
 	key := fmt.Sprintf("domain_counter:%d", domainID)
 
@@ -94,7 +94,7 @@ func (g *IdGeneratorRedis) ResetDomainCounter(domainID uint64, newValue uint64) 
 }
 
 // GenerateShortCode 生成短代码（包含防猜测措施）
-func (g *IdGeneratorRedis) GenerateShortCode(domainID uint64, ctx context.Context) (string, *uint64, error) {
+func (g *IDGeneratorRedis) GenerateShortCode(domainID uint64, ctx context.Context) (string, *uint64, error) {
 	// 主方案：使用分布式发号器
 	id, err := g.GenerateID(domainID, ctx)
 	if err != nil {
@@ -115,7 +115,7 @@ func (g *IdGeneratorRedis) GenerateShortCode(domainID uint64, ctx context.Contex
 }
 
 // addAntiGuessingSuffix 添加防猜测后缀
-func (g *IdGeneratorRedis) addAntiGuessingSuffix(base62Code string) (string, error) {
+func (g *IDGeneratorRedis) addAntiGuessingSuffix(base62Code string) (string, error) {
 	// 生成两位随机后缀
 	randomSuffix, err := g.generateRandomSuffix(2)
 	if err != nil {
@@ -130,7 +130,7 @@ func (g *IdGeneratorRedis) addAntiGuessingSuffix(base62Code string) (string, err
 }
 
 // generateRandomSuffix 生成指定长度的随机后缀
-func (g *IdGeneratorRedis) generateRandomSuffix(length int) (string, error) {
+func (g *IDGeneratorRedis) generateRandomSuffix(length int) (string, error) {
 	result := make([]byte, length)
 	charsetLen := big.NewInt(int64(len(g.fallbackChars)))
 
@@ -146,7 +146,7 @@ func (g *IdGeneratorRedis) generateRandomSuffix(length int) (string, error) {
 }
 
 // calculateChecksum 计算校验码
-func (g *IdGeneratorRedis) calculateChecksum(input string) int {
+func (g *IDGeneratorRedis) calculateChecksum(input string) int {
 	checksum := 0
 	for _, char := range input {
 		checksum ^= int(char)

@@ -5,26 +5,49 @@ server:
 
 # 数据库配置
 database:
+  # 数据库类型: mysql, postgresql, sqlite
+  driver: mysql
+  
+  # MySQL/PostgreSQL 配置
   host: localhost
   port: 3306
   username: root
   password: password
-  database: dwz_db
-  charset: utf8mb4
-  parse_time: true
-  loc: Local
-  max_idle_conns: 10
-  max_open_conns: 100
-  conn_max_lifetime: 3600
+  dbname: dwz_db
+  
+  # SQLite 配置（当 driver 为 sqlite 时使用）
+  filepath: "./config/sqlite.db"
 
-# PostgreSQL 配置（可选）
-# postgres:
+# 支持的环境变量：
+# DATABASE_DRIVER=mysql|postgresql|sqlite
+# DATABASE_HOST=localhost
+# DATABASE_PORT=3306
+# DATABASE_NAME=dwz_db  
+# DATABASE_USERNAME=root
+# DATABASE_PASSWORD=password
+# DATABASE_FILEPATH=./config/sqlite.db
+
+# 数据库配置示例：
+# 
+# MySQL:
+#   driver: mysql
+#   host: localhost
+#   port: 3306
+#   username: root
+#   password: password
+#   dbname: dwz_db
+#
+# PostgreSQL:
+#   driver: postgresql
 #   host: localhost
 #   port: 5432
 #   username: postgres
 #   password: password
-#   database: dwz_db
-#   sslmode: disable
+#   dbname: dwz_db
+#
+# SQLite:
+#   driver: sqlite
+#   filepath: "./config/sqlite.db"
 
 # Redis 配置
 redis:
@@ -73,4 +96,12 @@ cors:
   allow_headers:
     - "Origin"
     - "Content-Type"
-    - "Authorization" 
+    - "Authorization"
+
+# 缓存配置
+cache:
+  driver: redis  # local 或 redis
+
+# ID生成器配置
+id_generator:
+  driver: redis  # local 或 redis 

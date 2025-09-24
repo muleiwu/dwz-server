@@ -1,0 +1,3 @@
+[submodule "admin-webui"]
+	path = admin-webui
+	url = ../dwz-admin-webui

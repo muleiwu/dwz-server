@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -14,7 +13,6 @@ import (
 	helper2 "cnb.cool/mliev/open/dwz-server/internal/helper"
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"cnb.cool/mliev/open/dwz-server/pkg/domain_validate"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -455,60 +453,31 @@ func (s *ShortLinkService) validateDomain(domain string) error {
 
 // cacheShortLink 缓存短网址到Redis
 func (s *ShortLinkService) cacheShortLink(shortLink *model.ShortLink) {
-	ctx := context.Background()
 	key := fmt.Sprintf("shortlink:%s:%s", shortLink.Domain, shortLink.GetShortCode())
 
-	// 序列化为JSON存储，设置1小时过期时间
-	marshal, err := json.Marshal(*shortLink)
-
+	err := s.helper.GetCache().Set(s.context, key, shortLink, 84600)
 	if err != nil {
-		s.helper.GetLogger().Error(fmt.Sprintf("缓存短网址失败: %s", err.Error()))
-		return
+		s.helper.GetLogger().Error(err.Error())
 	}
-
-	s.helper.GetRedis().Set(ctx, key, marshal, time.Hour)
 }
 
 // getShortLinkFromCache 从Redis缓存获取短网址
 func (s *ShortLinkService) getShortLinkFromCache(domain, shortCode string) (*model.ShortLink, error) {
-	ctx := context.Background()
 	key := fmt.Sprintf("shortlink:%s:%s", domain, shortCode)
-
-	result := s.helper.GetRedis().Get(ctx, key)
-	if result.Err() != nil {
-		if errors.Is(result.Err(), redis.Nil) {
-			return nil, nil
-		}
-		return nil, result.Err()
-	}
-
-	data, err := result.Result()
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(data) == 0 {
-		return nil, nil
-	}
-
 	shortLink := model.ShortLink{}
 
-	err = json.Unmarshal([]byte(data), &shortLink)
+	err := s.helper.GetCache().Get(s.context, key, shortLink)
 
-	if err != nil {
-		s.helper.GetLogger().Error(fmt.Sprintf("反序列化短网址失败: %s", err.Error()))
-		return nil, err
-	}
-
-	return &shortLink, nil
+	return nil, err
 }
 
 // removeCacheShortLink 从Redis缓存删除短网址
 func (s *ShortLinkService) removeCacheShortLink(domain, shortCode string) {
-	ctx := context.Background()
 	key := fmt.Sprintf("shortlink:%s:%s", domain, shortCode)
-	s.helper.GetRedis().Del(ctx, key)
+	err := s.helper.GetCache().Del(s.context, key)
+	if err != nil {
+		s.helper.GetLogger().Error(err.Error())
+	}
 }
 
 // recordClickStatistic 记录点击统计

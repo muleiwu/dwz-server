@@ -15,6 +15,7 @@ type Helper struct {
 	env       interfaces.EnvInterface
 	config    interfaces.ConfigInterface
 	logger    interfaces.LoggerInterface
+	cache     interfaces.ICache
 	redis     *redis.Client
 	database  *gorm.DB
 	installed interfaces.Installed
@@ -39,6 +40,10 @@ func (receiver *Helper) GetLogger() interfaces.LoggerInterface {
 	return receiver.logger
 }
 
+func (receiver *Helper) GetCache() interfaces.ICache {
+	return receiver.cache
+}
+
 func (receiver *Helper) GetRedis() *redis.Client {
 	return receiver.redis
 }
@@ -61,6 +66,10 @@ func (receiver *Helper) SetConfig(config interfaces.ConfigInterface) {
 
 func (receiver *Helper) SetLogger(logger interfaces.LoggerInterface) {
 	receiver.logger = logger
+}
+
+func (receiver *Helper) SetCache(cache interfaces.ICache) {
+	receiver.cache = cache
 }
 
 func (receiver *Helper) SetRedis(redis *redis.Client) {

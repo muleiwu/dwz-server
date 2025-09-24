@@ -27,11 +27,12 @@ func getPostgreSQLDSN(host string, port int, username string, password string, d
 		port,
 		dbName)
 }
-func getSqliteSQLDSN(host string, port int, username string, password string, dbName string) string {
-	return host
+
+func getSqliteDSN(filepath string) string {
+	return filepath
 }
 
-func NewDatabase(helper interfaces.HelperInterface, driver string, host string, port int, dbName string, username string, password string) (*gorm.DB, error) {
+func NewDatabase(helper interfaces.HelperInterface, driver string, host string, port int, dbName string, username string, password string, filepath string) (*gorm.DB, error) {
 	var dialector gorm.Dialector
 	if driver == "postgresql" {
 		dialector = postgres.New(postgres.Config{
@@ -43,7 +44,7 @@ func NewDatabase(helper interfaces.HelperInterface, driver string, host string, 
 	} else if driver == "mariadb" {
 		dialector = mysql.Open(getMySQLDSN(host, port, username, password, dbName))
 	} else if driver == "sqlite" {
-		dialector = sqlite.Open(getSqliteSQLDSN(host, port, username, password, dbName))
+		dialector = sqlite.Open(getSqliteDSN(filepath))
 	} else if driver == "memory" {
 		dialector = sqlite.Open(":memory:")
 	} else {
