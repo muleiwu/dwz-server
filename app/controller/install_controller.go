@@ -259,7 +259,9 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 }
 
 func (receiver InstallController) initializeCache(driver string) error {
-	cache := cacheAssembly.Cache{}
+	cache := &cacheAssembly.Cache{
+		Helper: helper2.GetHelper(),
+	}
 	getDriver, err := cache.GetDriver(driver)
 
 	if err != nil {
