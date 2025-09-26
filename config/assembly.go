@@ -22,9 +22,9 @@ func (receiver *Assembly) Get() []interfaces.AssemblyInterface {
 		&envAssembly.Env{Helper: receiver.Helper},                                       // 环境变量
 		&configAssembly.Config{Helper: receiver.Helper, DefaultConfigs: Config{}.Get()}, // 代码中的配置(可使用环境变量)
 		&loggerAssembly.Logger{Helper: receiver.Helper},                                 // 日志驱动
-		&cacheAssembly.Cache{Helper: receiver.Helper},                                   // 缓存驱动
 		&installedAssembly.Installed{Helper: receiver.Helper},                           // 安装检测
 		&databaseAssembly.Database{Helper: receiver.Helper},                             // 数据库配置
 		&redisAssembly.Redis{Helper: receiver.Helper},                                   // redis 配置
+		&cacheAssembly.Cache{Helper: receiver.Helper},                                   // 缓存驱动
 	}
 }
