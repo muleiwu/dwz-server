@@ -1,6 +1,7 @@
 package assembly
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,8 +16,17 @@ type Cache struct {
 
 func (receiver *Cache) Assembly() error {
 
+	if receiver.Helper.GetInstalled() == nil || !receiver.Helper.GetInstalled().IsInstalled() {
+		receiver.Helper.GetLogger().Warn("应用未安装，停止初始化缓存")
+		return nil
+	}
+
 	driver := receiver.Helper.GetConfig().GetString("cache.driver", "redis")
 	receiver.Helper.GetLogger().Debug("加载缓存驱动" + driver)
+
+	if driver == "redis" && receiver.Helper.GetRedis() == nil {
+		panic(errors.New("缓存服务驱动配置为：redis，但Redis服务不可用，拒绝启动"))
+	}
 
 	cacheDriver, err := receiver.GetDriver(driver)
 	if err != nil {

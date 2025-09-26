@@ -26,6 +26,10 @@ func (receiver *IDGenerator) Run() error {
 	driver := receiver.Helper.GetConfig().GetString("id_generator.driver", "redis")
 	receiver.Helper.GetLogger().Info("加载ID发号器驱动: " + driver)
 
+	if driver == "redis" && receiver.Helper.GetRedis() == nil {
+		panic(errors.New("ID发号器驱动配置为：redis，但Redis服务不可用，拒绝启动"))
+	}
+
 	idGenerator, err := receiver.InitializeDomainCounters(driver)
 
 	if err != nil {
