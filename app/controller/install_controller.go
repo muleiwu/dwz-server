@@ -197,7 +197,7 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 
 	// 只有在需要Redis时才测试Redis连接
 	needsRedis := req.CacheDriver == "redis" || req.IDGeneratorDriver == "redis"
-	if needsRedis && req.Redis != nil {
+	if needsRedis {
 		if err := receiver.testRedisConnection(*req.Redis, helper); err != nil {
 			receiver.Error(c, http.StatusBadRequest, "Redis连接失败: "+err.Error())
 			return
@@ -221,10 +221,16 @@ func (receiver InstallController) Install(c *gin.Context, helper interfaces.Help
 		return
 	}
 
+	// 数据库初始化成功后成功重新赋值
+	helper = helper2.GetHelper()
+
 	if err := receiver.initializeCache(req.CacheDriver); err != nil {
 		receiver.Error(c, http.StatusInternalServerError, "缓存初始化失败: "+err.Error())
 		return
 	}
+
+	// 数据库初始化成功后成功重新赋值
+	helper = helper2.GetHelper()
 
 	if err := receiver.initializeIDGenerator(helper, req.IDGeneratorDriver); err != nil {
 		receiver.Error(c, http.StatusInternalServerError, "发号器初始化失败: "+err.Error())
