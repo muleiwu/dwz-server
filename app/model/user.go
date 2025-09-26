@@ -13,7 +13,7 @@ type User struct {
 	Username  string         `gorm:"size:50;not null;uniqueIndex" json:"username"` // 用户名，唯一
 	Password  string         `gorm:"size:255;not null" json:"-"`                   // 密码，不返回给前端
 	RealName  string         `gorm:"size:100" json:"real_name"`                    // 真实姓名
-	Email     string         `gorm:"size:255;uniqueIndex" json:"email"`            // 邮箱，唯一
+	Email     string         `gorm:"size:100;uniqueIndex" json:"email"`            // 邮箱，唯一
 	Phone     string         `gorm:"size:20" json:"phone"`                         // 手机号
 	Status    int8           `gorm:"default:1" json:"status"`                      // 状态：1-正常，0-禁用
 	LastLogin *time.Time     `json:"last_login"`                                   // 最后登录时间

@@ -13,7 +13,7 @@ type UserToken struct {
 	ID         uint64         `gorm:"primaryKey" json:"id"`
 	UserID     uint64         `gorm:"not null;index" json:"user_id"`              // 关联用户ID
 	TokenName  string         `gorm:"size:100;not null" json:"token_name"`        // Token名称
-	Token      string         `gorm:"size:255;not null;uniqueIndex" json:"token"` // Token值，唯一
+	Token      string         `gorm:"size:190;not null;uniqueIndex" json:"token"` // Token值，唯一
 	LastUsedAt *time.Time     `json:"last_used_at"`                               // 最后使用时间
 	ExpireAt   *time.Time     `json:"expire_at"`                                  // 过期时间，null表示永不过期
 	Status     int8           `gorm:"default:1" json:"status"`                    // 状态：1-正常，0-禁用
