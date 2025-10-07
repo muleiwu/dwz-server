@@ -47,7 +47,8 @@
   name: build-loong64
   env:
     IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-linux-loong64
-  image: node:22-slim
+  docker:
+    image: node:22-slim
   runner:
     tags: cnb:arch:amd64:containerd-snapshotter
   services:
