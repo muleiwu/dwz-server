@@ -127,6 +127,7 @@ $:
     - *git-clone
     - *build-amd64
     - *build-arm
+    - *build-loong64
     - services:
         - docker
       name: "push"
@@ -157,6 +158,7 @@ $:
             platforms:
               - linux/amd64
               - linux/arm64
+              - linux/loong64
         - name: remove tag
           type: artifact:remove-tag
           options:
@@ -164,4 +166,5 @@ $:
             tags:
               - ${CNB_COMMIT}-linux-amd64
               - ${CNB_COMMIT}-linux-arm64
+              - ${CNB_COMMIT}-linux-loong64
             type: docker
