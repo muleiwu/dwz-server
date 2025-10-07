@@ -1,5 +1,5 @@
 # 构建阶段
-FROM ghcr.io/loong64/golang:1.25-alpine AS builder
+FROM ghcr.io/loong64/golang:1.25-alpine AS builder-go
 
 # 设置工作目录
 WORKDIR /app
@@ -24,6 +24,8 @@ RUN go mod download
 
 # 复制源代码
 COPY . .
+# 复制构建产物到 nginx 的默认静态文件目录
+COPY ./admin-webui/apps/web-antd/dist /app/static/admin
 
 # 构建应用
 RUN go build -ldflags="-s -w" -o dwz main.go
@@ -42,7 +44,7 @@ RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
 WORKDIR /app
 
 # 从构建阶段复制二进制文件
-COPY --from=builder /app/dwz .
+COPY --from=builder-go /app/dwz .
 
 # 创建日志目录
 RUN mkdir -p logs && \

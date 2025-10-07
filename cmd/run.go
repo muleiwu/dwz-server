@@ -14,8 +14,8 @@ import (
 )
 
 // Start 启动应用程序
-func Start(staticFs map[string]embed.FS) {
-	initializeServices(staticFs)
+func Start(staticFs map[string]embed.FS, version, commit, date string) {
+	initializeServices(staticFs, version, commit, date)
 	// 添加阻塞以保持主程序运行
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
@@ -23,7 +23,7 @@ func Start(staticFs map[string]embed.FS) {
 }
 
 // initializeServices 初始化所有服务
-func initializeServices(staticFs map[string]embed.FS) {
+func initializeServices(staticFs map[string]embed.FS, version, commit, date string) {
 
 	helper := helper2.GetHelper()
 
@@ -47,6 +47,10 @@ func initializeServices(staticFs map[string]embed.FS) {
 	}
 
 	helper.GetConfig().Set("static.fs", staticFs)
+
+	helper.GetLogger().Info(fmt.Sprintf("【构建版本】：%s", version))
+	helper.GetLogger().Info(fmt.Sprintf("【构建时间】：%s", date))
+	helper.GetLogger().Info(fmt.Sprintf("【构建哈希】：%s", commit))
 
 	server := config.Server{
 		Helper: helper,
