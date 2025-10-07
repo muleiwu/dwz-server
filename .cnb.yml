@@ -77,8 +77,8 @@ develop:
           options:
             name: ${CNB_REPO_NAME}
             tags:
-              - linux-amd64
-              - linux-arm64
+              - ${CNB_COMMIT}-linux-amd64
+              - ${CNB_COMMIT}-linux-arm64
             type: docker
 $:
   tag_push:
@@ -119,6 +119,6 @@ $:
           options:
             name: ${CNB_REPO_NAME}
             tags:
-              - linux-amd64
-              - linux-arm64
+              - ${CNB_COMMIT}-linux-amd64
+              - ${CNB_COMMIT}-linux-arm64
             type: docker
