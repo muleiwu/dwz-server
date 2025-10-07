@@ -11,7 +11,7 @@
   services:
     - docker
   env:
-    IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:linux-amd64
+    IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-linux-amd64
   stages:
     - name: docker login
       script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
@@ -31,7 +31,7 @@
   services:
     - docker
   env:
-    IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:linux-arm64
+    IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-linux-arm64
   stages:
     - name: docker login
       script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
@@ -54,7 +54,7 @@ develop:
         - docker
       name: "push"
       env:
-        IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:develop
+        IMAGE_NAME: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}
       stages:
         - name: await the amd64
           type: cnb:await
@@ -67,8 +67,8 @@ develop:
         - name: manifest
           image: cnbcool/manifest
           settings:
-            target: ${IMAGE_TAG}
-            template: ${IMAGE_TAG}-OS-ARCH
+            target: ${IMAGE_NAME}:${CNB_BRANCH}
+            template: ${IMAGE_NAME}:${CNB_COMMIT}-OS-ARCH
             platforms:
               - linux/amd64
               - linux/arm64
@@ -87,6 +87,8 @@ $:
     - services:
         - docker
       name: "push"
+      env:
+        IMAGE_NAME: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}
       stages:
         - name: await the amd64
           type: cnb:await
@@ -99,16 +101,16 @@ $:
         - name: manifest latest
           image: cnbcool/manifest
           settings:
-            target: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
-            template: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:OS-ARCH
+            target: ${IMAGE_NAME}:latest
+            template: ${IMAGE_NAME}:${CNB_COMMIT}-OS-ARCH
             platforms:
               - linux/amd64
               - linux/arm64
         - name: manifest version
           image: cnbcool/manifest
           settings:
-            target: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}
-            template: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:OS-ARCH
+            target: ${IMAGE_NAME}:${CNB_BRANCH}
+            template: ${IMAGE_NAME}:${CNB_COMMIT}-OS-ARCH
             platforms:
               - linux/amd64
               - linux/arm64
