@@ -1,4 +1,11 @@
+.git-clone: &git-clone
+  name: git-clone
+  git:
+    enable: true
+    submodules: true
+
 .build-amd64: &build-amd64
+  name: build-amd64
   runner:
     tags: cnb:arch:amd64
   services:
@@ -18,6 +25,7 @@
         key: build-amd64
 
 .build-arm: &build-arm
+  name: build-arm
   runner:
     tags: cnb:arch:arm64:v8
   services:
@@ -38,14 +46,13 @@
 
 develop:
   push:
-    - git:
-        enable: true
-        submodules: true
+    - *git-clone
     - *build-amd64
     - *build-arm
 
     - services:
         - docker
+      name: "push"
       env:
         IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:develop
       stages:
@@ -75,13 +82,11 @@ develop:
             type: docker
 $:
   tag_push:
-    - git:
-        enable: true
-        submodules: true
-    - *build-amd64
+    - *git-clone
     - *build-arm
     - services:
         - docker
+      name: "push"
       stages:
         - name: await the amd64
           type: cnb:await
