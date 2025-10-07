@@ -19,7 +19,13 @@ builds:
         - darwin
       goarch:
         - amd64
+        - arm
         - arm64
+        - loong64
+      goarm:
+        - 5
+        - 6
+        - 7
       # 静态链接编译标志（适用于Unix系统）
       ldflags:
         # 静态链接所有库，减小二进制大小，移除调试信息
