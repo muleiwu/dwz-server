@@ -43,7 +43,56 @@
       type: cnb:resolve
       options:
         key: build-arm64
-
+.build-loong64: &build-loong64
+  - docker:
+      build:
+        dockerfile: .cnb/Dockerfile
+      services:
+        - docker
+      runner:
+        tags: cnb:arch:amd64:containerd-snapshotter
+      env:
+        IMAGE_NAME: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}
+      stages:
+        - name: version check
+          script: |
+            remote_latest_version=$(curl -s "https://cz.alpinelinux.org/alpine/latest-stable/releases/loongarch64/latest-releases.yaml" | yq -r '.[0].version')
+            cnb_version=$(curl -s https://api.cnb.cool/${CNB_REPO_SLUG_LOWERCASE}/-/releases/latest -H 'accept: application/json' -H "Authorization: Bearer ${CNB_TOKEN}" | jq -r '.tag_name')
+            echo "官方最新版本镜像为：${remote_latest_version}"
+            if [ -z "${remote_latest_version}" ] || [ "${remote_latest_version}" = "null" ]; then
+              echo "获取版本失败，流水线异常结束"
+              exit 1
+            fi
+            echo "##[set-output REMOTE_LATEST=${remote_latest_version}]"
+            echo "##[set-output CNB_VERSION=${cnb_version}]"
+          exports:
+            REMOTE_LATEST: REMOTE_LATEST
+            CNB_VERSION: CNB_VERSION
+        - name: per build
+          if: |
+            [ "$REMOTE_LATEST" != "$CNB_VERSION" ]
+          script: |
+            wget "https://cz.alpinelinux.org/alpine/latest-stable/releases/loongarch64/alpine-minirootfs-${REMOTE_LATEST}-loongarch64.tar.gz"
+            sed -i "s/VERSION/${REMOTE_LATEST}/g" Dockerfile
+            cat Dockerfile
+        - name: docker login
+          if: |
+            [ "$REMOTE_LATEST" != "$CNB_VERSION" ]
+          script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
+        - name: docker build and push
+          if: |
+            [ "$REMOTE_LATEST" != "$CNB_VERSION" ]
+          script: docker buildx build  -t ${IMAGE_NAME}:${REMOTE_LATEST} --platform linux/loong64 --push .
+        - name: release version
+          if: |
+            [ "$REMOTE_LATEST" != "$CNB_VERSION" ]
+          type: git:release
+          options:
+            latest: true
+            tag: ${REMOTE_LATEST}
+            title: ${REMOTE_LATEST}
+            description: 请使用 docker pull docker.cnb.cool/hex/loong/images/alpine:${REMOTE_LATEST} 获取该镜像
+      allowFailure: false
 develop:
   push:
     - *git-clone
@@ -80,6 +129,7 @@ develop:
               - ${CNB_COMMIT}-linux-amd64
               - ${CNB_COMMIT}-linux-arm64
             type: docker
+    - *build-loong64
 $:
   tag_push:
     - *git-clone
