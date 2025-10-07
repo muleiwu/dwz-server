@@ -1,17 +1,3 @@
-FROM ghcr.io/loong64/node:22-trixie-slim AS builder-web
-
-ENV TZ=Asia/Shanghai
-
-RUN npm i -g corepack
-
-WORKDIR /app
-
-# copy package.json and pnpm-lock.yaml to workspace
-COPY ./admin-webui /app
-
-# 安装 pnpm
-RUN pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
-
 # 构建阶段
 FROM ghcr.io/loong64/golang:1.25-alpine AS builder-go
 
@@ -39,7 +25,7 @@ RUN go mod download
 # 复制源代码
 COPY . .
 # 复制构建产物到 nginx 的默认静态文件目录
-COPY --from=builder-web /app/apps/web-antd/dist /app/static/admin
+COPY ./admin-webui/apps/web-antd/dist /app/static/admin
 
 # 构建应用
 RUN go build -ldflags="-s -w" -o dwz main.go

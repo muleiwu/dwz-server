@@ -47,12 +47,17 @@
   name: build-loong64
   env:
     IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-linux-loong64
+  image: node:22-slim
   runner:
     tags: cnb:arch:amd64:containerd-snapshotter
   services:
     # 流水线中启用 docker 服务
     - docker
   stages:
+    - name: build-web
+      script:
+        - cd ./admin-webui
+        - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
     # 云原生构建自动构建Docker镜像并将它发布到制品库
     - name: docker login
       script:
