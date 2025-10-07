@@ -55,6 +55,10 @@
     # 流水线中启用 docker 服务
     - docker
   stages:
+    - name: setting-env
+      script:
+        - apt-get update
+        - apt-get install --reinstall ca-certificates
     - name: build-web
       script:
         - cd ./admin-webui
