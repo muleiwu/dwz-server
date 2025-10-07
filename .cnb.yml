@@ -57,7 +57,7 @@
     - name: build-web
       script:
         - cd ./admin-webui
-        - pm config set registry http://mirrors.tencent.com/npm/ && npm i -g corepack && corepack install pnpm
+        - npm config set registry http://mirrors.tencent.com/npm/ && npm i -g corepack
         - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
     # 云原生构建自动构建Docker镜像并将它发布到制品库
     - name: docker login
