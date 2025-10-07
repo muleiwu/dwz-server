@@ -83,6 +83,7 @@ develop:
 $:
   tag_push:
     - *git-clone
+    - *build-amd64
     - *build-arm
     - services:
         - docker
