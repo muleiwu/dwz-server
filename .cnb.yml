@@ -45,6 +45,8 @@
         key: build-arm64
 .build-loong64: &build-loong64
   name: build-loong64
+  env:
+    IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-linux-loong64
   runner:
     tags: cnb:arch:amd64:containerd-snapshotter
   services:
@@ -59,8 +61,7 @@
       script: |
         docker buildx build --platform linux/loong64 \
           -f Dockerfile.loong64 \
-          -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_BRANCH}-loong64 \
-          -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest-loong64 \
+          -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-linux-loong64 \
           --push .
     - name: resolve
       type: cnb:resolve
@@ -99,6 +100,7 @@ develop:
             platforms:
               - linux/amd64
               - linux/arm64
+              - linux/loong64
         - name: remove tag
           type: artifact:remove-tag
           options:
@@ -106,6 +108,7 @@ develop:
             tags:
               - ${CNB_COMMIT}-linux-amd64
               - ${CNB_COMMIT}-linux-arm64
+              - ${CNB_COMMIT}-linux-loong64
             type: docker
 
 $:
