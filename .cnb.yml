@@ -79,10 +79,10 @@
         key: build-loong64
 develop:
   push:
-    - *git-clone
-    - *build-loong64
-    - *build-arm
-    - *build-amd64
+    - <<: *git-clone
+    - <<: *build-loong64
+    - <<: *build-arm
+    - <<: *build-amd64
 
     - services:
         - docker
@@ -123,10 +123,10 @@ develop:
 
 $:
   tag_push:
-    - *git-clone
-    - *build-amd64
-    - *build-arm
-    - *build-loong64
+    - <<: *git-clone
+    - <<: *build-amd64
+    - <<: *build-arm
+    - <<: *build-loong64
     - services:
         - docker
       name: "push"
