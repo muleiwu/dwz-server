@@ -11,21 +11,25 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-type CacheLocal struct {
+type CacheMemory struct {
 	helper interfaces.HelperInterface
 	cache  *cache.Cache
 }
 
-func NewCacheLocal(helper interfaces.HelperInterface, c *cache.Cache) *CacheLocal {
-	return &CacheLocal{helper: helper, cache: c}
+func NewCacheLocal(helper interfaces.HelperInterface, c *cache.Cache) *CacheMemory {
+	return NewCacheMemory(helper, c)
 }
 
-func (c *CacheLocal) Exists(ctx context.Context, key string) bool {
+func NewCacheMemory(helper interfaces.HelperInterface, c *cache.Cache) *CacheMemory {
+	return &CacheMemory{helper: helper, cache: c}
+}
+
+func (c *CacheMemory) Exists(ctx context.Context, key string) bool {
 	_, b := c.cache.Get(key)
 	return b
 }
 
-func (c *CacheLocal) Get(ctx context.Context, key string, obj any) error {
+func (c *CacheMemory) Get(ctx context.Context, key string, obj any) error {
 	val, b := c.cache.Get(key)
 	if !b {
 		return errors.New("key not exists")
@@ -33,7 +37,7 @@ func (c *CacheLocal) Get(ctx context.Context, key string, obj any) error {
 	return c.assignValue(obj, val)
 }
 
-func (c *CacheLocal) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
+func (c *CacheMemory) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	if ttl <= 0 {
 		ttl = -1
 	}
@@ -41,7 +45,7 @@ func (c *CacheLocal) Set(ctx context.Context, key string, value any, ttl time.Du
 	return nil
 }
 
-func (c *CacheLocal) GetSet(ctx context.Context, key string, ttl time.Duration, obj any, fun interfaces.CacheFun) error {
+func (c *CacheMemory) GetSet(ctx context.Context, key string, ttl time.Duration, obj any, fun interfaces.CacheFun) error {
 
 	err := fun(key, obj)
 	if err != nil {
@@ -51,12 +55,12 @@ func (c *CacheLocal) GetSet(ctx context.Context, key string, ttl time.Duration, 
 	return c.Set(ctx, key, obj, ttl)
 }
 
-func (c *CacheLocal) Del(ctx context.Context, key string) error {
+func (c *CacheMemory) Del(ctx context.Context, key string) error {
 	c.cache.Delete(key)
 	return nil
 }
 
-func (c *CacheLocal) ExpiresAt(ctx context.Context, key string, expiresAt time.Time) error {
+func (c *CacheMemory) ExpiresAt(ctx context.Context, key string, expiresAt time.Time) error {
 	var obj any
 	err := c.Get(ctx, key, &obj)
 	if err != nil {
@@ -70,7 +74,7 @@ func (c *CacheLocal) ExpiresAt(ctx context.Context, key string, expiresAt time.T
 	return nil
 }
 
-func (c *CacheLocal) ExpiresIn(ctx context.Context, key string, ttl time.Duration) error {
+func (c *CacheMemory) ExpiresIn(ctx context.Context, key string, ttl time.Duration) error {
 	var obj any
 	err := c.Get(ctx, key, &obj)
 	if err != nil {
@@ -83,7 +87,7 @@ func (c *CacheLocal) ExpiresIn(ctx context.Context, key string, ttl time.Duratio
 }
 
 // assignValue 使用反射将值赋给目标对象
-func (c *CacheLocal) assignValue(obj any, value interface{}) error {
+func (c *CacheMemory) assignValue(obj any, value interface{}) error {
 	if obj == nil {
 		return fmt.Errorf("obj cannot be nil")
 	}

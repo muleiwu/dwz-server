@@ -41,9 +41,11 @@ func (receiver *Cache) GetDriver(driver string) (interfaces.ICache, error) {
 
 	if driver == "redis" {
 		return impl.NewCacheRedis(receiver.Helper), nil
-	} else {
+	} else if driver == "memory" || driver == "local" {
 		// 设置超时时间和清理时间
 		c := cache.New(5*time.Minute, 10*time.Minute)
-		return impl.NewCacheLocal(receiver.Helper, c), nil
+		return impl.NewCacheMemory(receiver.Helper, c), nil
+	} else {
+		return impl.NewCacheNone(receiver.Helper), nil
 	}
 }
