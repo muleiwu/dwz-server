@@ -63,7 +63,7 @@ type InstallRequest struct {
 	Database          DatabaseConfig `json:"database" binding:"required"`
 	Redis             *RedisConfig   `json:"redis,omitempty"`
 	Admin             AdminConfig    `json:"admin" binding:"required"`
-	CacheDriver       string         `json:"cacheDriver" binding:"required,oneof=local redis"`
+	CacheDriver       string         `json:"cacheDriver" binding:"required,oneof=local redis none"`
 	IDGeneratorDriver string         `json:"idGeneratorDriver" binding:"required,oneof=local redis"`
 }
 
@@ -71,7 +71,7 @@ type InstallRequest struct {
 type TestConnectionRequest struct {
 	Database          DatabaseConfig `json:"database" binding:"required"`
 	Redis             *RedisConfig   `json:"redis,omitempty"`
-	CacheDriver       string         `json:"cacheDriver" binding:"required,oneof=local redis"`
+	CacheDriver       string         `json:"cacheDriver" binding:"required,oneof=local redis none"`
 	IDGeneratorDriver string         `json:"idGeneratorDriver" binding:"required,oneof=local redis"`
 }
 
