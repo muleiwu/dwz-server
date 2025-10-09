@@ -98,7 +98,7 @@
     - name: create release
       type: git:release
       options:
-        title: release
+        title: ${CNB_BRANCH}
         description: ${LATEST_CHANGE_LOG}
     - name: go mod
       script: go mod vendor
