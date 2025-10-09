@@ -138,35 +138,6 @@
 - **Model层**: 数据模型定义
 - **Middleware层**: 认证、日志、CORS等中间件
 
-## 🚀 系统预览
-
-![Snipaste_2025-07-16_01-30-57.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-30-57.png)
-
-![Snipaste_2025-07-16_01-32-13.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-32-13.png)
-
-![Snipaste_2025-07-16_01-32-59.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-32-59.png)
-
-![Snipaste_2025-07-16_01-33-14.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-33-14.png)
-
-![Snipaste_2025-07-16_01-33-45.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-33-45.png)
-
-![Snipaste_2025-07-16_01-33-56.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-33-56.png)
-
-![Snipaste_2025-07-16_01-34-36.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-34-36.png)
-
-![Snipaste_2025-07-16_01-34-59.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-34-59.png)
-
-![Snipaste_2025-07-16_01-35-19.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-35-19.png)
-
-![Snipaste_2025-07-16_01-35-56.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-35-56.png)
-
-![Snipaste_2025-07-16_01-36-07.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-07.png)
-
-![Snipaste_2025-07-16_01-36-18.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-18.png)
-
-![Snipaste_2025-07-16_01-36-35.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-35.png)
-
-![Snipaste_2025-07-16_01-36-59.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-59.png)
 
 ## 🔧 快速安装
 
@@ -270,6 +241,36 @@ docker-compose logs -f
 打开 `http://{您的IP}:8080` 进行继续配置（请注意8080端口放开）
 
 > **提示**：独立模式无需配置数据库和Redis，系统会自动使用SQLite和内存缓存。
+
+## 🚀 系统预览
+
+![Snipaste_2025-07-16_01-30-57.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-30-57.png)
+
+![Snipaste_2025-07-16_01-32-13.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-32-13.png)
+
+![Snipaste_2025-07-16_01-32-59.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-32-59.png)
+
+![Snipaste_2025-07-16_01-33-14.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-33-14.png)
+
+![Snipaste_2025-07-16_01-33-45.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-33-45.png)
+
+![Snipaste_2025-07-16_01-33-56.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-33-56.png)
+
+![Snipaste_2025-07-16_01-34-36.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-34-36.png)
+
+![Snipaste_2025-07-16_01-34-59.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-34-59.png)
+
+![Snipaste_2025-07-16_01-35-19.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-35-19.png)
+
+![Snipaste_2025-07-16_01-35-56.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-35-56.png)
+
+![Snipaste_2025-07-16_01-36-07.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-07.png)
+
+![Snipaste_2025-07-16_01-36-18.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-18.png)
+
+![Snipaste_2025-07-16_01-36-35.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-35.png)
+
+![Snipaste_2025-07-16_01-36-59.png](https://static.1ms.run/dwz/image/Snipaste_2025-07-16_01-36-59.png)
 
 
 ## 🚀 二次开发
