@@ -121,6 +121,8 @@
         FILES: FILES
     - name: 输出附件
       script: echo $FILES
+    - name: resolve
+      type: cnb:resolve
       options:
         key: build-bin
 develop:
