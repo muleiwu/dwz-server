@@ -100,8 +100,8 @@ cors:
 
 # 缓存配置
 cache:
-  driver: redis  # local 或 redis
+  driver: redis  # memory、redis、none
 
 # ID生成器配置
 id_generator:
-  driver: redis  # local 或 redis 
+  driver: redis  # memory、redis、none

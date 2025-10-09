@@ -475,7 +475,8 @@
                         <div class="form-group">
                             <label class="form-label" for="cacheDriver">缓存驱动</label>
                             <select class="form-input" id="cacheDriver" name="cacheDriver" required onchange="checkRedisRequired()">
-                                <option value="local">本地缓存</option>
+                                <option value="none" >关闭缓存</option>
+                                <option value="memory">内存缓存</option>
                                 <option value="redis" selected>Redis</option>
                             </select>
                             <small class="form-help">选择缓存存储方式</small>
@@ -662,7 +663,7 @@
             const redisNotice = document.getElementById('redisNotice');
             const redisInputs = redisConfigFields.querySelectorAll('input');
             
-            if (cacheDriver === 'local' && idGeneratorDriver === 'local') {
+            if (cacheDriver !== 'redis' && idGeneratorDriver !== 'redis') {
                 // 都使用本地驱动，不需要Redis
                 redisConfigFields.style.display = 'none';
                 redisNotice.style.display = 'block';
@@ -930,7 +931,7 @@
             // 缓存与发号器配置
             const cacheDriver = document.getElementById('cacheDriver').value;
             const idGeneratorDriver = document.getElementById('idGeneratorDriver').value;
-            document.getElementById('summaryCacheDriver').textContent = cacheDriver === 'local' ? '本地缓存' : 'Redis';
+            document.getElementById('summaryCacheDriver').textContent = cacheDriver === 'memory' ? '本地缓存' : cacheDriver === 'redis'? 'Redis': '关闭缓存';
             document.getElementById('summaryIdGeneratorDriver').textContent = idGeneratorDriver === 'local' ? '本地发号器' : 'Redis';
             
             // Redis配置 - 只有需要时才显示
