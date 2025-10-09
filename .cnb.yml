@@ -90,7 +90,7 @@
       script:
         - cd ./admin-webui
         - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
-        - cd .. && mkdir -p ./static/admin && cp -a ./admin-webui/apps/web-antd/dist ./static/admin && cp ./admin-webui/apps/web-antd/dist ./static/admin
+        - cd .. && mkdir -p ./static/admin && cp -a ./admin-webui/apps/web-antd/dist ./static/admin
     - name: changelog
       image: cnbcool/changelog
       exports:
