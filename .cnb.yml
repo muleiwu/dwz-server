@@ -108,7 +108,15 @@
       image: cnbcool/attachments:latest
       settings:
         attachments:
-          - helloworld
+          - ./dist/dwz-server_Darwin_arm64.tar.gz
+          - ./dist/dwz-server_Darwin_x86_64.tar.gz
+          - ./dist/dwz-server_Linux_arm64.tar.gz
+          - ./dist/dwz-server_Linux_armv5.tar.gz
+          - ./dist/dwz-server_Linux_armv6.tar.gz
+          - ./dist/dwz-server_Linux_armv7.tar.gz
+          - ./dist/dwz-server_Linux_loong64.tar.gz
+          - ./dist/dwz-server_Linux_x86_64.tar.gz
+          - ./dist/checksums.txt
       exports:
         FILES: FILES
     - name: 输出附件
