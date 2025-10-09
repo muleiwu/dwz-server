@@ -77,6 +77,44 @@
       type: cnb:resolve
       options:
         key: build-loong64
+.build-bin: &build-bin
+  name: build-bin
+  runner:
+    tags: cnb:arch:amd64
+  services:
+    - docker
+  docker:
+    image: docker.cnb.cool/mliev/open/node-go:node22-pnpm-go1.25.2
+  stages:
+    - name: build-web
+      script:
+        - cd ./admin-webui
+        - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
+        - cd .. && mkdir -p ./static/admin && cp -a ./admin-webui/apps/web-antd/dist ./static/admin && cp ./admin-webui/apps/web-antd/dist ./static/admin
+    - name: changelog
+      image: cnbcool/changelog
+      exports:
+        latestChangeLog: LATEST_CHANGE_LOG
+    - name: create release
+      type: git:release
+      options:
+        title: release
+        description: ${LATEST_CHANGE_LOG}
+    - name: go mod
+      script: go mod vendor
+    - name: go build
+      script: goreleaser release --snapshot --clean
+    - name: release 上传附件
+      image: cnbcool/attachments:latest
+      settings:
+        attachments:
+          - helloworld
+      exports:
+        FILES: FILES
+    - name: 输出附件
+      script: echo $FILES
+      options:
+        key: build-bin
 develop:
   push:
     - <<: *git-clone
@@ -127,6 +165,7 @@ $:
     - <<: *build-amd64
     - <<: *build-arm
     - <<: *build-loong64
+    - <<: *build-bin
     - services:
         - docker
       name: "push"
@@ -145,6 +184,10 @@ $:
           type: cnb:await
           options:
             key: build-loong64
+        - name: await the build-bin
+          type: cnb:await
+          options:
+            key: build-bin
         - name: manifest latest
           image: cnbcool/manifest
           settings:
