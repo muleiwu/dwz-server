@@ -139,8 +139,8 @@ func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[strin
 			}
 
 			// 短网址跳转路由
-			regexRouter.GET(`^/(?P<code>[a-zA-Z0-9]+)$`, deps.WrapHandler(controller.ShortLinkController{}.RedirectShortLink))        // 短网址跳转
-			regexRouter.GET(`^/preview/(?P<code>[a-zA-Z0-9]+)$`, deps.WrapHandler(controller.ShortLinkController{}.PreviewShortLink)) // 预览短网址
+			regexRouter.GET(`^/(?P<code>[a-zA-Z0-9\-_]+)$`, deps.WrapHandler(controller.ShortLinkController{}.RedirectShortLink))        // 短网址跳转
+			regexRouter.GET(`^/preview/(?P<code>[a-zA-Z0-9\-_]+)$`, deps.WrapHandler(controller.ShortLinkController{}.PreviewShortLink)) // 预览短网址
 
 		},
 	}
