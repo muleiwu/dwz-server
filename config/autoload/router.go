@@ -29,7 +29,7 @@ func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[strin
 			router.GET("/health", deps.WrapHandler(controller.HealthController{}.GetHealth))
 			router.GET("/health/simple", deps.WrapHandler(controller.HealthController{}.GetHealthSimple))
 
-			router.GET("/install.cgi", deps.WrapHandler(controller.InstallController{}.GetInstall))
+			router.GET("/install/index", deps.WrapHandler(controller.InstallController{}.GetInstall))
 
 			// 安装接口路由（不需要认证）
 			installRoutes := router.Group("/api/v1/install")
@@ -139,8 +139,8 @@ func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[strin
 			}
 
 			// 短网址跳转路由
-			regexRouter.GET(`^/(?P<code>[a-zA-Z0-9\-_]+)$`, deps.WrapHandler(controller.ShortLinkController{}.RedirectShortLink))        // 短网址跳转
-			regexRouter.GET(`^/preview/(?P<code>[a-zA-Z0-9\-_]+)$`, deps.WrapHandler(controller.ShortLinkController{}.PreviewShortLink)) // 预览短网址
+			regexRouter.GET(`^/(?P<code>[a-zA-Z0-9\-_.]+)$`, deps.WrapHandler(controller.ShortLinkController{}.RedirectShortLink))        // 短网址跳转
+			regexRouter.GET(`^/preview/(?P<code>[a-zA-Z0-9\-_.]+)$`, deps.WrapHandler(controller.ShortLinkController{}.PreviewShortLink)) // 预览短网址
 
 		},
 	}
