@@ -21,7 +21,7 @@ func InstallMiddleware(helper interfaces.HelperInterface) gin.HandlerFunc {
 
 		// 如果系统未安装，只允许访问安装相关的页面
 		allowedPaths := []string{
-			"/install.cgi",
+			"/install/index",
 			"/api/v1/install",
 			"/favicon.ico",
 			"/health",
@@ -48,7 +48,7 @@ func InstallMiddleware(helper interfaces.HelperInterface) gin.HandlerFunc {
 
 		// 其他路径重定向到安装页面
 		if c.Request.Method == "GET" {
-			c.Redirect(http.StatusFound, "/install.cgi")
+			c.Redirect(http.StatusFound, "/install/index")
 		} else {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"code":    503,
