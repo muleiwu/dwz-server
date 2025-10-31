@@ -50,7 +50,7 @@ func (receiver *HttpServer) InitLoggerFields() []interfaces.LoggerFieldInterface
 }
 
 // GinZapLogger 返回一个Gin中间件，使用zap记录HTTP请求
-func (receiver *HttpServer) GinZapLogger() gin.HandlerFunc {
+func (receiver *HttpServer) ginLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
@@ -61,9 +61,11 @@ func (receiver *HttpServer) GinZapLogger() gin.HandlerFunc {
 		// 请求处理完成后记录日志
 		cost := time.Since(start)
 		statusCode := c.Writer.Status()
+		traceId := c.GetString("traceId")
 
 		// 通用的日志字段
 		fields := []interfaces.LoggerFieldInterface{
+			NewLoggerField("trace-id", traceId),
 			NewLoggerField("method", c.Request.Method),
 			NewLoggerField("path", path),
 			NewLoggerField("query", query),
@@ -102,9 +104,9 @@ func (receiver *HttpServer) RunHttp() {
 	// 配置Gin引擎
 	// 配置Gin引擎并替换默认logger
 	engine := gin.New()
-	engine.Use(receiver.traceIdMiddleware())
 	engine.Use(gin.Recovery())
-	engine.Use(receiver.GinZapLogger())
+	engine.Use(receiver.traceIdMiddleware())
+	engine.Use(receiver.ginLogger())
 
 	// 加载HTML模板
 	if err := receiver.loadTemplates(engine); err != nil {
@@ -210,9 +212,12 @@ func (receiver *HttpServer) loadWebStatic(engine *gin.Engine) {
 
 func (receiver *HttpServer) traceIdMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		uuidV4 := uuid.New().String()
-		c.Set("traceId", uuidV4)
-		c.Writer.Header().Set("trace-id", uuidV4)
+		newUUID, err := uuid.NewV7()
+		if err != nil {
+			newUUID = uuid.New()
+		}
+		c.Set("traceId", newUUID.String())
+		c.Writer.Header().Set("trace-id", newUUID.String())
 		c.Next()
 	}
 }
