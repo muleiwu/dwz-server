@@ -25,7 +25,7 @@
         - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
         - cd .. && mkdir -p ./static/admin && cp -a ./admin-webui/apps/web-antd/dist ./static/admin
     - name: go build
-      script: ./.build/build-multi-platform.sh
+      script: chmod +x ./.build/build-multi-platform.sh && ./.build/build-multi-platform.sh
     - name: docker login
       script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
     - name: docker build and push
