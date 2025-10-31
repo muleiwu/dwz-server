@@ -8,8 +8,8 @@
   name: build-multi-platform
   runner:
     tags: cnb:arch:amd64
-    docker:
-      image: docker.cnb.cool/mliev/open/node-go:node22-pnpm-go1.25.2
+  docker:
+    image: docker.cnb.cool/mliev/open/node-go:node22-pnpm-go1.25.2
   services:
     - name: docker
       options:
