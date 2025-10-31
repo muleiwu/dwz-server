@@ -128,7 +128,6 @@
 develop:
   push:
     - <<: *git-clone
-    - <<: *build-loong64
     - <<: *build-arm
     - <<: *build-amd64
 
@@ -146,10 +145,6 @@ develop:
           type: cnb:await
           options:
             key: build-arm64
-        - name: await the loong64
-          type: cnb:await
-          options:
-            key: build-loong64
         - name: manifest
           image: cnbcool/manifest
           settings:
@@ -158,7 +153,6 @@ develop:
             platforms:
               - linux/amd64
               - linux/arm64
-              - linux/loong64
         - name: remove tag
           type: artifact:remove-tag
           options:
@@ -166,7 +160,6 @@ develop:
             tags:
               - ${CNB_COMMIT}-linux-amd64
               - ${CNB_COMMIT}-linux-arm64
-              - ${CNB_COMMIT}-linux-loong64
             type: docker
 
 $:
@@ -174,7 +167,6 @@ $:
     - <<: *git-clone
     - <<: *build-amd64
     - <<: *build-arm
-    - <<: *build-loong64
     - <<: *build-bin
     - services:
         - docker
@@ -190,10 +182,6 @@ $:
           type: cnb:await
           options:
             key: build-arm64
-        - name: await the loong64
-          type: cnb:await
-          options:
-            key: build-loong64
         - name: await the build-bin
           type: cnb:await
           options:
@@ -206,7 +194,6 @@ $:
             platforms:
               - linux/amd64
               - linux/arm64
-              - linux/loong64
         - name: manifest version
           image: cnbcool/manifest
           settings:
@@ -215,7 +202,6 @@ $:
             platforms:
               - linux/amd64
               - linux/arm64
-              - linux/loong64
         - name: remove tag
           type: artifact:remove-tag
           options:
@@ -223,5 +209,4 @@ $:
             tags:
               - ${CNB_COMMIT}-linux-amd64
               - ${CNB_COMMIT}-linux-arm64
-              - ${CNB_COMMIT}-linux-loong64
             type: docker
