@@ -14,6 +14,29 @@ func NewABTestDao(helper interfaces.HelperInterface) *ABTestDao {
 	return &ABTestDao{helper: helper}
 }
 
+// getDBDriver 获取数据库驱动类型
+func (dao *ABTestDao) getDBDriver() string {
+	return dao.helper.GetConfig().GetString("database.driver", "mysql")
+}
+
+// getDateSubSQL 获取日期减法SQL表达式（兼容MySQL和SQLite）
+func (dao *ABTestDao) getDateSubSQL(days int) string {
+	driver := dao.getDBDriver()
+	if driver == "sqlite" {
+		return "click_date >= datetime('now', '-' || ? || ' days')"
+	}
+	return "click_date >= DATE_SUB(NOW(), INTERVAL ? DAY)"
+}
+
+// getDateSQL 获取日期提取SQL表达式（兼容MySQL和SQLite）
+func (dao *ABTestDao) getDateSQL(column string) string {
+	driver := dao.getDBDriver()
+	if driver == "sqlite" {
+		return "date(" + column + ")"
+	}
+	return "DATE(" + column + ")"
+}
+
 // CreateABTest 创建AB测试
 func (dao *ABTestDao) CreateABTest(abTest *model.ABTest) error {
 	return dao.helper.GetDatabase().Create(abTest).Error
@@ -128,7 +151,7 @@ func (dao *ABTestDao) GetABTestStatistics(abTestID uint64, days int) (map[uint64
 		Group("variant_id")
 
 	if days > 0 {
-		query = query.Where("click_date >= DATE_SUB(NOW(), INTERVAL ? DAY)", days)
+		query = query.Where(dao.getDateSubSQL(days), days)
 	}
 
 	err := query.Find(&results).Error
@@ -153,14 +176,15 @@ func (dao *ABTestDao) GetDailyABTestStatistics(abTestID uint64, days int) ([]map
 		ClickCount int64  `json:"click_count"`
 	}
 
+	dateSQL := dao.getDateSQL("click_date")
 	query := db.Model(&model.ABTestClickStatistic{}).
-		Select("DATE(click_date) as date, variant_id, COUNT(*) as click_count").
+		Select(dateSQL+" as date, variant_id, COUNT(*) as click_count").
 		Where("ab_test_id = ?", abTestID).
-		Group("DATE(click_date), variant_id").
+		Group(dateSQL + ", variant_id").
 		Order("date DESC, variant_id ASC")
 
 	if days > 0 {
-		query = query.Where("click_date >= DATE_SUB(NOW(), INTERVAL ? DAY)", days)
+		query = query.Where(dao.getDateSubSQL(days), days)
 	}
 
 	err := query.Find(&results).Error

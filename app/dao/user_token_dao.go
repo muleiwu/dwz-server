@@ -16,6 +16,15 @@ func NewUserTokenDAO(helper interfaces.HelperInterface) *UserTokenDAO {
 	}
 }
 
+// getCurrentTimeSQL 获取当前时间SQL表达式（兼容MySQL和SQLite）
+func (dao *UserTokenDAO) getCurrentTimeSQL() string {
+	driver := dao.helper.GetConfig().GetString("database.driver", "mysql")
+	if driver == "sqlite" {
+		return "CURRENT_TIMESTAMP"
+	}
+	return "NOW()"
+}
+
 // Create 创建Token
 func (dao *UserTokenDAO) Create(token *model.UserToken) error {
 	return dao.helper.GetDatabase().Create(token).Error
@@ -77,7 +86,7 @@ func (dao *UserTokenDAO) GetListByUserID(userID uint64, offset, limit int, token
 
 // UpdateLastUsed 更新最后使用时间
 func (dao *UserTokenDAO) UpdateLastUsed(id uint64) error {
-	return dao.helper.GetDatabase().Model(&model.UserToken{}).Where("id = ?", id).Update("last_used_at", gorm.Expr("NOW()")).Error
+	return dao.helper.GetDatabase().Model(&model.UserToken{}).Where("id = ?", id).Update("last_used_at", gorm.Expr(dao.getCurrentTimeSQL())).Error
 }
 
 // DeleteByUserID 删除用户的所有Token
