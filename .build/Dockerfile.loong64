@@ -17,15 +17,15 @@ ENV GO111MODULE=on
 ENV CGO_ENABLED=0
 
 # 复制go mod文件
-COPY go.mod go.sum ./
+COPY ../go.mod go.sum ./
 
 # 下载依赖
 RUN go mod download
 
 # 复制源代码
-COPY . .
+COPY .. .
 # 复制构建产物到 nginx 的默认静态文件目录
-COPY ./admin-webui/apps/web-antd/dist /app/static/admin
+COPY ../admin-webui/apps/web-antd/dist /app/static/admin
 
 # 构建应用
 RUN go build -ldflags="-s -w" -o dwz main.go
