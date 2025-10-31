@@ -10,7 +10,7 @@ before:
 builds:
     # Linux 和 Darwin 静态链接构建
     -
-      id: dwz-server
+      id: dwz-server-unix
       env:
         - CGO_ENABLED=0
       binary: dwz-server
@@ -48,7 +48,7 @@ builds:
     
     # Windows 静态链接构建（不使用-extldflags "-static"）
     -
-      id: dwz-server
+      id: dwz-server-windows
       env:
         - CGO_ENABLED=0
       binary: dwz-server
