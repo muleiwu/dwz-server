@@ -4,32 +4,6 @@
     enable: true
     submodules: true
 
-.build-multi-platform: &build-multi-platform
-  name: build-multi-platform
-  runner:
-    tags: cnb:arch:amd64
-  services:
-    - name: docker
-      options:
-        rootlessBuildkitd:
-          enabled: true
-  env:
-    IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}
-    CNB_IS_TAG: ${CNB_IS_TAG}
-  stages:
-    - name: docker login
-      script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
-    - name: docker build and push
-      script: docker buildx build -t ${IMAGE_TAG}:${CNB_BRANCH} --cap-add SYS_ADMIN --platform linux/amd64,linux/arm64,linux/arm/v7 --push .
-    - name: docker build and push latest
-      if: |
-        [ "$CNB_IS_TAG" == "true" ]
-      script: docker buildx build -t ${IMAGE_TAG}:latest --cap-add SYS_ADMIN --platform linux/amd64,linux/arm64,linux/arm/v7 --push .
-    - name: resolve
-      type: cnb:resolve
-      options:
-        key: build-multi-platform
-
 .build-amd64: &build-amd64
   name: build-amd64
   runner:
@@ -154,22 +128,45 @@
 develop:
   push:
     - <<: *git-clone
-    - <<: *build-multi-platform
+    - <<: *build-arm
+    - <<: *build-amd64
+
     - services:
         - docker
       name: "push"
       env:
         IMAGE_NAME: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}
       stages:
-        - name: await the build-multi-platform
+        - name: await the amd64
           type: cnb:await
           options:
-            key: build-multi-platform
+            key: build-amd64
+        - name: await the arm64
+          type: cnb:await
+          options:
+            key: build-arm64
+        - name: manifest
+          image: cnbcool/manifest
+          settings:
+            target: ${IMAGE_NAME}:${CNB_BRANCH}
+            template: ${IMAGE_NAME}:${CNB_COMMIT}-OS-ARCH
+            platforms:
+              - linux/amd64
+              - linux/arm64
+        - name: remove tag
+          type: artifact:remove-tag
+          options:
+            name: ${CNB_REPO_NAME}
+            tags:
+              - ${CNB_COMMIT}-linux-amd64
+              - ${CNB_COMMIT}-linux-arm64
+            type: docker
 
 $:
   tag_push:
     - <<: *git-clone
-    - <<: *build-multi-platform
+    - <<: *build-amd64
+    - <<: *build-arm
     - <<: *build-bin
     - services:
         - docker
@@ -177,11 +174,39 @@ $:
       env:
         IMAGE_NAME: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}
       stages:
-        - name: await the build-multi-platform
+        - name: await the amd64
           type: cnb:await
           options:
-            key: build-multi-platform
-        - name: await the bin
+            key: build-amd64
+        - name: await the arm64
+          type: cnb:await
+          options:
+            key: build-arm64
+        - name: await the build-bin
           type: cnb:await
           options:
             key: build-bin
+        - name: manifest latest
+          image: cnbcool/manifest
+          settings:
+            target: ${IMAGE_NAME}:latest
+            template: ${IMAGE_NAME}:${CNB_COMMIT}-OS-ARCH
+            platforms:
+              - linux/amd64
+              - linux/arm64
+        - name: manifest version
+          image: cnbcool/manifest
+          settings:
+            target: ${IMAGE_NAME}:${CNB_BRANCH}
+            template: ${IMAGE_NAME}:${CNB_COMMIT}-OS-ARCH
+            platforms:
+              - linux/amd64
+              - linux/arm64
+        - name: remove tag
+          type: artifact:remove-tag
+          options:
+            name: ${CNB_REPO_NAME}
+            tags:
+              - ${CNB_COMMIT}-linux-amd64
+              - ${CNB_COMMIT}-linux-arm64
+            type: docker
