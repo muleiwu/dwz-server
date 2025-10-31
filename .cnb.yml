@@ -10,34 +10,34 @@
     tags: cnb:arch:amd64
     docker:
       image: docker.cnb.cool/mliev/open/node-go:node22-pnpm-go1.25.2
-    services:
-      - name: docker
-        options:
-          rootlessBuildkitd:
-            enabled: true
-    env:
-      IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}
-      CNB_IS_TAG: ${CNB_IS_TAG}
-    stages:
-      - name: build-web
-        script:
-          - cd ./admin-webui
-          - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
-          - cd .. && mkdir -p ./static/admin && cp -a ./admin-webui/apps/web-antd/dist ./static/admin
-      - name: go build
-        script: ./.build/build-multi-platform.sh
-      - name: docker login
-        script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
-      - name: docker build and push
-        script: docker buildx build -t ${IMAGE_TAG}:${CNB_BRANCH} -f ./.build/Dockerfile.multi --platform linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6 --push .
-      - name: docker build and push latest
-        if: |
-          [ "$CNB_IS_TAG" == "true" ]
-        script: docker buildx build -t ${IMAGE_TAG}:latest -f ./.build/Dockerfile.multi --platform linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6 --push .
-      - name: resolve
-        type: cnb:resolve
-        options:
-          key: build-multi-platform
+  services:
+    - name: docker
+      options:
+        rootlessBuildkitd:
+          enabled: true
+  env:
+    IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}
+    CNB_IS_TAG: ${CNB_IS_TAG}
+  stages:
+    - name: build-web
+      script:
+        - cd ./admin-webui
+        - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
+        - cd .. && mkdir -p ./static/admin && cp -a ./admin-webui/apps/web-antd/dist ./static/admin
+    - name: go build
+      script: ./.build/build-multi-platform.sh
+    - name: docker login
+      script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
+    - name: docker build and push
+      script: docker buildx build -t ${IMAGE_TAG}:${CNB_BRANCH} -f ./.build/Dockerfile.multi --platform linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6 --push .
+    - name: docker build and push latest
+      if: |
+        [ "$CNB_IS_TAG" == "true" ]
+      script: docker buildx build -t ${IMAGE_TAG}:latest -f ./.build/Dockerfile.multi --platform linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6 --push .
+    - name: resolve
+      type: cnb:resolve
+      options:
+        key: build-multi-platform
 
 .build-amd64: &build-amd64
   name: build-amd64
