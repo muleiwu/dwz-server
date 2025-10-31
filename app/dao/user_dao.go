@@ -18,6 +18,15 @@ func NewUserDAO(helper interfaces.HelperInterface) *UserDAO {
 	}
 }
 
+// getCurrentTimeSQL 获取当前时间SQL表达式（兼容MySQL和SQLite）
+func (dao *UserDAO) getCurrentTimeSQL() string {
+	driver := dao.helper.GetEnv().GetString("database.driver", "mysql")
+	if driver == "sqlite" {
+		return "CURRENT_TIMESTAMP"
+	}
+	return "NOW()"
+}
+
 // Create 创建用户
 func (dao *UserDAO) Create(user *model.User) error {
 	return dao.helper.GetDatabase().Create(user).Error
@@ -92,7 +101,7 @@ func (dao *UserDAO) GetList(offset, limit int, username, realName string, status
 
 // UpdateLastLogin 更新最后登录时间
 func (dao *UserDAO) UpdateLastLogin(id uint64) error {
-	return dao.helper.GetDatabase().Model(&model.User{}).Where("id = ?", id).Update("last_login", gorm.Expr("NOW()")).Error
+	return dao.helper.GetDatabase().Model(&model.User{}).Where("id = ?", id).Update("last_login", gorm.Expr(dao.getCurrentTimeSQL())).Error
 }
 
 // CheckUsernameExists 检查用户名是否存在
