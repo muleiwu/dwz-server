@@ -19,7 +19,8 @@ FROM golang:1.25.0-alpine AS builder-go
 WORKDIR /app
 
 # 安装必要的包
-RUN apk --no-cache add ca-certificates git tzdata
+RUN --cap-add=SYS_ADMIN \
+    apk --no-cache add ca-certificates tzdata
 
 # 设置时区
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
