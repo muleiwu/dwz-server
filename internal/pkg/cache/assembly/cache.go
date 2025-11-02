@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	"cnb.cool/mliev/open/dwz-server/internal/pkg/cache/impl"
-	"github.com/patrickmn/go-cache"
+	gocache "github.com/muleiwu/go-cache"
+	"github.com/muleiwu/gsr"
 )
 
 type Cache struct {
@@ -37,15 +37,14 @@ func (receiver *Cache) Assembly() error {
 	return nil
 }
 
-func (receiver *Cache) GetDriver(driver string) (interfaces.ICache, error) {
+func (receiver *Cache) GetDriver(driver string) (gsr.Cacher, error) {
 
 	if driver == "redis" {
-		return impl.NewCacheRedis(receiver.Helper), nil
+		return gocache.NewRedis(receiver.Helper.GetRedis()), nil
 	} else if driver == "memory" || driver == "local" {
 		// 设置超时时间和清理时间
-		c := cache.New(5*time.Minute, 10*time.Minute)
-		return impl.NewCacheMemory(receiver.Helper, c), nil
+		return gocache.NewMemory(5*time.Minute, 10*time.Minute), nil
 	} else {
-		return impl.NewCacheNone(receiver.Helper), nil
+		return gocache.NewNone(), nil
 	}
 }
