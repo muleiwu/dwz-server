@@ -159,9 +159,7 @@ func (s *ShortLinkService) UpdateShortLink(id uint64, req *dto.UpdateShortLinkRe
 		shortLink.Description = req.Description
 	}
 
-	if req.ExpireAt != nil {
-		shortLink.ExpireAt = req.ExpireAt
-	}
+	shortLink.ExpireAt = req.ExpireAt
 
 	if req.IsActive != nil {
 		shortLink.IsActive = *req.IsActive

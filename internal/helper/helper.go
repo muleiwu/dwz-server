@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	"github.com/muleiwu/gsr"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
@@ -15,7 +16,7 @@ type Helper struct {
 	env       interfaces.EnvInterface
 	config    interfaces.ConfigInterface
 	logger    interfaces.LoggerInterface
-	cache     interfaces.ICache
+	cache     gsr.Cacher
 	redis     *redis.Client
 	database  *gorm.DB
 	installed interfaces.Installed
@@ -40,7 +41,7 @@ func (receiver *Helper) GetLogger() interfaces.LoggerInterface {
 	return receiver.logger
 }
 
-func (receiver *Helper) GetCache() interfaces.ICache {
+func (receiver *Helper) GetCache() gsr.Cacher {
 	return receiver.cache
 }
 
@@ -68,7 +69,7 @@ func (receiver *Helper) SetLogger(logger interfaces.LoggerInterface) {
 	receiver.logger = logger
 }
 
-func (receiver *Helper) SetCache(cache interfaces.ICache) {
+func (receiver *Helper) SetCache(cache gsr.Cacher) {
 	receiver.cache = cache
 }
 
