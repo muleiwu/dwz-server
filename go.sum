@@ -109,6 +109,7 @@ github.com/muleiwu/go-cache v1.0.2/go.mod h1:zxZOctK4T59Z/YN9RZ2QCF2+lBvwhzXR1IM
 github.com/muleiwu/go-cache v1.0.3-0.20251112103215-451cdfbecf76 h1:Yc32zC8oz7z/1ZhLznRFc7UWwi8mMFqKFqRLVC53Mzs=
 github.com/muleiwu/go-cache v1.0.3-0.20251112103215-451cdfbecf76/go.mod h1:I5Lb8CB31GBUwqo6s+UgBVPhM3Ic34jj1pfxVJqVUn0=
 github.com/muleiwu/go-cache v1.0.3/go.mod h1:I5Lb8CB31GBUwqo6s+UgBVPhM3Ic34jj1pfxVJqVUn0=
+github.com/muleiwu/go-cache v1.1.0 h1:mbMYIB342Q6yK7IyQv15gYLxDL2jU7PCcLDWKnSXvKE=
 github.com/muleiwu/go-cache v1.1.0/go.mod h1:I5Lb8CB31GBUwqo6s+UgBVPhM3Ic34jj1pfxVJqVUn0=
 github.com/muleiwu/gsr v1.0.0 h1:uxEtvj2Yho0okV6xvar6dTVaIoxqJgxkgZNf6xcERj8=
 github.com/muleiwu/gsr v1.0.0/go.mod h1:RJBYRCQ8Gv5OSJVjk38eOoC197KxvAH5pdb0Gatsuos=
