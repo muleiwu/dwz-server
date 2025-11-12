@@ -269,6 +269,7 @@ func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientI
 	// 先从缓存查找
 	shortLink, err := s.getShortLinkFromCache(domain, shortCode)
 	if err != nil || shortLink == nil {
+		s.helper.GetLogger().Warn(fmt.Sprintf("缓存未命中，尝试多种方式从数据库查找-> domain: %s, shortCode: %s, %+v", domain, shortCode, err))
 		// 缓存未命中，尝试多种方式从数据库查找
 		shortLink, err = s.findShortLinkByCode(domain, shortCode)
 		if err != nil {
@@ -453,7 +454,7 @@ func (s *ShortLinkService) validateDomain(domain string) error {
 func (s *ShortLinkService) cacheShortLink(shortLink *model.ShortLink) {
 	key := fmt.Sprintf("shortlink:%s:%s", shortLink.Domain, shortLink.GetShortCode())
 
-	err := s.helper.GetCache().Set(s.context, key, shortLink, 84600)
+	err := s.helper.GetCache().Set(s.context, key, &shortLink, 84600)
 	if err != nil {
 		s.helper.GetLogger().Error(err.Error())
 	}
@@ -462,11 +463,12 @@ func (s *ShortLinkService) cacheShortLink(shortLink *model.ShortLink) {
 // getShortLinkFromCache 从Redis缓存获取短网址
 func (s *ShortLinkService) getShortLinkFromCache(domain, shortCode string) (*model.ShortLink, error) {
 	key := fmt.Sprintf("shortlink:%s:%s", domain, shortCode)
-	shortLink := model.ShortLink{}
 
-	err := s.helper.GetCache().Get(s.context, key, shortLink)
+	var shortLink model.ShortLink
 
-	return nil, err
+	err := s.helper.GetCache().Get(s.context, key, &shortLink)
+
+	return &shortLink, err
 }
 
 // removeCacheShortLink 从Redis缓存删除短网址
