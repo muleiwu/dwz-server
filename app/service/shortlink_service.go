@@ -454,7 +454,7 @@ func (s *ShortLinkService) validateDomain(domain string) error {
 func (s *ShortLinkService) cacheShortLink(shortLink *model.ShortLink) {
 	key := fmt.Sprintf("shortlink:%s:%s", shortLink.Domain, shortLink.GetShortCode())
 
-	err := s.helper.GetCache().Set(s.context, key, &shortLink, 84600)
+	err := s.helper.GetCache().Set(s.context, key, &shortLink, 24*time.Hour)
 	if err != nil {
 		s.helper.GetLogger().Error(err.Error())
 	}

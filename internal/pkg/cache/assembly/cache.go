@@ -7,6 +7,7 @@ import (
 
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	gocache "github.com/muleiwu/go-cache"
+	"github.com/muleiwu/go-cache/serializer"
 	"github.com/muleiwu/gsr"
 )
 
@@ -40,7 +41,7 @@ func (receiver *Cache) Assembly() error {
 func (receiver *Cache) GetDriver(driver string) (gsr.Cacher, error) {
 
 	if driver == "redis" {
-		return gocache.NewRedis(receiver.Helper.GetRedis()), nil
+		return gocache.NewRedis(receiver.Helper.GetRedis(), gocache.WithRedisSerializer(serializer.NewJson())), nil
 	} else if driver == "memory" || driver == "local" {
 		// 设置超时时间和清理时间
 		return gocache.NewMemory(5*time.Minute, 10*time.Minute), nil
