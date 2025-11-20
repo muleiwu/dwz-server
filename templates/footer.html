@@ -3,25 +3,28 @@
     <div class="container">
         <div class="footer-content">
             <div class="footer-info">
-                <div style="display: flex;flex-direction: row; color: white;justify-content: center;">
+                <div class="footer-links">
                     {{if .Copyright}}
-                    <div>{{.Copyright}}</div>
-                    <div style="margin: 0 6px;">&</div>
+                    <span>{{.Copyright}}</span>
+                    <span>&</span>
                     {{end}}
-                    <div>Powered by <a href="https://www.mliev.com/docs/dwz" style="color: white; text-decoration:none;">木雷短网址</a></div>
+                    <span>Powered by <a href="https://www.mliev.com/docs/dwz" target="_blank">木雷短网址</a></span>
                 </div>
             </div>
         </div>
         {{if or .ICPNumber .PoliceNumber}}
-        <div class="beian-info">
-            {{if .ICPNumber}}
-            <div><a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{{.ICPNumber}}</a></div>
-            {{end}}
-            {{if .PoliceNumber}}
-            <div>公安备案号：{{.PoliceNumber}}</div>
-            {{end}}
+        <div class="footer-content" style="margin-top: 1rem;">
+            <div class="beian-info">
+                {{if .ICPNumber}}
+                <div><a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{{.ICPNumber}}</a>
+                </div>
+                {{end}}
+                {{if .PoliceNumber}}
+                <div>公安备案号：{{.PoliceNumber}}</div>
+                {{end}}
+            </div>
         </div>
         {{end}}
     </div>
 </footer>
-{{end}} 
+{{end}}
