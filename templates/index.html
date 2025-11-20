@@ -1,40 +1,66 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.SiteName}} - 专业短网址服务</title>
+    <title>{{.SiteName}} - 企业级短链接服务平台</title>
     {{template "styles" .}}
 </head>
+
 <body>
     {{template "header" .}}
 
     <main class="hero">
         <div class="container">
             <div class="hero-content">
+                <div
+                    style="margin-bottom: 1rem; display: inline-block; padding: 0.5rem 1rem; background: rgba(99, 102, 241, 0.1); border-radius: 2rem; border: 1px solid rgba(99, 102, 241, 0.2); color: var(--primary); font-size: 0.9rem; font-weight: 600;">
+                    🚀 企业级私有化部署首选
+                </div>
                 <h1>{{.SiteName}}</h1>
-                <p>专业的短网址服务，让链接更短更美观，支持统计分析等高级功能</p>
-                
+                <p>功能完善、高性能的企业级短链接服务平台。支持多域名、AB测试、用户管理、实时统计，满足企业各种复杂场景需求。</p>
+
+                <div class="action-buttons">
+                    <a href="/admin/" class="cta-button">
+                        进入后台管理
+                    </a>
+                    <a href="https://www.mliev.com/docs/dwz" target="_blank" class="cta-button"
+                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                        查看文档
+                    </a>
+                </div>
+
                 <div class="features">
                     <div class="feature">
-                        <div class="feature-icon">🔗</div>
-                        <h3>短链生成</h3>
-                        <p>快速生成短链接</p>
+                        <div class="feature-icon">📦</div>
+                        <h3>独立部署模式</h3>
+                        <p>零依赖部署，支持 SQLite + 内存缓存。无需安装复杂数据库，单文件下载即用，轻松上手。</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🧪</div>
+                        <h3>AB 测试系统</h3>
+                        <p>支持多版本测试与智能分流。同一短链可配置多个目标 URL，实时统计各版本转化率。</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">👥</div>
+                        <h3>完善的用户管理</h3>
+                        <p>支持多用户注册登录、Token 双重认证。基于角色的权限控制，详细的操作审计日志。</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">⚡</div>
+                        <h3>高性能架构</h3>
+                        <p>Go 语言开发，平均响应 <10ms，单实例支持万级 QPS。多级缓存机制，从容应对高并发。</p>
                     </div>
                     <div class="feature">
                         <div class="feature-icon">📊</div>
-                        <h3>数据统计</h3>
-                        <p>详细的访问统计和分析报告</p>
+                        <h3>多维度统计</h3>
+                        <p>实时记录点击数据，提供地理分布、设备信息、时间分布等详细分析报告。</p>
                     </div>
                     <div class="feature">
-                        <div class="feature-icon">🌐</div>
-                        <h3>高并发支持</h3>
-                        <p>高并短链接系统，支持参数透传</p>
-                    </div>
-                    <div class="feature">
-                        <div class="feature-icon">🔒</div>
-                        <h3>安全可靠</h3>
-                        <p>企业级安全保障，数据加密存储</p>
+                        <div class="feature-icon">🛡️</div>
+                        <h3>企业级安全</h3>
+                        <p>敏感信息自动脱敏，防刷机制，IP 访问频率限制，全方位保障数据安全。</p>
                     </div>
                 </div>
             </div>
@@ -43,10 +69,22 @@
 
     <section class="cta-section">
         <div class="container">
-            <h2>开始使用短网址服务</h2>
+            <h2>立即部署您的私有短链服务</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; margin-top: 1rem;">支持 Docker
+                一键部署，几分钟内即可拥有完整的企业级短链系统</p>
+            <div class="action-buttons">
+                <a href="https://github.com/muleiwu/dwz-server" target="_blank" class="cta-button">
+                    GitHub 源码
+                </a>
+                <a href="https://cnb.cool/mliev/open/dwz-server" target="_blank" class="cta-button"
+                    style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                    CNB 仓库
+                </a>
+            </div>
         </div>
     </section>
 
     {{template "footer" .}}
 </body>
-</html> 
+
+</html>
