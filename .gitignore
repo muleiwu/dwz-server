@@ -3,3 +3,5 @@ config.yaml
 /scripts/
 /dist/
 /static/admin/
+AGENTS.md
+WARP.md
