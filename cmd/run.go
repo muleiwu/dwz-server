@@ -48,9 +48,12 @@ func initializeServices(staticFs map[string]embed.FS, version, commit, date stri
 
 	helper.GetConfig().Set("static.fs", staticFs)
 
-	helper.GetLogger().Info(fmt.Sprintf("【构建版本】：%s", version))
-	helper.GetLogger().Info(fmt.Sprintf("【构建时间】：%s", date))
-	helper.GetLogger().Info(fmt.Sprintf("【构建哈希】：%s", commit))
+	// 设置版本信息
+	helper.GetVersion().SetVersionInfo(version, commit, date)
+
+	helper.GetLogger().Info(fmt.Sprintf("【构建版本】：%s", helper.GetVersion().GetVersion()))
+	helper.GetLogger().Info(fmt.Sprintf("【构建时间】：%s", helper.GetVersion().GetBuildTime()))
+	helper.GetLogger().Info(fmt.Sprintf("【构建哈希】：%s", helper.GetVersion().GetGitCommit()))
 
 	server := config.Server{
 		Helper: helper,

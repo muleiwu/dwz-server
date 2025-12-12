@@ -20,6 +20,7 @@ type Helper struct {
 	redis     *redis.Client
 	database  *gorm.DB
 	installed interfaces.Installed
+	version   interfaces.VersionInterface
 }
 
 func GetHelper() interfaces.HelperInterface {
@@ -57,6 +58,10 @@ func (receiver *Helper) GetInstalled() interfaces.Installed {
 	return receiver.installed
 }
 
+func (receiver *Helper) GetVersion() interfaces.VersionInterface {
+	return receiver.version
+}
+
 func (receiver *Helper) SetEnv(env interfaces.EnvInterface) {
 	receiver.env = env
 }
@@ -83,4 +88,8 @@ func (receiver *Helper) SetDatabase(database *gorm.DB) {
 
 func (receiver *Helper) SetInstalled(installed interfaces.Installed) {
 	receiver.installed = installed
+}
+
+func (receiver *Helper) SetVersion(version interfaces.VersionInterface) {
+	receiver.version = version
 }

@@ -14,6 +14,7 @@ type GetHelperInterface interface {
 	GetRedis() *redis.Client
 	GetDatabase() *gorm.DB
 	GetInstalled() Installed
+	GetVersion() VersionInterface
 }
 
 type SetHelperInterface interface {
@@ -24,6 +25,7 @@ type SetHelperInterface interface {
 	SetRedis(redis *redis.Client)
 	SetDatabase(database *gorm.DB)
 	SetInstalled(installed Installed)
+	SetVersion(version VersionInterface)
 }
 
 type HelperInterface interface {
