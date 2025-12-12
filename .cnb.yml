@@ -16,7 +16,7 @@
     - name: docker login
       script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
     - name: docker build
-      script: docker build -t ${IMAGE_TAG} .
+      script: docker build --build-arg APP_VERSION=${CNB_BRANCH} --build-arg BUILD_TIME=${CNB_BUILD_START_TIME}  --build-arg GIT_COMMIT=${CNB_COMMIT_SHORT}  --build-arg ENVIRONMENT=prod -t ${IMAGE_TAG} .
     - name: docker push
       script: docker push ${IMAGE_TAG}
     - name: resolve
@@ -36,7 +36,7 @@
     - name: docker login
       script: docker login -u ${CNB_TOKEN_USER_NAME} -p "${CNB_TOKEN}" ${CNB_DOCKER_REGISTRY}
     - name: docker build
-      script: docker build -t ${IMAGE_TAG} .
+      script: docker build --build-arg APP_VERSION=${CNB_BRANCH} --build-arg BUILD_TIME=${CNB_BUILD_START_TIME}  --build-arg GIT_COMMIT=${CNB_COMMIT_SHORT}  --build-arg ENVIRONMENT=prod -t ${IMAGE_TAG} .
     - name: docker push
       script: docker push ${IMAGE_TAG}
     - name: resolve
@@ -70,6 +70,10 @@
     - name: docker build && push
       script: |
         docker buildx build --platform linux/loong64 \
+          --build-arg APP_VERSION=${CNB_BRANCH} \
+          --build-arg BUILD_TIME=${CNB_BUILD_START_TIME}  \
+          --build-arg GIT_COMMIT=${CNB_COMMIT_SHORT}  \
+          --build-arg ENVIRONMENT=prod \
           -f Dockerfile.loong64 \
           -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-linux-loong64 \
           --push .

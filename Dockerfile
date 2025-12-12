@@ -42,7 +42,12 @@ COPY . .
 COPY --from=builder-web /app/apps/web-antd/dist /app/static/admin
 
 # 构建应用
-RUN go build -ldflags="-s -w" -o dwz main.go
+RUN go build -ldflags="-s -w" "\
+    -X 'main.Version=${APP_VERSION}' \
+    -X 'main.BuildTime=${BUILD_TIME}' \
+    -X 'main.GitCommit=${GIT_COMMIT}' \
+    -X 'main.Environment=${ENVIRONMENT}'" \
+    -o dwz main.go
 
 # 运行阶段
 FROM alpine:latest
