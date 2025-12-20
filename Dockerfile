@@ -41,12 +41,16 @@ COPY . .
 # 复制构建产物到 nginx 的默认静态文件目录
 COPY --from=builder-web /app/apps/web-antd/dist /app/static/admin
 
+# 声明构建参数
+ARG APP_VERSION
+ARG BUILD_TIME
+ARG GIT_COMMIT
+
 # 构建应用
 RUN go build -ldflags="-s -w \
     -X 'main.Version=${APP_VERSION}' \
     -X 'main.BuildTime=${BUILD_TIME}' \
-    -X 'main.GitCommit=${GIT_COMMIT}' \
-    -X 'main.Environment=${ENVIRONMENT}'" \
+    -X 'main.GitCommit=${GIT_COMMIT}'" \
     -o dwz main.go
 
 # 运行阶段
