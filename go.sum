@@ -104,11 +104,6 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/muleiwu/base_n v1.0.0 h1:S4hMzphqrl8/rzfb4A39fjcIZ3IjX7xGMwh21ms5W7s=
 github.com/muleiwu/base_n v1.0.0/go.mod h1:E/fRx6QdT9iiksoo8+IxAusdu2KyF4nD8968ATPNl2I=
-github.com/muleiwu/go-cache v1.0.2 h1:V3Xh5Go42ZwT4WJj40xnlkcRhCFu3e4UAzN5Sav8pec=
-github.com/muleiwu/go-cache v1.0.2/go.mod h1:zxZOctK4T59Z/YN9RZ2QCF2+lBvwhzXR1IMZb4vyLwE=
-github.com/muleiwu/go-cache v1.0.3-0.20251112103215-451cdfbecf76 h1:Yc32zC8oz7z/1ZhLznRFc7UWwi8mMFqKFqRLVC53Mzs=
-github.com/muleiwu/go-cache v1.0.3-0.20251112103215-451cdfbecf76/go.mod h1:I5Lb8CB31GBUwqo6s+UgBVPhM3Ic34jj1pfxVJqVUn0=
-github.com/muleiwu/go-cache v1.0.3/go.mod h1:I5Lb8CB31GBUwqo6s+UgBVPhM3Ic34jj1pfxVJqVUn0=
 github.com/muleiwu/go-cache v1.1.0 h1:mbMYIB342Q6yK7IyQv15gYLxDL2jU7PCcLDWKnSXvKE=
 github.com/muleiwu/go-cache v1.1.0/go.mod h1:I5Lb8CB31GBUwqo6s+UgBVPhM3Ic34jj1pfxVJqVUn0=
 github.com/muleiwu/gsr v1.0.0 h1:uxEtvj2Yho0okV6xvar6dTVaIoxqJgxkgZNf6xcERj8=
@@ -162,10 +157,6 @@ github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVM
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
 github.com/ugorji/go/codec v1.3.1 h1:waO7eEiFDwidsBN6agj1vJQ4AG7lh2yqXyOXqhgQuyY=
 github.com/ugorji/go/codec v1.3.1/go.mod h1:pRBVtBSKl77K30Bv8R2P+cLSGaTtex6fsA2Wjqmfxj4=
-github.com/vmihailenco/msgpack/v5 v5.4.1 h1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IUPn0Bjt8=
-github.com/vmihailenco/msgpack/v5 v5.4.1/go.mod h1:GaZTsDaehaPpQVyxrf5mtQlH+pc21PIudVV/E3rRQok=
-github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
-github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/mock v0.6.0 h1:hyF9dfmbgIX5EfOdasqLsWD6xqpNZlXblLB/Dbnwv3Y=

@@ -99,8 +99,21 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 		shortLink.ShortCode = req.CustomCode
 		shortLink.IsCustomCode = true
 	} else {
-		// 使用分布式发号器生成短代码
-		generatedCode, issuerNumber, err := s.idGenerator.GenerateShortCode(domainInfo.ID, s.context)
+		// 使用分布式发号器生成短代码，使用域名配置
+		// 处理指针类型，提供默认值
+		randomSuffixLength := 2
+		if domainInfo.RandomSuffixLength != nil {
+			randomSuffixLength = *domainInfo.RandomSuffixLength
+		}
+		enableChecksum := true
+		if domainInfo.EnableChecksum != nil {
+			enableChecksum = *domainInfo.EnableChecksum
+		}
+		config := interfaces.ShortCodeConfig{
+			RandomSuffixLength: randomSuffixLength,
+			EnableChecksum:     enableChecksum,
+		}
+		generatedCode, issuerNumber, err := s.idGenerator.GenerateShortCodeWithConfig(domainInfo.ID, s.context, config)
 		if err != nil {
 			return nil, fmt.Errorf("生成短代码失败: %v", err)
 		}
