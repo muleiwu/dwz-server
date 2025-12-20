@@ -42,7 +42,7 @@ COPY . .
 COPY --from=builder-web /app/apps/web-antd/dist /app/static/admin
 
 # 构建应用
-RUN go build -ldflags="-s -w" "\
+RUN go build -ldflags="-s -w \
     -X 'main.Version=${APP_VERSION}' \
     -X 'main.BuildTime=${BUILD_TIME}' \
     -X 'main.GitCommit=${GIT_COMMIT}' \
