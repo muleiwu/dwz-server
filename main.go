@@ -6,9 +6,11 @@ import (
 	"embed"
 )
 
-var version = "{{ .Version }}"
-var commit = "{{ .Commit }}"
-var date = "{{ .Date }}"
+var (
+	Version   string
+	GitCommit string
+	BuildTime string
+)
 
 //go:embed templates/**
 var templateFS embed.FS
@@ -21,5 +23,5 @@ func main() {
 		"templates":  templateFS,
 		"web.static": staticFs,
 	}
-	cmd.Start(staticFs, version, commit, date)
+	cmd.Start(staticFs, Version, GitCommit, BuildTime)
 }

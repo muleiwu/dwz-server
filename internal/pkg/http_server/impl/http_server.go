@@ -218,6 +218,8 @@ func (receiver *HttpServer) traceIdMiddleware() gin.HandlerFunc {
 		}
 		c.Set("traceId", newUUID.String())
 		c.Writer.Header().Set("trace-id", newUUID.String())
+		c.Writer.Header().Set("version-number", receiver.Helper.GetVersion().GetVersion())
+		c.Writer.Header().Set("version-git-commit", receiver.Helper.GetVersion().GetGitCommit())
 		c.Next()
 	}
 }

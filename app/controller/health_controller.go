@@ -22,6 +22,15 @@ func (receiver HealthController) GetHealth(c *gin.Context, helper interfaces.Hel
 		Services:  make(map[string]interface{}),
 	}
 
+	// 添加版本信息
+	if helper.GetVersion() != nil {
+		healthStatus.Version = &dto.VersionInfo{
+			Version:   helper.GetVersion().GetVersion(),
+			GitCommit: helper.GetVersion().GetGitCommit(),
+			BuildTime: helper.GetVersion().GetBuildTime(),
+		}
+	}
+
 	// 检查数据库连接
 	dbStatus := receiver.checkDatabase(helper)
 	healthStatus.Services["database"] = dbStatus

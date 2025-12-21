@@ -29,6 +29,16 @@ func (d *DomainDao) FindByDomain(domain string) (*model.Domain, error) {
 	return &domainModel, nil
 }
 
+// FindByID 根据ID查找域名
+func (d *DomainDao) FindByID(id uint64) (*model.Domain, error) {
+	var domainModel model.Domain
+	err := d.helper.GetDatabase().Where("id = ? AND deleted_at IS NULL", id).First(&domainModel).Error
+	if err != nil {
+		return nil, err
+	}
+	return &domainModel, nil
+}
+
 // List 获取域名列表
 func (d *DomainDao) List() ([]model.Domain, error) {
 	var domains []model.Domain

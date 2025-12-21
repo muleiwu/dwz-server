@@ -114,6 +114,26 @@ func (g *IDGeneratorRedis) GenerateShortCode(domainID uint64, ctx context.Contex
 	return shortCode, &id, nil
 }
 
+// GenerateShortCodeWithConfig 使用自定义配置生成短代码
+func (g *IDGeneratorRedis) GenerateShortCodeWithConfig(domainID uint64, ctx context.Context, config interfaces.ShortCodeConfig) (string, *uint64, error) {
+	// 使用分布式发号器
+	id, err := g.GenerateID(domainID, ctx)
+	if err != nil {
+		return "", nil, errors.New(fmt.Sprintf("分布式发号器故障: %v", err))
+	}
+
+	// 将ID转换为62进制
+	base62Code := g.base62.Encode(int64(id))
+
+	// 添加防猜测措施（使用配置）
+	shortCode, err := g.addAntiGuessingSuffixWithConfig(base62Code, config)
+	if err != nil {
+		return "", nil, errors.New(fmt.Sprintf("添加防猜测后缀失败: %v", err))
+	}
+
+	return shortCode, &id, nil
+}
+
 // addAntiGuessingSuffix 添加防猜测后缀
 func (g *IDGeneratorRedis) addAntiGuessingSuffix(base62Code string) (string, error) {
 	// 生成两位随机后缀
@@ -127,6 +147,28 @@ func (g *IDGeneratorRedis) addAntiGuessingSuffix(base62Code string) (string, err
 
 	// 返回格式：base62Code + 随机后缀 + 校验码
 	return base62Code + randomSuffix + string(g.fallbackChars[checksum]), nil
+}
+
+// addAntiGuessingSuffixWithConfig 使用配置添加防猜测后缀
+func (g *IDGeneratorRedis) addAntiGuessingSuffixWithConfig(base62Code string, config interfaces.ShortCodeConfig) (string, error) {
+	result := base62Code
+
+	// 添加随机后缀
+	if config.RandomSuffixLength > 0 {
+		randomSuffix, err := g.generateRandomSuffix(config.RandomSuffixLength)
+		if err != nil {
+			return "", err
+		}
+		result += randomSuffix
+	}
+
+	// 添加校验位
+	if config.EnableChecksum {
+		checksum := g.calculateChecksum(result)
+		result += string(g.fallbackChars[checksum])
+	}
+
+	return result, nil
 }
 
 // generateRandomSuffix 生成指定长度的随机后缀

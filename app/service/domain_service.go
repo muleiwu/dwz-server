@@ -38,15 +38,19 @@ func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainRespons
 	}
 
 	// 创建域名记录
+	// 注意：直接使用请求中的值，不做默认值回退
+	// 默认值由数据库迁移时设置，确保老数据兼容
 	domain := &model.Domain{
-		Domain:          req.Domain,
-		Protocol:        req.Protocol,
-		SiteName:        req.SiteName,
-		ICPNumber:       req.ICPNumber,
-		PoliceNumber:    req.PoliceNumber,
-		Description:     req.Description,
-		IsActive:        req.IsActive,
-		PassQueryParams: req.PassQueryParams,
+		Domain:             req.Domain,
+		Protocol:           req.Protocol,
+		SiteName:           req.SiteName,
+		ICPNumber:          req.ICPNumber,
+		PoliceNumber:       req.PoliceNumber,
+		Description:        req.Description,
+		IsActive:           req.IsActive,
+		PassQueryParams:    req.PassQueryParams,
+		RandomSuffixLength: req.RandomSuffixLength,
+		EnableChecksum:     req.EnableChecksum,
 	}
 
 	if err := s.domainDao.Create(domain); err != nil {
@@ -120,6 +124,8 @@ func (s *DomainService) UpdateDomain(id uint64, req *dto.DomainRequest) (*dto.Do
 	domain.ICPNumber = req.ICPNumber
 	domain.Protocol = req.Protocol
 	domain.SiteName = req.SiteName
+	domain.RandomSuffixLength = req.RandomSuffixLength
+	domain.EnableChecksum = req.EnableChecksum
 
 	if err := s.domainDao.Update(domain); err != nil {
 		return nil, err
@@ -163,21 +169,46 @@ func (s *DomainService) GetDomainByName(domainName string) (*model.Domain, error
 	return domain, nil
 }
 
+// GetDomainByID 根据ID查询域名
+func (s *DomainService) GetDomainByID(id uint64) (*model.Domain, error) {
+	domain, err := s.domainDao.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("域名不存在")
+		}
+		return nil, err
+	}
+
+	return domain, nil
+}
+
 // 私有方法
 
 // modelToResponse 将模型转换为响应格式
 func (s *DomainService) modelToResponse(domain *model.Domain) *dto.DomainResponse {
+	// 处理指针类型，提供默认值
+	randomSuffixLength := 2
+	if domain.RandomSuffixLength != nil {
+		randomSuffixLength = *domain.RandomSuffixLength
+	}
+	enableChecksum := true
+	if domain.EnableChecksum != nil {
+		enableChecksum = *domain.EnableChecksum
+	}
+
 	return &dto.DomainResponse{
-		ID:              domain.ID,
-		Domain:          domain.Domain,
-		Protocol:        domain.Protocol,
-		SiteName:        domain.SiteName,
-		ICPNumber:       domain.ICPNumber,
-		PoliceNumber:    domain.PoliceNumber,
-		IsActive:        domain.IsActive,
-		PassQueryParams: domain.PassQueryParams,
-		Description:     domain.Description,
-		CreatedAt:       domain.CreatedAt,
-		UpdatedAt:       domain.UpdatedAt,
+		ID:                 domain.ID,
+		Domain:             domain.Domain,
+		Protocol:           domain.Protocol,
+		SiteName:           domain.SiteName,
+		ICPNumber:          domain.ICPNumber,
+		PoliceNumber:       domain.PoliceNumber,
+		IsActive:           domain.IsActive,
+		PassQueryParams:    domain.PassQueryParams,
+		RandomSuffixLength: randomSuffixLength,
+		EnableChecksum:     enableChecksum,
+		Description:        domain.Description,
+		CreatedAt:          domain.CreatedAt,
+		UpdatedAt:          domain.UpdatedAt,
 	}
 }

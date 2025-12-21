@@ -9,6 +9,7 @@ import (
 	installedAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/installed/assembly"
 	loggerAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/logger/assembly"
 	redisAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/assembly"
+	versionAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/version/assembly"
 )
 
 type Assembly struct {
@@ -22,6 +23,7 @@ func (receiver *Assembly) Get() []interfaces.AssemblyInterface {
 		&envAssembly.Env{Helper: receiver.Helper},                                       // 环境变量
 		&configAssembly.Config{Helper: receiver.Helper, DefaultConfigs: Config{}.Get()}, // 代码中的配置(可使用环境变量)
 		&loggerAssembly.Logger{Helper: receiver.Helper},                                 // 日志驱动
+		&versionAssembly.Version{Helper: receiver.Helper},                               // 版本信息
 		&installedAssembly.Installed{Helper: receiver.Helper},                           // 安装检测
 		&databaseAssembly.Database{Helper: receiver.Helper},                             // 数据库配置
 		&redisAssembly.Redis{Helper: receiver.Helper},                                   // redis 配置

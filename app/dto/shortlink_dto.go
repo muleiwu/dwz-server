@@ -88,29 +88,33 @@ type BatchFailedItem struct {
 
 // DomainResponse 域名响应
 type DomainResponse struct {
-	ID              uint64    `json:"id"`
-	Domain          string    `json:"domain"`
-	Protocol        string    `json:"protocol" example:"https"`
-	SiteName        string    `json:"site_name"`     // 网站名称
-	ICPNumber       string    `json:"icp_number"`    // ICP备案号码
-	PoliceNumber    string    `json:"police_number"` // 公安备案号码
-	IsActive        bool      `json:"is_active"`
-	PassQueryParams bool      `json:"pass_query_params"`
-	Description     string    `json:"description"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID                 uint64    `json:"id"`
+	Domain             string    `json:"domain"`
+	Protocol           string    `json:"protocol" example:"https"`
+	SiteName           string    `json:"site_name"`     // 网站名称
+	ICPNumber          string    `json:"icp_number"`    // ICP备案号码
+	PoliceNumber       string    `json:"police_number"` // 公安备案号码
+	IsActive           bool      `json:"is_active"`
+	PassQueryParams    bool      `json:"pass_query_params"`
+	RandomSuffixLength int       `json:"random_suffix_length"` // 随机后缀位数 (0-10)
+	EnableChecksum     bool      `json:"enable_checksum"`      // 是否启用校验位
+	Description        string    `json:"description"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 // DomainRequest 域名请求（通用）
 type DomainRequest struct {
-	Domain          string `json:"domain" binding:"required" example:"dwz.do"`                   // 域名
-	Protocol        string `json:"protocol" binding:"required,oneof=http https" example:"https"` // 协议
-	SiteName        string `json:"site_name"`                                                    // 网站名称
-	ICPNumber       string `json:"icp_number"`                                                   // ICP备案号码
-	PoliceNumber    string `json:"police_number"`                                                // 公安备案号码
-	IsActive        bool   `json:"is_active" example:"true"`                                     // 是否激活
-	PassQueryParams bool   `json:"pass_query_params" example:"false"`                            // 透传参数
-	Description     string `json:"description" example:"主要短链域名"`                                 // 描述
+	Domain             string `json:"domain" binding:"required" example:"dwz.do"`                        // 域名
+	Protocol           string `json:"protocol" binding:"required,oneof=http https" example:"https"`      // 协议
+	SiteName           string `json:"site_name"`                                                         // 网站名称
+	ICPNumber          string `json:"icp_number"`                                                        // ICP备案号码
+	PoliceNumber       string `json:"police_number"`                                                     // 公安备案号码
+	IsActive           bool   `json:"is_active" example:"true"`                                          // 是否激活
+	PassQueryParams    bool   `json:"pass_query_params" example:"false"`                                 // 透传参数
+	RandomSuffixLength *int   `json:"random_suffix_length" binding:"omitempty,min=0,max=10" example:"2"` // 随机后缀位数 (0-10)，使用指针以支持0值
+	EnableChecksum     *bool  `json:"enable_checksum" example:"true"`                                    // 是否启用校验位，使用指针以支持false值
+	Description        string `json:"description" example:"主要短链域名"`                                      // 描述
 }
 
 // CreateDomainRequest 创建域名请求
