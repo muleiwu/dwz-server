@@ -50,6 +50,16 @@ func (dao *UserTokenDAO) GetByToken(token string) (*model.UserToken, error) {
 	return &userToken, nil
 }
 
+// GetByAppID 根据AppID获取Token信息（用于签名认证）
+func (dao *UserTokenDAO) GetByAppID(appID string) (*model.UserToken, error) {
+	var userToken model.UserToken
+	err := dao.helper.GetDatabase().Preload("User").Where("app_id = ?", appID).First(&userToken).Error
+	if err != nil {
+		return nil, err
+	}
+	return &userToken, nil
+}
+
 // Update 更新Token
 func (dao *UserTokenDAO) Update(token *model.UserToken) error {
 	return dao.helper.GetDatabase().Save(token).Error
