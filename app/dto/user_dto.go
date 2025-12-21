@@ -110,3 +110,13 @@ type UserTokenListResponse struct {
 	List       []UserTokenInfo `json:"list"`
 	Pagination Pagination      `json:"pagination"`
 }
+
+// RateLimitErrorResponse 速率限制错误响应
+// 当登录尝试被速率限制阻止时返回此响应
+type RateLimitErrorResponse struct {
+	Code              int    `json:"code"`               // HTTP状态码 (429)
+	Message           string `json:"message"`            // 错误消息
+	LimitType         string `json:"limit_type"`         // 限制类型: "ip" 或 "username"
+	RemainingAttempts int    `json:"remaining_attempts"` // 剩余尝试次数（未锁定时）
+	LockoutSeconds    int    `json:"lockout_seconds"`    // 剩余锁定秒数（已锁定时）
+}

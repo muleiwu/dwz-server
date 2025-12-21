@@ -41,12 +41,25 @@ func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[strin
 			// 首页
 			router.GET("/", deps.WrapHandler(controller.IndexController{}.GetIndex))
 
-			// 登录路由（不需要认证）
-			router.POST("/api/v1/login", middleware.OperationLogMiddleware(helper), deps.WrapHandler(controller.UserController{}.Login)) // 用户登录
+			// 认证路由组（不需要认证）
+			auth := router.Group("/api/v1/auth")
+			{
+				auth.POST("/login", middleware.OperationLogMiddleware(helper), deps.WrapHandler(controller.AuthController{}.Login)) // 用户登录
+			}
+
+			// 保留原有登录路由以保持向后兼容（指向新的AuthController）
+			// todo 后续删除
+			router.POST("/api/v1/login", middleware.OperationLogMiddleware(helper), deps.WrapHandler(controller.AuthController{}.Login)) // 用户登录（向后兼容）
 
 			// API路由组
 			v1 := router.Group("/api/v1", middleware.OperationLogMiddleware(helper), middleware.AuthMiddleware(helper))
 			{
+				// 认证相关路由（需要认证）
+				authRoutes := v1.Group("/auth")
+				{
+					authRoutes.POST("/logout", deps.WrapHandler(controller.AuthController{}.Logout)) // 用户登出
+				}
+
 				// 短网址管理路由
 				shortLinks := v1.Group("/short_links")
 				{

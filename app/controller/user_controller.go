@@ -16,24 +16,6 @@ type UserController struct {
 	BaseResponse
 }
 
-// Login 用户登录
-func (ctrl UserController) Login(c *gin.Context, helper interfaces.HelperInterface) {
-	var req dto.LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
-		return
-	}
-
-	userService := service.NewUserService(helper)
-	response, err := userService.Login(&req)
-	if err != nil {
-		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
-		return
-	}
-
-	ctrl.Success(c, response)
-}
-
 // CreateUser 创建用户
 func (ctrl UserController) CreateUser(c *gin.Context, helper interfaces.HelperInterface) {
 	var req dto.CreateUserRequest
