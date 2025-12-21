@@ -63,7 +63,19 @@ func (ctrl DomainController) UpdateDomain(c *gin.Context, helper interfaces.Help
 		return
 	}
 
-	response, err := service.NewDomainService(helper).UpdateDomain(id, &req)
+	// 获取原始域名记录，保护 random_suffix_length 和 enable_checksum 字段
+	domainService := service.NewDomainService(helper)
+	originalDomain, err := domainService.GetDomainByID(id)
+	if err != nil {
+		ctrl.Error(c, constants.ErrCodeNotFound, "域名不存在")
+		return
+	}
+
+	// 使用原始值覆盖请求中的配置字段，防止修改
+	req.RandomSuffixLength = originalDomain.RandomSuffixLength
+	req.EnableChecksum = originalDomain.EnableChecksum
+
+	response, err := domainService.UpdateDomain(id, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())

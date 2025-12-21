@@ -169,6 +169,19 @@ func (s *DomainService) GetDomainByName(domainName string) (*model.Domain, error
 	return domain, nil
 }
 
+// GetDomainByID 根据ID查询域名
+func (s *DomainService) GetDomainByID(id uint64) (*model.Domain, error) {
+	domain, err := s.domainDao.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("域名不存在")
+		}
+		return nil, err
+	}
+
+	return domain, nil
+}
+
 // 私有方法
 
 // modelToResponse 将模型转换为响应格式
