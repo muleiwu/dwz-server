@@ -88,6 +88,11 @@
     - docker
   docker:
     image: docker.cnb.cool/mliev/open/node-go:node22-pnpm-go1.25.2
+  env:
+    APP_VERSION: ${CNB_BRANCH}
+    BUILD_TIME: ${CNB_BUILD_START_TIME}
+    GIT_COMMIT: ${CNB_COMMIT_SHORT}
+    ENVIRONMENT: production
   stages:
     - name: build-web
       script:

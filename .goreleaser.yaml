@@ -62,10 +62,11 @@ builds:
       ldflags:
         # 减小二进制大小，移除调试信息
         - -s -w
-        # 添加版本信息 (可选)
-        - -X main.version={{.Version}}
-        - -X main.commit={{.Commit}}
-        - -X main.date={{.Date}}
+        # 添加版本信息
+        - -X main.Version={{ .Env.APP_VERSION }}
+        - -X main.GitCommit={{ .Env.GIT_COMMIT }}
+        - -X main.BuildTime={{ .Env.BUILD_TIME }}
+        - -X main.Environment={{ .Env.ENVIRONMENT }}
       # 构建标志确保静态编译
       flags:
         - -a
