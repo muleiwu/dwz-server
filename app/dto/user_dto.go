@@ -74,6 +74,7 @@ type UserListResponse struct {
 // CreateUserTokenRequest 创建用户Token请求
 type CreateUserTokenRequest struct {
 	TokenName string     `json:"token_name" binding:"required,max=100" example:"API Token"`
+	TokenType string     `json:"token_type" binding:"omitempty,oneof=bearer signature" example:"signature"` // 默认 signature
 	ExpireAt  *time.Time `json:"expire_at" example:"2024-12-31T23:59:59Z"`
 }
 
@@ -81,7 +82,10 @@ type CreateUserTokenRequest struct {
 type CreateUserTokenResponse struct {
 	ID        uint64     `json:"id"`
 	TokenName string     `json:"token_name"`
-	Token     string     `json:"token"`
+	TokenType string     `json:"token_type"`
+	Token     string     `json:"token,omitempty"`      // Bearer Token（仅 bearer 类型）
+	AppID     string     `json:"app_id,omitempty"`     // 签名认证 App ID（仅 signature 类型）
+	AppSecret string     `json:"app_secret,omitempty"` // 签名认证 App Secret（仅创建时返回）
 	ExpireAt  *time.Time `json:"expire_at"`
 	CreatedAt time.Time  `json:"created_at"`
 }
@@ -90,7 +94,9 @@ type CreateUserTokenResponse struct {
 type UserTokenInfo struct {
 	ID         uint64     `json:"id"`
 	TokenName  string     `json:"token_name"`
-	Token      string     `json:"token"` // 列表中只显示前8位
+	TokenType  string     `json:"token_type"`
+	Token      string     `json:"token,omitempty"`  // 仅 bearer 类型，显示前8位
+	AppID      string     `json:"app_id,omitempty"` // 仅 signature 类型
 	LastUsedAt *time.Time `json:"last_used_at"`
 	ExpireAt   *time.Time `json:"expire_at"`
 	Status     int8       `json:"status"`

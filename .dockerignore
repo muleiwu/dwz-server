@@ -32,6 +32,7 @@ config.yaml
 LICENSE
 README.md
 *.md
+docs/
 
 # 忽略已编译的二进制文件
 go-web 
