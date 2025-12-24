@@ -16,6 +16,14 @@ const (
 	ErrCodeInternal    = 500 // 内部服务器错误
 	ErrCodeBadGateway  = 502 // 网关错误
 	ErrCodeUnavailable = 503 // 服务不可用
+
+	// 签名认证错误码 (401xx)
+	ErrCodeMissingAuth      = 40101 // 缺少认证信息
+	ErrCodeInvalidTimestamp = 40102 // 时间戳无效
+	ErrCodeInvalidSignature = 40103 // 签名验证失败
+	ErrCodeInvalidAppID     = 40104 // 无效的AppID
+	ErrCodeTokenDisabled    = 40105 // Token已禁用
+	ErrCodeUserDisabled     = 40106 // 用户已被禁用
 )
 
 // 错误信息映射
@@ -29,6 +37,14 @@ var ErrMessages = map[int]string{
 	ErrCodeInternal:     "内部服务器错误",
 	ErrCodeBadGateway:   "网关错误",
 	ErrCodeUnavailable:  "服务暂不可用",
+
+	// 签名认证错误信息
+	ErrCodeMissingAuth:      "缺少认证信息",
+	ErrCodeInvalidTimestamp: "时间戳无效",
+	ErrCodeInvalidSignature: "签名验证失败",
+	ErrCodeInvalidAppID:     "无效的AppID",
+	ErrCodeTokenDisabled:    "Token已禁用",
+	ErrCodeUserDisabled:     "用户已被禁用",
 }
 
 // GetErrMessage 获取错误信息
