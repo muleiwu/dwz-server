@@ -109,9 +109,24 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 		if domainInfo.EnableChecksum != nil {
 			enableChecksum = *domainInfo.EnableChecksum
 		}
+		enableXorObfuscation := false
+		if domainInfo.EnableXorObfuscation != nil {
+			enableXorObfuscation = *domainInfo.EnableXorObfuscation
+		}
+		xorSecret := uint64(0)
+		if domainInfo.XorSecret != nil {
+			xorSecret = *domainInfo.XorSecret
+		}
+		xorRot := 0
+		if domainInfo.XorRot != nil {
+			xorRot = *domainInfo.XorRot
+		}
 		config := interfaces.ShortCodeConfig{
-			RandomSuffixLength: randomSuffixLength,
-			EnableChecksum:     enableChecksum,
+			RandomSuffixLength:   randomSuffixLength,
+			EnableChecksum:       enableChecksum,
+			EnableXorObfuscation: enableXorObfuscation,
+			XorSecret:            xorSecret,
+			XorRot:               xorRot,
 		}
 		generatedCode, issuerNumber, err := s.idGenerator.GenerateShortCodeWithConfig(domainInfo.ID, s.context, config)
 		if err != nil {

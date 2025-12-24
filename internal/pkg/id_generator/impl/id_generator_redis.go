@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/bits"
 
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/muleiwu/base_n"
@@ -122,8 +123,14 @@ func (g *IDGeneratorRedis) GenerateShortCodeWithConfig(domainID uint64, ctx cont
 		return "", nil, errors.New(fmt.Sprintf("分布式发号器故障: %v", err))
 	}
 
+	// 如果启用XOR混淆，对ID进行混淆
+	encodedID := id
+	if config.EnableXorObfuscation {
+		encodedID = obfuscateIDRedis(id, config.XorSecret, config.XorRot)
+	}
+
 	// 将ID转换为62进制
-	base62Code := g.base62.Encode(int64(id))
+	base62Code := g.base62.Encode(int64(encodedID))
 
 	// 添加防猜测措施（使用配置）
 	shortCode, err := g.addAntiGuessingSuffixWithConfig(base62Code, config)
@@ -194,4 +201,36 @@ func (g *IDGeneratorRedis) calculateChecksum(input string) int {
 		checksum ^= int(char)
 	}
 	return checksum % len(g.fallbackChars)
+}
+
+// obfuscateIDRedis 使用XOR和位旋转混淆ID，保持结果的base62长度与原ID一致
+func obfuscateIDRedis(id uint64, secret uint64, rot int) uint64 {
+	// 计算ID需要的位数
+	bitLen := bits.Len64(id)
+	if bitLen == 0 {
+		bitLen = 1 // 至少1位
+	}
+
+	// 创建位掩码，确保结果在相同范围内
+	mask := (uint64(1) << bitLen) - 1
+
+	// 先限制ID在范围内（理论上已经在范围内，但保险起见）
+	id = id & mask
+
+	// 对secret也应用掩码，避免XOR后超出范围
+	maskedSecret := secret & mask
+
+	// 位旋转需要在有效位数内旋转
+	rotInRange := rot % bitLen
+	if rotInRange < 0 {
+		rotInRange += bitLen
+	}
+
+	// 在bitLen位内进行旋转
+	rotated := ((id << rotInRange) | (id >> (bitLen - rotInRange))) & mask
+
+	// XOR并应用掩码
+	result := (rotated ^ maskedSecret) & mask
+
+	return result
 }

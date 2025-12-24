@@ -1,7 +1,11 @@
 package service
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"errors"
+	mathrand "math/rand"
+	"strconv"
 
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
@@ -37,20 +41,51 @@ func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainRespons
 		return nil, errors.New("域名已存在")
 	}
 
+	// 处理XOR混淆配置
+	var xorSecretUint64 *uint64
+	var xorRotInt *int
+
+	if req.EnableXorObfuscation != nil && *req.EnableXorObfuscation {
+		// 处理 XorSecret：字符串转 uint64
+		if req.XorSecret != nil && *req.XorSecret != "" {
+			secret, err := strconv.ParseUint(*req.XorSecret, 10, 64)
+			if err != nil {
+				return nil, errors.New("无效的XOR密钥格式")
+			}
+			xorSecretUint64 = &secret
+		} else {
+			// 未提供则随机生成
+			secret := generateRandomUint64()
+			xorSecretUint64 = &secret
+		}
+
+		// 处理 XorRot
+		if req.XorRot != nil {
+			xorRotInt = req.XorRot
+		} else {
+			// 未提供则随机生成
+			rot := mathrand.Intn(63) + 1 // 1-63
+			xorRotInt = &rot
+		}
+	}
+
 	// 创建域名记录
 	// 注意：直接使用请求中的值，不做默认值回退
 	// 默认值由数据库迁移时设置，确保老数据兼容
 	domain := &model.Domain{
-		Domain:             req.Domain,
-		Protocol:           req.Protocol,
-		SiteName:           req.SiteName,
-		ICPNumber:          req.ICPNumber,
-		PoliceNumber:       req.PoliceNumber,
-		Description:        req.Description,
-		IsActive:           req.IsActive,
-		PassQueryParams:    req.PassQueryParams,
-		RandomSuffixLength: req.RandomSuffixLength,
-		EnableChecksum:     req.EnableChecksum,
+		Domain:               req.Domain,
+		Protocol:             req.Protocol,
+		SiteName:             req.SiteName,
+		ICPNumber:            req.ICPNumber,
+		PoliceNumber:         req.PoliceNumber,
+		Description:          req.Description,
+		IsActive:             req.IsActive,
+		PassQueryParams:      req.PassQueryParams,
+		RandomSuffixLength:   req.RandomSuffixLength,
+		EnableChecksum:       req.EnableChecksum,
+		EnableXorObfuscation: req.EnableXorObfuscation,
+		XorSecret:            xorSecretUint64,
+		XorRot:               xorRotInt,
 	}
 
 	if err := s.domainDao.Create(domain); err != nil {
@@ -195,20 +230,46 @@ func (s *DomainService) modelToResponse(domain *model.Domain) *dto.DomainRespons
 	if domain.EnableChecksum != nil {
 		enableChecksum = *domain.EnableChecksum
 	}
+	enableXorObfuscation := false
+	if domain.EnableXorObfuscation != nil {
+		enableXorObfuscation = *domain.EnableXorObfuscation
+	}
+	xorSecret := "0"
+	if domain.XorSecret != nil {
+		xorSecret = strconv.FormatUint(*domain.XorSecret, 10)
+	}
+	xorRot := 0
+	if domain.XorRot != nil {
+		xorRot = *domain.XorRot
+	}
 
 	return &dto.DomainResponse{
-		ID:                 domain.ID,
-		Domain:             domain.Domain,
-		Protocol:           domain.Protocol,
-		SiteName:           domain.SiteName,
-		ICPNumber:          domain.ICPNumber,
-		PoliceNumber:       domain.PoliceNumber,
-		IsActive:           domain.IsActive,
-		PassQueryParams:    domain.PassQueryParams,
-		RandomSuffixLength: randomSuffixLength,
-		EnableChecksum:     enableChecksum,
-		Description:        domain.Description,
-		CreatedAt:          domain.CreatedAt,
-		UpdatedAt:          domain.UpdatedAt,
+		ID:                   domain.ID,
+		Domain:               domain.Domain,
+		Protocol:             domain.Protocol,
+		SiteName:             domain.SiteName,
+		ICPNumber:            domain.ICPNumber,
+		PoliceNumber:         domain.PoliceNumber,
+		IsActive:             domain.IsActive,
+		PassQueryParams:      domain.PassQueryParams,
+		RandomSuffixLength:   randomSuffixLength,
+		EnableChecksum:       enableChecksum,
+		EnableXorObfuscation: enableXorObfuscation,
+		XorSecret:            xorSecret,
+		XorRot:               xorRot,
+		Description:          domain.Description,
+		CreatedAt:            domain.CreatedAt,
+		UpdatedAt:            domain.UpdatedAt,
 	}
+}
+
+// generateRandomUint64 使用crypto/rand生成随机uint64
+func generateRandomUint64() uint64 {
+	var b [8]byte
+	_, err := rand.Read(b[:])
+	if err != nil {
+		// 如果crypto/rand失败，使用时间戳作为备用方案
+		return uint64(binary.BigEndian.Uint64(b[:]))
+	}
+	return binary.BigEndian.Uint64(b[:])
 }

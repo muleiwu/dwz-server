@@ -4,8 +4,11 @@ import "context"
 
 // ShortCodeConfig 短码生成配置
 type ShortCodeConfig struct {
-	RandomSuffixLength int  // 随机后缀位数 (0-10)
-	EnableChecksum     bool // 是否启用校验位
+	RandomSuffixLength   int    // 随机后缀位数 (0-10)
+	EnableChecksum       bool   // 是否启用校验位
+	EnableXorObfuscation bool   // 是否启用XOR混淆
+	XorSecret            uint64 // XOR密钥
+	XorRot               int    // 旋转位数 (1-63)
 }
 
 type IDGenerator interface {

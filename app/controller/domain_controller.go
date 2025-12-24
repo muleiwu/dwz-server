@@ -74,6 +74,17 @@ func (ctrl DomainController) UpdateDomain(c *gin.Context, helper interfaces.Help
 	// 使用原始值覆盖请求中的配置字段，防止修改
 	req.RandomSuffixLength = originalDomain.RandomSuffixLength
 	req.EnableChecksum = originalDomain.EnableChecksum
+	req.EnableXorObfuscation = originalDomain.EnableXorObfuscation
+
+	// XorSecret 需要从 uint64 转换为 string
+	if originalDomain.XorSecret != nil {
+		secretStr := strconv.FormatUint(*originalDomain.XorSecret, 10)
+		req.XorSecret = &secretStr
+	} else {
+		req.XorSecret = nil
+	}
+
+	req.XorRot = originalDomain.XorRot
 
 	response, err := domainService.UpdateDomain(id, &req)
 	if err != nil {
