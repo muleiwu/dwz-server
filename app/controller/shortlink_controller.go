@@ -88,6 +88,35 @@ func (ctrl ShortLinkController) UpdateShortLink(c *gin.Context, helper interface
 	ctrl.Success(c, response)
 }
 
+// UpdateShortLinkStatus 更新短网址状态
+func (ctrl ShortLinkController) UpdateShortLinkStatus(c *gin.Context, helper interfaces.HelperInterface) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		ctrl.Error(c, constants.ErrCodeBadRequest, "无效的ID格式")
+		return
+	}
+
+	var req dto.UpdateShortLinkStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
+		return
+	}
+
+	shortLinkService := service.NewShortLinkService(helper, c.Request.Context())
+	response, err := shortLinkService.UpdateShortLinkStatus(id, req.IsActive)
+	if err != nil {
+		if strings.Contains(err.Error(), "不存在") {
+			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
+		} else {
+			ctrl.Error(c, constants.ErrCodeInternal, err.Error())
+		}
+		return
+	}
+
+	ctrl.Success(c, response)
+}
+
 // DeleteShortLink 删除短网址
 func (ctrl ShortLinkController) DeleteShortLink(c *gin.Context, helper interfaces.HelperInterface) {
 	idStr := c.Param("id")
@@ -101,6 +130,8 @@ func (ctrl ShortLinkController) DeleteShortLink(c *gin.Context, helper interface
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
+		} else if strings.Contains(err.Error(), "请先禁用") {
+			ctrl.Error(c, constants.ErrCodeForbidden, err.Error())
 		} else {
 			ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		}

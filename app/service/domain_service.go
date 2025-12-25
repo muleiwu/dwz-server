@@ -172,7 +172,19 @@ func (s *DomainService) UpdateDomain(id uint64, req *dto.DomainRequest) (*dto.Do
 
 // DeleteDomain 删除域名
 func (s *DomainService) DeleteDomain(id uint64) error {
-	// 可以添加检查是否有短网址使用此域名的逻辑
+	// 先查找域名
+	domain, err := s.domainDao.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("域名不存在")
+		}
+		return err
+	}
+
+	// 检查是否已禁用，只有禁用状态才能删除
+	if domain.IsActive {
+		return errors.New("请先禁用域名后再删除")
+	}
 
 	return s.domainDao.Delete(id)
 }

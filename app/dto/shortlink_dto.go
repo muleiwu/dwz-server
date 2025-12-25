@@ -21,6 +21,11 @@ type UpdateShortLinkRequest struct {
 	IsActive    *bool      `json:"is_active"`
 }
 
+// UpdateShortLinkStatusRequest 更新短网址状态请求
+type UpdateShortLinkStatusRequest struct {
+	IsActive bool `json:"is_active" example:"true"`
+}
+
 // ShortLinkResponse 短网址响应
 type ShortLinkResponse struct {
 	ID          uint64     `json:"id"`
