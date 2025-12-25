@@ -86,6 +86,7 @@ func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainRespons
 		EnableXorObfuscation: req.EnableXorObfuscation,
 		XorSecret:            xorSecretUint64,
 		XorRot:               xorRotInt,
+		DefaultStartNumber:   &req.DefaultStartNumber,
 	}
 
 	if err := s.domainDao.Create(domain); err != nil {
@@ -242,6 +243,10 @@ func (s *DomainService) modelToResponse(domain *model.Domain) *dto.DomainRespons
 	if domain.XorRot != nil {
 		xorRot = *domain.XorRot
 	}
+	defaultStartNumber := uint64(0)
+	if domain.DefaultStartNumber != nil {
+		defaultStartNumber = *domain.DefaultStartNumber
+	}
 
 	return &dto.DomainResponse{
 		ID:                   domain.ID,
@@ -257,6 +262,7 @@ func (s *DomainService) modelToResponse(domain *model.Domain) *dto.DomainRespons
 		EnableXorObfuscation: enableXorObfuscation,
 		XorSecret:            xorSecret,
 		XorRot:               xorRot,
+		DefaultStartNumber:   defaultStartNumber,
 		Description:          domain.Description,
 		CreatedAt:            domain.CreatedAt,
 		UpdatedAt:            domain.UpdatedAt,

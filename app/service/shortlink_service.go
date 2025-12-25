@@ -121,12 +121,17 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 		if domainInfo.XorRot != nil {
 			xorRot = *domainInfo.XorRot
 		}
+		defaultStartNumber := uint64(0)
+		if domainInfo.DefaultStartNumber != nil {
+			defaultStartNumber = *domainInfo.DefaultStartNumber
+		}
 		config := interfaces.ShortCodeConfig{
 			RandomSuffixLength:   randomSuffixLength,
 			EnableChecksum:       enableChecksum,
 			EnableXorObfuscation: enableXorObfuscation,
 			XorSecret:            xorSecret,
 			XorRot:               xorRot,
+			DefaultStartNumber:   defaultStartNumber,
 		}
 		generatedCode, issuerNumber, err := s.idGenerator.GenerateShortCodeWithConfig(domainInfo.ID, s.context, config)
 		if err != nil {
