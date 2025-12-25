@@ -21,6 +21,11 @@ type UpdateShortLinkRequest struct {
 	IsActive    *bool      `json:"is_active"`
 }
 
+// UpdateShortLinkStatusRequest 更新短网址状态请求
+type UpdateShortLinkStatusRequest struct {
+	IsActive bool `json:"is_active" example:"true"`
+}
+
 // ShortLinkResponse 短网址响应
 type ShortLinkResponse struct {
 	ID          uint64     `json:"id"`
@@ -101,6 +106,7 @@ type DomainResponse struct {
 	EnableXorObfuscation bool      `json:"enable_xor_obfuscation"` // 是否启用XOR混淆
 	XorSecret            string    `json:"xor_secret"`             // XOR密钥（字符串格式）
 	XorRot               int       `json:"xor_rot"`                // 旋转位数
+	DefaultStartNumber   uint64    `json:"default_start_number"`   // 默认开始数字
 	Description          string    `json:"description"`
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
@@ -120,6 +126,7 @@ type DomainRequest struct {
 	EnableXorObfuscation *bool   `json:"enable_xor_obfuscation" example:"false"`                            // 是否启用XOR混淆，使用指针以支持false值
 	XorSecret            *string `json:"xor_secret" example:"11817553067636239985"`                         // XOR密钥（字符串格式），不填写时随机生成
 	XorRot               *int    `json:"xor_rot" binding:"omitempty,min=1,max=63" example:"17"`             // 旋转位数 (1-63)，不填写时随机生成
+	DefaultStartNumber   uint64  `json:"default_start_number" example:"0"`                                  // 默认开始数字，0表示从1开始
 	Description          string  `json:"description" example:"主要短链域名"`                                      // 描述
 }
 

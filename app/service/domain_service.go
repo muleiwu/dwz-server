@@ -86,6 +86,7 @@ func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainRespons
 		EnableXorObfuscation: req.EnableXorObfuscation,
 		XorSecret:            xorSecretUint64,
 		XorRot:               xorRotInt,
+		DefaultStartNumber:   &req.DefaultStartNumber,
 	}
 
 	if err := s.domainDao.Create(domain); err != nil {
@@ -171,7 +172,19 @@ func (s *DomainService) UpdateDomain(id uint64, req *dto.DomainRequest) (*dto.Do
 
 // DeleteDomain 删除域名
 func (s *DomainService) DeleteDomain(id uint64) error {
-	// 可以添加检查是否有短网址使用此域名的逻辑
+	// 先查找域名
+	domain, err := s.domainDao.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("域名不存在")
+		}
+		return err
+	}
+
+	// 检查是否已禁用，只有禁用状态才能删除
+	if domain.IsActive {
+		return errors.New("请先禁用域名后再删除")
+	}
 
 	return s.domainDao.Delete(id)
 }
@@ -242,6 +255,10 @@ func (s *DomainService) modelToResponse(domain *model.Domain) *dto.DomainRespons
 	if domain.XorRot != nil {
 		xorRot = *domain.XorRot
 	}
+	defaultStartNumber := uint64(0)
+	if domain.DefaultStartNumber != nil {
+		defaultStartNumber = *domain.DefaultStartNumber
+	}
 
 	return &dto.DomainResponse{
 		ID:                   domain.ID,
@@ -257,6 +274,7 @@ func (s *DomainService) modelToResponse(domain *model.Domain) *dto.DomainRespons
 		EnableXorObfuscation: enableXorObfuscation,
 		XorSecret:            xorSecret,
 		XorRot:               xorRot,
+		DefaultStartNumber:   defaultStartNumber,
 		Description:          domain.Description,
 		CreatedAt:            domain.CreatedAt,
 		UpdatedAt:            domain.UpdatedAt,

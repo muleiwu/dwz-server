@@ -56,9 +56,9 @@ func (d *DomainDao) IdToUpdate(domainId uint64, where map[string]any) error {
 	return d.helper.GetDatabase().Model(&model.Domain{}).Where("id = ?", domainId).Updates(where).Error
 }
 
-// Delete 删除域名（软删除）
+// Delete 删除域名（硬删除）
 func (d *DomainDao) Delete(id uint64) error {
-	return d.helper.GetDatabase().Delete(&model.Domain{}, id).Error
+	return d.helper.GetDatabase().Unscoped().Delete(&model.Domain{}, id).Error
 }
 
 // GetActiveDomains 获取活跃域名列表

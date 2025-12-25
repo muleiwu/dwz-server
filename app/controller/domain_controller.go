@@ -86,6 +86,13 @@ func (ctrl DomainController) UpdateDomain(c *gin.Context, helper interfaces.Help
 
 	req.XorRot = originalDomain.XorRot
 
+	// 保护 DefaultStartNumber 字段，创建后不允许修改
+	if originalDomain.DefaultStartNumber != nil {
+		req.DefaultStartNumber = *originalDomain.DefaultStartNumber
+	} else {
+		req.DefaultStartNumber = 0
+	}
+
 	response, err := domainService.UpdateDomain(id, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
@@ -144,6 +151,8 @@ func (ctrl DomainController) DeleteDomain(c *gin.Context, helper interfaces.Help
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
+		} else if strings.Contains(err.Error(), "请先禁用") {
+			ctrl.Error(c, constants.ErrCodeForbidden, err.Error())
 		} else {
 			ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		}

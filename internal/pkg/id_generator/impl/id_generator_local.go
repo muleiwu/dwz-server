@@ -121,6 +121,18 @@ func (g *IDGeneratorLocal) GenerateShortCode(domainID uint64, ctx context.Contex
 
 // GenerateShortCodeWithConfig 使用自定义配置生成短代码
 func (g *IDGeneratorLocal) GenerateShortCodeWithConfig(domainID uint64, ctx context.Context, config interfaces.ShortCodeConfig) (string, *uint64, error) {
+	// 检查是否需要初始化计数器（当计数器为0且DefaultStartNumber > 0时）
+	if config.DefaultStartNumber > 0 {
+		g.countersMutex.RLock()
+		currentValue, exists := g.counters[domainID]
+		g.countersMutex.RUnlock()
+
+		// 如果计数器不存在或为0，使用默认开始数字初始化
+		if !exists || currentValue == 0 {
+			g.InitializeDomainCounter(domainID, config.DefaultStartNumber)
+		}
+	}
+
 	// Generate ID using our concurrent ID generator
 	id, err := g.GenerateID(domainID, ctx)
 	if err != nil {

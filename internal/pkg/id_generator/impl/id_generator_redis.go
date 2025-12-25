@@ -117,6 +117,20 @@ func (g *IDGeneratorRedis) GenerateShortCode(domainID uint64, ctx context.Contex
 
 // GenerateShortCodeWithConfig 使用自定义配置生成短代码
 func (g *IDGeneratorRedis) GenerateShortCodeWithConfig(domainID uint64, ctx context.Context, config interfaces.ShortCodeConfig) (string, *uint64, error) {
+	// 检查是否需要初始化计数器（当计数器为0且DefaultStartNumber > 0时）
+	if config.DefaultStartNumber > 0 {
+		key := fmt.Sprintf("domain_counter:%d", domainID)
+
+		// 检查当前计数器值
+		current, err := g.redis.Get(ctx, key).Int64()
+		if err == redis.Nil || current == 0 {
+			// 计数器不存在或为0，使用默认开始数字初始化
+			g.InitializeDomainCounter(domainID, config.DefaultStartNumber)
+		} else if err != nil {
+			g.logger.Error(fmt.Sprintf("检查域名%d计数器失败: %v", domainID, err))
+		}
+	}
+
 	// 使用分布式发号器
 	id, err := g.GenerateID(domainID, ctx)
 	if err != nil {

@@ -9,6 +9,7 @@ type ShortCodeConfig struct {
 	EnableXorObfuscation bool   // 是否启用XOR混淆
 	XorSecret            uint64 // XOR密钥
 	XorRot               int    // 旋转位数 (1-63)
+	DefaultStartNumber   uint64 // 默认开始数字
 }
 
 type IDGenerator interface {

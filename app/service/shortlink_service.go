@@ -121,12 +121,17 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 		if domainInfo.XorRot != nil {
 			xorRot = *domainInfo.XorRot
 		}
+		defaultStartNumber := uint64(0)
+		if domainInfo.DefaultStartNumber != nil {
+			defaultStartNumber = *domainInfo.DefaultStartNumber
+		}
 		config := interfaces.ShortCodeConfig{
 			RandomSuffixLength:   randomSuffixLength,
 			EnableChecksum:       enableChecksum,
 			EnableXorObfuscation: enableXorObfuscation,
 			XorSecret:            xorSecret,
 			XorRot:               xorRot,
+			DefaultStartNumber:   defaultStartNumber,
 		}
 		generatedCode, issuerNumber, err := s.idGenerator.GenerateShortCodeWithConfig(domainInfo.ID, s.context, config)
 		if err != nil {
@@ -203,6 +208,29 @@ func (s *ShortLinkService) UpdateShortLink(id uint64, req *dto.UpdateShortLinkRe
 	return s.modelToResponse(shortLink), nil
 }
 
+// UpdateShortLinkStatus 更新短网址状态
+func (s *ShortLinkService) UpdateShortLinkStatus(id uint64, isActive bool) (*dto.ShortLinkResponse, error) {
+	shortLink, err := s.shortLinkDao.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("短网址不存在")
+		}
+		return nil, err
+	}
+
+	// 更新状态
+	shortLink.IsActive = isActive
+
+	if err := s.shortLinkDao.Update(shortLink); err != nil {
+		return nil, err
+	}
+
+	// 更新缓存
+	s.cacheShortLink(shortLink)
+
+	return s.modelToResponse(shortLink), nil
+}
+
 // DeleteShortLink 删除短网址
 func (s *ShortLinkService) DeleteShortLink(id uint64) error {
 	shortLink, err := s.shortLinkDao.FindByID(id)
@@ -211,6 +239,11 @@ func (s *ShortLinkService) DeleteShortLink(id uint64) error {
 			return errors.New("短网址不存在")
 		}
 		return err
+	}
+
+	// 检查是否已禁用，只有禁用状态才能删除
+	if shortLink.IsActive {
+		return errors.New("请先禁用短网址后再删除")
 	}
 
 	if err := s.shortLinkDao.Delete(id); err != nil {

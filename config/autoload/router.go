@@ -67,6 +67,7 @@ func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[strin
 					shortLinks.GET("", deps.WrapHandler(controller.ShortLinkController{}.GetShortLinkList))                      // 获取短网址列表
 					shortLinks.GET("/:id", deps.WrapHandler(controller.ShortLinkController{}.GetShortLink))                      // 获取短网址详情
 					shortLinks.PUT("/:id", deps.WrapHandler(controller.ShortLinkController{}.UpdateShortLink))                   // 更新短网址
+					shortLinks.PUT("/:id/status", deps.WrapHandler(controller.ShortLinkController{}.UpdateShortLinkStatus))      // 更新短网址状态
 					shortLinks.DELETE("/:id", deps.WrapHandler(controller.ShortLinkController{}.DeleteShortLink))                // 删除短网址
 					shortLinks.GET("/:id/statistics", deps.WrapHandler(controller.ShortLinkController{}.GetShortLinkStatistics)) // 获取统计信息
 					shortLinks.POST("/batch", deps.WrapHandler(controller.ShortLinkController{}.BatchCreateShortLinks))          // 批量创建短网址

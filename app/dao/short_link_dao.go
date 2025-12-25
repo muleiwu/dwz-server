@@ -46,9 +46,9 @@ func (d *ShortLinkDao) Update(shortLink *model.ShortLink) error {
 	return d.helper.GetDatabase().Save(shortLink).Error
 }
 
-// Delete 删除短网址（软删除）
+// Delete 删除短网址（硬删除）
 func (d *ShortLinkDao) Delete(id uint64) error {
-	return d.helper.GetDatabase().Delete(&model.ShortLink{}, id).Error
+	return d.helper.GetDatabase().Unscoped().Delete(&model.ShortLink{}, id).Error
 }
 
 // List 获取短网址列表
