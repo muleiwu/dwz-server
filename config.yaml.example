@@ -5,24 +5,43 @@ http:
   # 静态资源根目录，会自动加载该目录下的所有文件和子目录
   # 访问 /admin/ 时会尝试返回 /admin/index.html 或 /admin/index.htm
   static_dir: static
-  # 静态文件模式: embed（嵌入到二进制）或 disk（从磁盘加载，开发模式支持热更新）
+  # 静态文件模式: embed（嵌入到二进制）或 disk（从磁盘加载）
   static_mode: embed
-  # 模板文件模式: embed（嵌入到二进制）或 disk（从磁盘加载，开发模式支持热更新）
+  # 模板文件模式: embed（嵌入到二进制）或 disk（从磁盘加载）
   templates_mode: embed
   # 模板文件目录
   templates_dir: templates
 
-# 开发环境建议使用 disk 模式，支持热更新：
+# 静态资源缓存策略（仅对 static_mode: disk 生效）：
+# - mode: release → 启用内存缓存，首次读取后缓存到内存，性能最优
+# - mode: debug/test → 实时读取磁盘，支持热更新，无需重启服务器
+
+# 开发环境配置示例（支持热更新）：
 # http:
+#   mode: debug              # 非 release 模式，实时读取磁盘
+#   addr: ":8080"
 #   static_dir: static
-#   static_mode: disk
-#   templates_mode: disk
+#   static_mode: disk        # 从磁盘加载
+#   templates_mode: disk     # 从磁盘加载
+#   templates_dir: templates
 #
-# 生产环境建议使用 embed 模式，嵌入到二进制文件：
+# 生产环境配置示例（性能优化）：
 # http:
+#   mode: release            # release 模式，启用缓存
+#   addr: ":8080"
 #   static_dir: static
-#   static_mode: embed
-#   templates_mode: embed
+#   static_mode: disk        # 从磁盘加载（带缓存）
+#   templates_mode: embed    # 嵌入到二进制
+#   templates_dir: templates
+#
+# 或使用完全嵌入模式（推荐生产环境）：
+# http:
+#   mode: release
+#   addr: ":8080"
+#   static_dir: static
+#   static_mode: embed       # 嵌入到二进制
+#   templates_mode: embed    # 嵌入到二进制
+#   templates_dir: templates
 
 # 数据库配置
 database:

@@ -45,13 +45,21 @@ func (receiver *StaticHandler) setupStaticFileServers() {
 
 	// 初始化驱动（只判断一次）
 	staticMode := receiver.helper.GetConfig().GetString("http.static_mode", "embed")
-	receiver.helper.GetLogger().Debug(fmt.Sprintf("当前静态文件模式：%s", staticMode))
+	httpMode := receiver.helper.GetConfig().GetString("http.mode", "release")
+	receiver.helper.GetLogger().Debug(fmt.Sprintf("当前静态文件模式：%s, HTTP模式：%s", staticMode, httpMode))
 	staticFs := receiver.helper.GetConfig().Get("static.fs", map[string]embed.FS{}).(map[string]embed.FS)
 
 	if staticMode == "disk" {
-		// disk 模式下使用磁盘驱动，支持热更新
-		receiver.driver = static_handler.NewDiskStaticDriver(".")
-		receiver.helper.GetLogger().Info("Disk 模式：使用磁盘驱动加载静态文件，支持热更新")
+		// disk 模式下使用磁盘驱动
+		// 根据 http.mode 决定是否启用缓存
+		enableCache := (httpMode == "release")
+		receiver.driver = static_handler.NewDiskStaticDriver(".", enableCache)
+
+		if enableCache {
+			receiver.helper.GetLogger().Info("Disk 模式（缓存启用）：首次读取后缓存到内存，提升性能")
+		} else {
+			receiver.helper.GetLogger().Info("Disk 模式（实时读取）：每次请求从磁盘读取，支持热更新")
+		}
 	} else {
 		// embed 模式下使用 embed 驱动
 		embeddedFs, ok := staticFs["web.static"]
