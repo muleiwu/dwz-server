@@ -1,10 +1,7 @@
-# 服务器配置
-server:
-  mode: release  # debug, release, test
-  addr: ":8080"
-
 # HTTP 配置
 http:
+  mode: release  # debug, release, test
+  addr: ":8080"
   # 静态资源根目录，会自动加载该目录下的所有文件和子目录
   # 访问 /admin/ 时会尝试返回 /admin/index.html 或 /admin/index.htm
   static_dir: static
