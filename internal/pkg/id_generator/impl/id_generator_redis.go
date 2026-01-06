@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"math/bits"
 
 	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
 	"github.com/muleiwu/base_n"
@@ -140,7 +139,7 @@ func (g *IDGeneratorRedis) GenerateShortCodeWithConfig(domainID uint64, ctx cont
 	// 如果启用XOR混淆，对ID进行混淆
 	encodedID := id
 	if config.EnableXorObfuscation {
-		encodedID = obfuscateIDRedis(id, config.XorSecret, config.XorRot)
+		encodedID = g.obfuscateID(id, config.XorSecret, config.XorRot)
 	}
 
 	// 将ID转换为62进制
@@ -217,34 +216,54 @@ func (g *IDGeneratorRedis) calculateChecksum(input string) int {
 	return checksum % len(g.fallbackChars)
 }
 
-// obfuscateIDRedis 使用XOR和位旋转混淆ID，保持结果的base62长度与原ID一致
-func obfuscateIDRedis(id uint64, secret uint64, rot int) uint64 {
-	// 计算ID需要的位数
-	bitLen := bits.Len64(id)
-	if bitLen == 0 {
-		bitLen = 1 // 至少1位
+// pow62 计算 62 的 n 次方
+func (g *IDGeneratorRedis) pow62(n int) uint64 {
+	if n <= 0 {
+		return 1
 	}
-
-	// 创建位掩码，确保结果在相同范围内
-	mask := (uint64(1) << bitLen) - 1
-
-	// 先限制ID在范围内（理论上已经在范围内，但保险起见）
-	id = id & mask
-
-	// 对secret也应用掩码，避免XOR后超出范围
-	maskedSecret := secret & mask
-
-	// 位旋转需要在有效位数内旋转
-	rotInRange := rot % bitLen
-	if rotInRange < 0 {
-		rotInRange += bitLen
+	result := uint64(1)
+	for i := 0; i < n; i++ {
+		result *= 62
 	}
-
-	// 在bitLen位内进行旋转
-	rotated := ((id << rotInRange) | (id >> (bitLen - rotInRange))) & mask
-
-	// XOR并应用掩码
-	result := (rotated ^ maskedSecret) & mask
-
 	return result
+}
+
+// calculateBase62Digits 计算 ID 对应的 Base62 位数
+func (g *IDGeneratorRedis) calculateBase62Digits(id uint64) int {
+	if id == 0 {
+		return 1
+	}
+	digits := 1
+	threshold := uint64(62)
+	for id >= threshold {
+		digits++
+		threshold *= 62
+	}
+	return digits
+}
+
+// obfuscateID 使用XOR和位旋转混淆ID，保持结果的base62长度与原ID一致
+func (g *IDGeneratorRedis) obfuscateID(id uint64, secret uint64, rot int) uint64 {
+	// 计算 ID 对应的 Base62 位数
+	digits := g.calculateBase62Digits(id)
+
+	// 获取该位数的范围边界
+	minVal := g.pow62(digits - 1)
+	maxVal := g.pow62(digits) - 1
+	rangeSize := maxVal - minVal + 1
+
+	// 归一化到 [0, rangeSize-1]
+	normalized := id - minVal
+
+	// 在范围内进行位旋转（如果 rot > 0）
+	if rot > 0 && rangeSize > 1 {
+		rotAmount := uint64(rot) % rangeSize
+		normalized = (normalized + rotAmount) % rangeSize
+	}
+
+	// XOR 混淆（保证双射）
+	obfuscated := normalized ^ (secret % rangeSize)
+
+	// 映射回原范围
+	return obfuscated + minVal
 }
