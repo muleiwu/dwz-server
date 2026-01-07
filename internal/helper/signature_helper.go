@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
@@ -147,18 +148,27 @@ func (s *SignatureHelper) sortAndSerializeParams(params map[string]interface{}) 
 		}{k, params[k]}
 	}
 
-	// 手动构建 JSON 字符串以保证顺序
+	// 手动构建 JSON 字符串以保证顺序（禁用 HTML 转义以兼容其他语言）
 	var builder strings.Builder
 	builder.WriteString("{")
 	for i, item := range orderedMap {
 		if i > 0 {
 			builder.WriteString(",")
 		}
-		keyJSON, _ := json.Marshal(item.Key)
-		valueJSON, _ := json.Marshal(item.Value)
-		builder.WriteString(string(keyJSON))
+		// 使用 Encoder 禁用 HTML 转义，避免 &<> 等字符被转义为 \uXXXX
+		var keyBuf, valueBuf bytes.Buffer
+		keyEncoder := json.NewEncoder(&keyBuf)
+		keyEncoder.SetEscapeHTML(false)
+		keyEncoder.Encode(item.Key)
+
+		valueEncoder := json.NewEncoder(&valueBuf)
+		valueEncoder.SetEscapeHTML(false)
+		valueEncoder.Encode(item.Value)
+
+		// Encoder.Encode 会添加换行符，需要 TrimSpace
+		builder.WriteString(strings.TrimSpace(keyBuf.String()))
 		builder.WriteString(":")
-		builder.WriteString(string(valueJSON))
+		builder.WriteString(strings.TrimSpace(valueBuf.String()))
 	}
 	builder.WriteString("}")
 
