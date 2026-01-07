@@ -275,8 +275,25 @@ docker-compose logs -f
 
 ### 环境要求
 - Go 1.23+
-- MySQL 5.7+ 或 PostgreSQL 9.6+
-- Redis 6.0+
+- Node.js 22+ / pnpm 9.0+（前端构建）
+- MySQL 5.7+ 或 PostgreSQL 9.6+（可选，支持 SQLite）
+- Redis 6.0+（可选，支持内存缓存）
+
+### 手动打包
+
+详细的手动打包教程请参考：[手动打包教程](docs/manual-build.md)
+
+快速构建命令：
+```bash
+# 1. 构建前端
+cd admin-webui && pnpm install && pnpm run build:antd --filter=\!./docs && cd ..
+
+# 2. 复制前端产物
+mkdir -p static/admin && cp -r admin-webui/apps/web-antd/dist/* static/admin/
+
+# 3. 构建后端
+CGO_ENABLED=0 go build -ldflags="-s -w" -o dwz-server main.go
+```
 
 ### 开发步骤
 

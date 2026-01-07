@@ -152,6 +152,7 @@ func (receiver *HttpServer) RunHttp() {
 		receiver.Helper.GetLogger().Info(fmt.Sprintf("服务器启动于 %s", addr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			receiver.Helper.GetLogger().Error(fmt.Sprintf("启动服务器失败: %v", err))
+			panic(err)
 		}
 	}()
 
@@ -176,28 +177,45 @@ func (receiver *HttpServer) RunHttp() {
 
 // loadTemplates 加载模板到Gin引擎
 func (receiver *HttpServer) loadTemplates(engine *gin.Engine) error {
-	staticFs := receiver.Helper.GetConfig().Get("static.fs", map[string]embed.FS{}).(map[string]embed.FS)
+	templatesMode := receiver.Helper.GetConfig().GetString("http.templates_mode", "embed")
+	templatesDir := receiver.Helper.GetConfig().GetString("http.templates_dir", "templates")
 
-	templates, ok := staticFs["templates"]
+	receiver.Helper.GetLogger().Debug(fmt.Sprintf("当前模板文件模式：%s", templatesMode))
 
-	if !ok {
-		return errors.New("没有模板目录需要初始化")
+	var tmpl *template.Template
+	var err error
+
+	if templatesMode == "disk" {
+		// disk 模式：从磁盘加载模板，支持热更新
+		receiver.Helper.GetLogger().Info("Disk 模式：从磁盘加载模板文件，支持热更新")
+		tmpl, err = template.ParseGlob(fmt.Sprintf("%s/*.html", templatesDir))
+		if err != nil {
+			return fmt.Errorf("从磁盘加载模板失败: %v", err)
+		}
+	} else {
+		// embed 模式：从嵌入的文件系统加载模板
+		receiver.Helper.GetLogger().Info("Embed 模式：从嵌入文件系统加载模板")
+		staticFs := receiver.Helper.GetConfig().Get("static.fs", map[string]embed.FS{}).(map[string]embed.FS)
+
+		templates, ok := staticFs["templates"]
+		if !ok {
+			return errors.New("没有模板目录需要初始化")
+		}
+
+		// 从嵌入的文件系统创建子文件系统
+		subFS, err := fs.Sub(templates, templatesDir)
+		if err != nil {
+			return fmt.Errorf("创建模板子文件系统失败: %v", err)
+		}
+
+		parseFS, err := template.New("").ParseFS(subFS, "*.html")
+		if err != nil {
+			return fmt.Errorf("解析嵌入模板失败: %v", err)
+		}
+
+		// 创建模板并解析所有模板文件
+		tmpl = template.Must(parseFS, err)
 	}
-
-	// 从嵌入的文件系统创建子文件系统
-	subFS, err := fs.Sub(templates, "templates")
-	if err != nil {
-		return err
-	}
-
-	parseFS, err := template.New("").ParseFS(subFS, "*.html")
-
-	if err != nil {
-		return err
-	}
-
-	// 创建模板并解析所有模板文件
-	tmpl := template.Must(parseFS, err)
 
 	// 设置HTML模板
 	engine.SetHTMLTemplate(tmpl)

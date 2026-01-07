@@ -314,6 +314,7 @@ import (
     "net/http"
     "sort"
     "strconv"
+    "strings"
     "time"
 
     "github.com/google/uuid"
@@ -341,8 +342,14 @@ func (s *SignatureAuth) sortParams(params map[string]interface{}) string {
         sortedMap[k] = params[k]
     }
 
-    result, _ := json.Marshal(sortedMap)
-    return string(result)
+    // 使用 Buffer 和 Encoder 禁用 HTML 转义，避免 &<> 等字符被转义
+    var buf bytes.Buffer
+    encoder := json.NewEncoder(&buf)
+    encoder.SetEscapeHTML(false)
+    encoder.Encode(sortedMap)
+    
+    // Encoder.Encode 会添加换行符，需要 TrimSpace
+    return strings.TrimSpace(buf.String())
 }
 
 func (s *SignatureAuth) generateSignature(method, path string, params map[string]interface{}, timestamp int64, nonce string) string {
