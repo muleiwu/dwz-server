@@ -3,6 +3,7 @@ package static_handler
 import (
 	"embed"
 	"errors"
+	"io"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -53,18 +54,33 @@ func (d *EmbedStaticDriver) ServeFile(c *gin.Context, dir string, relativePath s
 
 	// 先检查文件本身是否存在
 	if d.fileExistsInFS(subFS, relativePath) {
-		c.FileFromFS(relativePath, http.FS(subFS))
-		return nil
+		return d.serveFileContent(c, subFS, relativePath)
 	}
 
 	// 检查 路径/index.html 是否存在
 	indexPath := strings.TrimSuffix(relativePath, "/") + "/index.html"
 	if d.fileExistsInFS(subFS, indexPath) {
-		c.FileFromFS(indexPath, http.FS(subFS))
-		return nil
+		return d.serveFileContent(c, subFS, indexPath)
 	}
 
 	return errors.New("file not found")
+}
+
+// serveFileContent 直接读取文件内容并写入响应
+func (d *EmbedStaticDriver) serveFileContent(c *gin.Context, filesystem fs.FS, path string) error {
+	file, err := filesystem.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Writer.Write(content)
+	return err
 }
 
 // fileExistsInFS 检查文件是否存在于文件系统中
@@ -117,4 +133,3 @@ func (d *EmbedStaticDriver) WalkFiles(dir string, errorCallback WalkErrorCallbac
 
 	return files, nil
 }
-
