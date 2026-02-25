@@ -9,7 +9,7 @@ import (
 
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/config"
-	helper2 "cnb.cool/mliev/open/dwz-server/internal/helper"
+	helper2 "cnb.cool/mliev/open/dwz-server/pkg/helper"
 )
 
 func TestCache(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	envInterface "cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	envInterface "cnb.cool/mliev/open/dwz-server/pkg/interfaces"
 	"github.com/gin-gonic/gin"
 )
 

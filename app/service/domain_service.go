@@ -10,8 +10,8 @@ import (
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/domain_validate"
+	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/open/dwz-server/pkg/service/domain_validate"
 	"gorm.io/gorm"
 )
 

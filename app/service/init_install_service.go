@@ -9,9 +9,9 @@ import (
 
 	"cnb.cool/mliev/open/dwz-server/app/dao"
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	database2 "cnb.cool/mliev/open/dwz-server/internal/pkg/database/config"
-	config2 "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/config"
+	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	database2 "cnb.cool/mliev/open/dwz-server/pkg/service/database/config"
+	config2 "cnb.cool/mliev/open/dwz-server/pkg/service/redis/config"
 	_ "github.com/glebarez/sqlite"
 	"github.com/redis/go-redis/v9"
 )

@@ -3,8 +3,8 @@ package autoload
 import (
 	"cnb.cool/mliev/open/dwz-server/app/controller"
 	"cnb.cool/mliev/open/dwz-server/app/middleware"
-	envInterface "cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	"cnb.cool/mliev/open/dwz-server/internal/pkg/http_server/impl"
+	envInterface "cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/open/dwz-server/pkg/service/http_server/impl"
 	"github.com/gin-gonic/gin"
 	"github.com/jxskiss/ginregex"
 )

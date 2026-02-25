@@ -6,7 +6,7 @@ import (
 
 	"cnb.cool/mliev/open/dwz-server/app/constants"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
-	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
 	"github.com/gin-gonic/gin"
 )
 

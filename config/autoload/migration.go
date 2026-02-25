@@ -2,7 +2,7 @@ package autoload
 
 import (
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	envInterface "cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	envInterface "cnb.cool/mliev/open/dwz-server/pkg/interfaces"
 )
 
 type Migration struct {

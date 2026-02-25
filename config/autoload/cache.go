@@ -1,6 +1,6 @@
 package autoload
 
-import envInterface "cnb.cool/mliev/open/dwz-server/internal/interfaces"
+import envInterface "cnb.cool/mliev/open/dwz-server/pkg/interfaces"
 
 type Config struct {
 }

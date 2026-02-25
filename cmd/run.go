@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"cnb.cool/mliev/open/dwz-server/config"
-	helper2 "cnb.cool/mliev/open/dwz-server/internal/helper"
-	configAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/config/assembly"
+	helper2 "cnb.cool/mliev/open/dwz-server/pkg/helper"
+	configAssembly "cnb.cool/mliev/open/dwz-server/pkg/service/config/assembly"
 )
 
 // Start 启动应用程序
