@@ -412,6 +412,190 @@ func main() {
 }
 ```
 
+### Java
+
+```java
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+
+public class SignatureAuth {
+    private final String appId;
+    private final String appSecret;
+    private final String baseUrl;
+    private final HttpClient httpClient;
+
+    public SignatureAuth(String appId, String appSecret, String baseUrl) {
+        this.appId = appId;
+        this.appSecret = appSecret;
+        this.baseUrl = baseUrl;
+        this.httpClient = HttpClient.newHttpClient();
+    }
+
+    /**
+     * 将参数按 key 排序后转为 JSON 字符串
+     */
+    private String sortParams(Map<String, Object> params) {
+        if (params == null || params.isEmpty()) {
+            return "{}";
+        }
+        
+        // TreeMap 自动按 key 字母顺序排序
+        TreeMap<String, Object> sortedMap = new TreeMap<>(params);
+        
+        // 手动构建 JSON 字符串（避免引入第三方库）
+        StringBuilder json = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<String, Object> entry : sortedMap.entrySet()) {
+            if (!first) {
+                json.append(",");
+            }
+            first = false;
+            
+            json.append("\"").append(entry.getKey()).append("\":");
+            
+            Object value = entry.getValue();
+            if (value instanceof String) {
+                json.append("\"").append(escapeJson((String) value)).append("\"");
+            } else if (value instanceof Number || value instanceof Boolean) {
+                json.append(value);
+            } else {
+                json.append("\"").append(value.toString()).append("\"");
+            }
+        }
+        json.append("}");
+        
+        return json.toString();
+    }
+
+    /**
+     * 转义 JSON 字符串中的特殊字符
+     */
+    private String escapeJson(String str) {
+        return str.replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\b", "\\b")
+                  .replace("\f", "\\f")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t");
+    }
+
+    /**
+     * 生成 HMAC-SHA256 签名
+     */
+    private String generateSignature(String method, String path, Map<String, Object> params, 
+                                     long timestamp, String nonce) throws Exception {
+        String sortedParamsJson = sortParams(params);
+        String stringToSign = method.toUpperCase() + path + sortedParamsJson + timestamp + nonce;
+        
+        Mac mac = Mac.getInstance("HmacSHA256");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(
+            appSecret.getBytes(StandardCharsets.UTF_8), 
+            "HmacSHA256"
+        );
+        mac.init(secretKeySpec);
+        
+        byte[] hash = mac.doFinal(stringToSign.getBytes(StandardCharsets.UTF_8));
+        
+        // 转换为十六进制字符串
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        
+        return hexString.toString();
+    }
+
+    /**
+     * 发送带签名的请求
+     */
+    public String request(String method, String path, Map<String, Object> data) throws Exception {
+        long timestamp = Instant.now().getEpochSecond();
+        String nonce = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        
+        // 确定用于签名的参数
+        Map<String, Object> signParams = data;
+        if (signParams == null) {
+            signParams = Map.of();
+        }
+        
+        String signature = generateSignature(method, path, signParams, timestamp, nonce);
+        
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+            .uri(URI.create(baseUrl + path))
+            .header("X-App-Id", appId)
+            .header("X-Signature", signature)
+            .header("X-Timestamp", String.valueOf(timestamp))
+            .header("X-Nonce", nonce)
+            .header("Content-Type", "application/json");
+        
+        // 根据方法类型构建请求
+        switch (method.toUpperCase()) {
+            case "GET":
+                requestBuilder.GET();
+                break;
+            case "POST":
+                String jsonBody = sortParams(data);
+                requestBuilder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
+                break;
+            case "PUT":
+                jsonBody = sortParams(data);
+                requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(jsonBody));
+                break;
+            case "DELETE":
+                requestBuilder.DELETE();
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported method: " + method);
+        }
+        
+        HttpRequest request = requestBuilder.build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        return response.body();
+    }
+
+    // 使用示例
+    public static void main(String[] args) {
+        try {
+            SignatureAuth auth = new SignatureAuth(
+                "app_1a2b3c4d5e6f7890",
+                "your_app_secret_here",
+                "https://api.example.com"
+            );
+            
+            // 创建短链接
+            Map<String, Object> createData = Map.of(
+                "original_url", "https://www.example.com",
+                "title", "示例网站"
+            );
+            String result = auth.request("POST", "/api/v1/short_links", createData);
+            System.out.println(result);
+            
+            // 获取短链接列表（GET 请求，参数为空）
+            String listResult = auth.request("GET", "/api/v1/short_links?page=1&page_size=10", null);
+            System.out.println(listResult);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
 ## 错误响应
 
 | HTTP 状态码 | 错误消息 | 说明 |

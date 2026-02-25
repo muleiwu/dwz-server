@@ -29,13 +29,22 @@ func (receiver *Migration) Run() error {
 		return nil
 	}
 
-	if len(receiver.Migration) > 0 {
-		err := receiver.Helper.GetDatabase().AutoMigrate(receiver.Migration...)
+	// 合并 CE 和 EE 模型
+	models := receiver.Migration
+	if extraModels := receiver.Helper.GetConfig().Get("ee.extra_models", nil); extraModels != nil {
+		if eeModels, ok := extraModels.([]any); ok {
+			models = append(models, eeModels...)
+			receiver.Helper.GetLogger().Info(fmt.Sprintf("合并 EE 模型: %d 个", len(eeModels)))
+		}
+	}
+
+	if len(models) > 0 {
+		err := receiver.Helper.GetDatabase().AutoMigrate(models...)
 		if err != nil {
 			return fmt.Errorf("[db migration err:%s]", err.Error())
 		}
 
-		receiver.Helper.GetLogger().Info(fmt.Sprintf("[db migration success: %d models migrated]", len(receiver.Migration)))
+		receiver.Helper.GetLogger().Info(fmt.Sprintf("[db migration success: %d models migrated]", len(models)))
 
 		// 修复空字符串的 token 和 app_id 为 NULL（解决唯一索引冲突问题）
 		receiver.fixEmptyTokenFields()
