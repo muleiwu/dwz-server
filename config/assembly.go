@@ -1,15 +1,15 @@
 package config
 
 import (
-	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
-	cacheAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/cache/assembly"
-	configAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/config/assembly"
-	databaseAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/database/assembly"
-	envAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/env/assembly"
-	installedAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/installed/assembly"
-	loggerAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/logger/assembly"
-	redisAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/redis/assembly"
-	versionAssembly "cnb.cool/mliev/open/dwz-server/internal/pkg/version/assembly"
+	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	cacheAssembly "cnb.cool/mliev/open/dwz-server/pkg/service/cache/assembly"
+	configAssembly "cnb.cool/mliev/open/dwz-server/pkg/service/config/assembly"
+	databaseAssembly "cnb.cool/mliev/open/dwz-server/pkg/service/database/assembly"
+	envAssembly "cnb.cool/mliev/open/dwz-server/pkg/service/env/assembly"
+	installedAssembly "cnb.cool/mliev/open/dwz-server/pkg/service/installed/assembly"
+	loggerAssembly "cnb.cool/mliev/open/dwz-server/pkg/service/logger/assembly"
+	redisAssembly "cnb.cool/mliev/open/dwz-server/pkg/service/redis/assembly"
+	versionAssembly "cnb.cool/mliev/open/dwz-server/pkg/service/version/assembly"
 )
 
 type Assembly struct {

@@ -2,7 +2,7 @@ package config
 
 import (
 	"cnb.cool/mliev/open/dwz-server/config/autoload"
-	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
 )
 
 type Config struct {

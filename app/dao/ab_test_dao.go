@@ -2,7 +2,7 @@ package dao
 
 import (
 	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
 	"gorm.io/gorm"
 )
 

@@ -19,7 +19,7 @@ go run main.go
 go test ./...
 
 # Run specific test
-go test ./internal/helper/signature_helper_test.go
+go test ./pkg/helper/signature_helper_test.go
 
 # Build binary
 go build -o dwz-server main.go

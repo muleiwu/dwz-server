@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
 )
 
 // Rate limit constants

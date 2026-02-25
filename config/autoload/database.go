@@ -1,7 +1,7 @@
 package autoload
 
 import (
-	envInterface "cnb.cool/mliev/open/dwz-server/internal/interfaces"
+	envInterface "cnb.cool/mliev/open/dwz-server/pkg/interfaces"
 )
 
 type Database struct {
