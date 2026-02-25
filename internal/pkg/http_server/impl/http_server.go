@@ -134,6 +134,14 @@ func (receiver *HttpServer) RunHttp() {
 
 	header(engine, deps)
 
+	// 注册 EE 扩展路由 (如果提供)
+	if extraRoutes := receiver.Helper.GetConfig().Get("ee.extra_routes", nil); extraRoutes != nil {
+		if fn, ok := extraRoutes.(func(*gin.Engine, *HttpDeps)); ok {
+			receiver.Helper.GetLogger().Info("注册 EE 扩展路由")
+			fn(engine, deps)
+		}
+	}
+
 	//receiver.routerFunc(engine)
 
 	// 创建一个HTTP服务器，以便能够优雅关闭

@@ -23,5 +23,10 @@ func main() {
 		"templates":  templateFS,
 		"web.static": staticFs,
 	}
-	cmd.Start(staticFs, Version, GitCommit, BuildTime)
+	cmd.Start(cmd.StartOptions{
+		Version:   Version,
+		GitCommit: GitCommit,
+		BuildTime: BuildTime,
+		StaticFs:  staticFs,
+	})
 }
