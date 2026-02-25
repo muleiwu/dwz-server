@@ -15,7 +15,7 @@
 ### 开源地址
 
 1. 后端
-   - CNB [https://cnb.cool/mliev/open/dwz-server](https://cnb.cool/mliev/open/dwz-server)
+   - CNB [https://cnb.cool/mliev/dwz/dwz-server](https://cnb.cool/mliev/dwz/dwz-server)
    - Gitee [https://gitee.com/muleiwu/dwz-server](https://gitee.com/muleiwu/dwz-server)
    - GitHub [https://github.com/muleiwu/dwz-server](https://github.com/muleiwu/dwz-server)
 2. 界面
