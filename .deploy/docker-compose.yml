@@ -1,6 +1,6 @@
 services:
   dwz-server:
-    image: docker.cnb.cool/mliev/dwz/dwz-server:master
+    image: docker.cnb.cool/mliev/dwz/dwz-server:latest
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 5s
