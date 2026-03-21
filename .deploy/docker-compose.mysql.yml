@@ -3,9 +3,7 @@ version: '3.8'
 services:
   # 应用服务
   dwz-server:
-    build:
-      context: ..
-      dockerfile: ../Dockerfile
+    image: docker.cnb.cool/mliev/dwz/dwz-server:latest
     ports:
       - "8080:8080"
     environment:
