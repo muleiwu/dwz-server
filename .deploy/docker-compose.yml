@@ -1,0 +1,13 @@
+services:
+  dwz-server:
+    image: docker.cnb.cool/mliev/dwz/dwz-server:master
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./config.yaml:/app/config.yaml"

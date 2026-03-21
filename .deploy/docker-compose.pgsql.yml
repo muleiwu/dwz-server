@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # 应用服务
+  dwz-server:
+    build:
+      context: ..
+      dockerfile: ../Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - MODE=debug
+      - DATABASE_DRIVER=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=dwz_user
+      - DATABASE_PASSWORD=dwz_pass
+      - DATABASE_NAME=dwz_db
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - dwz-network
+    restart: unless-stopped
+
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: dwz_user
+      POSTGRES_PASSWORD: dwz_pass
+      POSTGRES_DB: dwz_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dwz_user -d dwz_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - dwz-network
+    restart: unless-stopped
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - dwz-network
+    restart: unless-stopped
+
+  # 数据库管理工具 (可选)
+  adminer:
+    image: adminer
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    networks:
+      - dwz-network
+    restart: unless-stopped
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  dwz-network:
+    driver: bridge
