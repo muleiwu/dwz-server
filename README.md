@@ -199,7 +199,7 @@ version: '3.8'
 services:
   dwz-server:
     container_name: dwz-server
-    image: docker.cnb.cool/mliev/open/dwz-server:latest
+    image: docker.cnb.cool/mliev/dwz/dwz-server:latest
     restart: always
     ports:
       - "8080:8080"

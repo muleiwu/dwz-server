@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/http_server/impl"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/http_server/impl"
 	"embed"
 	"github.com/gin-gonic/gin"
 )

@@ -3,7 +3,7 @@ package impl
 import (
 	"fmt"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

@@ -3,7 +3,7 @@ version: '3.8'
 services:
   dwz-server:
     container_name: dwz-server
-    image: docker.cnb.cool/mliev/open/dwz-server:latest-loong64
+    image: docker.cnb.cool/mliev/dwz/dwz-server:latest-loong64
     restart: always
     ports:
       - "8080"  # 仅暴露给容器网络

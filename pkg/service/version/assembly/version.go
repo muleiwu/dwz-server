@@ -1,8 +1,8 @@
 package assembly
 
 import (
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/version/impl"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/version/impl"
 )
 
 // Version 版本组装器

@@ -3,8 +3,8 @@ package controller
 import (
 	"net/http"
 
-	"cnb.cool/mliev/open/dwz-server/app/constants"
-	"cnb.cool/mliev/open/dwz-server/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/app/constants"
+	"cnb.cool/mliev/dwz/dwz-server/app/dto"
 	"github.com/gin-gonic/gin"
 )
 

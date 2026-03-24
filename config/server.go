@@ -1,11 +1,11 @@
 package config
 
 import (
-	"cnb.cool/mliev/open/dwz-server/config/autoload"
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/http_server/service"
-	idGeneratorService "cnb.cool/mliev/open/dwz-server/pkg/service/id_generator/service"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/migration"
+	"cnb.cool/mliev/dwz/dwz-server/config/autoload"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/http_server/service"
+	idGeneratorService "cnb.cool/mliev/dwz/dwz-server/pkg/service/id_generator/service"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/migration"
 )
 
 type Server struct {

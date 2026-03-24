@@ -1,9 +1,9 @@
 package assembly
 
 import (
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/redis/config"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/redis/impl"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/redis/config"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/redis/impl"
 )
 
 type Redis struct {

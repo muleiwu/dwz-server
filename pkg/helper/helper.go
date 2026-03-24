@@ -3,7 +3,7 @@ package helper
 import (
 	"sync"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	"github.com/muleiwu/gsr"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"

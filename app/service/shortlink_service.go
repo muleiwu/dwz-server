@@ -7,12 +7,12 @@ import (
 	"net/url"
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/app/dao"
-	"cnb.cool/mliev/open/dwz-server/app/dto"
-	"cnb.cool/mliev/open/dwz-server/app/model"
-	helper2 "cnb.cool/mliev/open/dwz-server/pkg/helper"
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/domain_validate"
+	"cnb.cool/mliev/dwz/dwz-server/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/app/model"
+	helper2 "cnb.cool/mliev/dwz/dwz-server/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/domain_validate"
 	"gorm.io/gorm"
 )
 

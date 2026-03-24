@@ -3,7 +3,7 @@ package migration
 import (
 	"fmt"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 )
 
 type Migration struct {

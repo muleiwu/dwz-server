@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	configInterface "cnb.cool/mliev/open/dwz-server/pkg/service/config/interfaces"
+	configInterface "cnb.cool/mliev/dwz/dwz-server/pkg/service/config/interfaces"
 	"github.com/redis/go-redis/v9"
 )
 

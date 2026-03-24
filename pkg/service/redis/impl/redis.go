@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	"github.com/redis/go-redis/v9"
 )
 

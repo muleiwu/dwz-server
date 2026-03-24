@@ -1,4 +1,4 @@
-module cnb.cool/mliev/open/dwz-server
+module cnb.cool/mliev/dwz/dwz-server
 
 go 1.25.0
 

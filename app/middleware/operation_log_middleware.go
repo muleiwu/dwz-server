@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/app/service"
-	envInterface "cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/app/service"
+	envInterface "cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	"github.com/gin-gonic/gin"
 )
 

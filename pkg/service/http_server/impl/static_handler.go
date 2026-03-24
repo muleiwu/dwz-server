@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/http_server/impl/static_handler"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/http_server/impl/static_handler"
 	"github.com/gin-gonic/gin"
 )
 

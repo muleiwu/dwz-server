@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"cnb.cool/mliev/open/dwz-server/app/dao"
-	"cnb.cool/mliev/open/dwz-server/pkg/helper"
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/id_generator/assembly"
+	"cnb.cool/mliev/dwz/dwz-server/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/id_generator/assembly"
 )
 
 type IDGenerator struct {

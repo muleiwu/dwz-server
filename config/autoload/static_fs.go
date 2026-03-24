@@ -3,7 +3,7 @@ package autoload
 import (
 	"embed"
 
-	envInterface "cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	envInterface "cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 )
 
 type StaticFs struct {

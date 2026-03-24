@@ -4,10 +4,10 @@ import (
 	"strconv"
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/app/constants"
-	"cnb.cool/mliev/open/dwz-server/app/dao"
-	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/app/constants"
+	"cnb.cool/mliev/dwz/dwz-server/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/app/model"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	"github.com/gin-gonic/gin"
 )
 

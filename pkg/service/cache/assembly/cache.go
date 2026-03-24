@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	gocache "github.com/muleiwu/go-cache"
 	"github.com/muleiwu/go-cache/serializer"
 	"github.com/muleiwu/gsr"

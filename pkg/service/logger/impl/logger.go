@@ -1,7 +1,7 @@
 package impl
 
 import (
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	"go.uber.org/zap"
 )
 

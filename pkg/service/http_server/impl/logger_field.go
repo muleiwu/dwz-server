@@ -1,6 +1,6 @@
 package impl
 
-import "cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+import "cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 
 type LoggerField struct {
 	Key   string

@@ -1,8 +1,8 @@
 package assembly
 
 import (
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
-	configImpl "cnb.cool/mliev/open/dwz-server/pkg/service/config/impl"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	configImpl "cnb.cool/mliev/dwz/dwz-server/pkg/service/config/impl"
 )
 
 type Config struct {

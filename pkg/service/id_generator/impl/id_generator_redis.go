@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	"github.com/muleiwu/base_n"
 	"github.com/redis/go-redis/v9"
 )

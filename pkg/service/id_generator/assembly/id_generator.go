@@ -1,8 +1,8 @@
 package assembly
 
 import (
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/open/dwz-server/pkg/service/id_generator/impl"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/id_generator/impl"
 )
 
 func GetDriver(helper interfaces.HelperInterface, driver string) (interfaces.IDGenerator, error) {

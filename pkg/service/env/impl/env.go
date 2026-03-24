@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
 	"github.com/spf13/viper"
 )
 

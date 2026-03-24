@@ -1,8 +1,8 @@
 package impl
 
 import (
-	helper2 "cnb.cool/mliev/open/dwz-server/pkg/helper"
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	helper2 "cnb.cool/mliev/dwz/dwz-server/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	"github.com/gin-gonic/gin"
 )
 

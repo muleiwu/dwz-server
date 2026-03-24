@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 )
 
 type Installed struct {

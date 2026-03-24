@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 )
 
 var idGeneratorHelper interfaces.IDGenerator

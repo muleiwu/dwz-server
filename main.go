@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cnb.cool/mliev/open/dwz-server/cmd"
+	"cnb.cool/mliev/dwz/dwz-server/cmd"
 
 	"embed"
 )

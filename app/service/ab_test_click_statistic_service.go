@@ -3,10 +3,10 @@ package service
 import (
 	"time"
 
-	"cnb.cool/mliev/open/dwz-server/app/dao"
-	"cnb.cool/mliev/open/dwz-server/app/dto"
-	"cnb.cool/mliev/open/dwz-server/app/model"
-	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/app/model"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 )
 
 type ABTestClickStatisticService struct {
