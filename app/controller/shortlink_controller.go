@@ -3,6 +3,7 @@ package controller
 import (
 	"cnb.cool/mliev/open/dwz-server/app/constants"
 	"cnb.cool/mliev/open/dwz-server/app/dto"
+	"cnb.cool/mliev/open/dwz-server/app/model"
 	"cnb.cool/mliev/open/dwz-server/app/service"
 	"cnb.cool/mliev/open/dwz-server/pkg/interfaces"
 
@@ -215,6 +216,22 @@ type ErrorPageData struct {
 	Copyright    string
 }
 
+// AntiRedPageData 防红页面模板数据结构
+type AntiRedPageData struct {
+	SiteName     string
+	ICPNumber    string
+	PoliceNumber string
+	Domain       string
+	Copyright    string
+	TargetURL    string
+}
+
+// isWeChatOrQQBrowser 检测是否为微信或QQ内置浏览器
+func isWeChatOrQQBrowser(userAgent string) bool {
+	ua := strings.ToLower(userAgent)
+	return strings.Contains(ua, "micromessenger") || strings.Contains(ua, "qq/")
+}
+
 // RedirectShortLink 短网址跳转
 func (ctrl ShortLinkController) RedirectShortLink(c *gin.Context, helper interfaces.HelperInterface) {
 	shortCode := c.Param("code")
@@ -257,8 +274,37 @@ func (ctrl ShortLinkController) RedirectShortLink(c *gin.Context, helper interfa
 		return
 	}
 
+	// 防红检查：如果域名启用了防红且为微信/QQ内置浏览器，则显示引导页
+	if isWeChatOrQQBrowser(userAgent) {
+		domainService := service.NewDomainService(helper)
+		domainInfo, domainErr := domainService.GetDomainByName(domain)
+		if domainErr == nil && domainInfo.EnableAntiRed != nil && *domainInfo.EnableAntiRed {
+			ctrl.renderAntiRedPage(c, helper, domainInfo, originalURL)
+			return
+		}
+	}
+
 	// 302重定向到原始URL
 	c.Redirect(http.StatusFound, originalURL)
+}
+
+// renderAntiRedPage 渲染防红引导页面
+func (ctrl ShortLinkController) renderAntiRedPage(c *gin.Context, helper interfaces.HelperInterface, domainInfo *model.Domain, targetURL string) {
+	siteName := helper.GetEnv().GetString("website.name", "短网址服务")
+	if domainInfo.SiteName != "" {
+		siteName = domainInfo.SiteName
+	}
+
+	pageData := AntiRedPageData{
+		SiteName:     siteName,
+		ICPNumber:    domainInfo.ICPNumber,
+		PoliceNumber: domainInfo.PoliceNumber,
+		Domain:       domainInfo.Domain,
+		Copyright:    helper.GetEnv().GetString("website.copyright", ""),
+		TargetURL:    targetURL,
+	}
+
+	c.HTML(http.StatusOK, "anti_red.html", pageData)
 }
 
 // render404Page 渲染404页面

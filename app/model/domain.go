@@ -20,6 +20,7 @@ type Domain struct {
 	RandomSuffixLength   *int           `gorm:"default:2" json:"random_suffix_length"`            // 随机后缀位数 (0-10)，使用指针以区分0和未设置
 	EnableChecksum       *bool          `gorm:"default:true" json:"enable_checksum"`              // 是否启用校验位，使用指针以区分false和未设置
 	EnableXorObfuscation *bool          `gorm:"default:false" json:"enable_xor_obfuscation"`      // 是否启用XOR混淆，使用指针以区分false和未设置
+	EnableAntiRed        *bool          `gorm:"default:false" json:"enable_anti_red"`             // 是否启用微信/QQ防红
 	XorSecret            *uint64        `json:"xor_secret"`                                       // XOR密钥，创建时由服务层随机生成
 	XorRot               *int           `json:"xor_rot"`                                          // 旋转位数，创建时由服务层随机生成
 	DefaultStartNumber   *uint64        `gorm:"default:0" json:"default_start_number"`            // 默认开始数字，使用指针以区分0和未设置

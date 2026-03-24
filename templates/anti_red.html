@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>请在浏览器中打开 - {{.SiteName}}</title>
+    {{template "styles" .}}
+    <style>
+        .guide-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8rem 1rem 4rem;
+        }
+
+        .guide-content {
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+            animation: fadeUp 0.8s ease-out;
+        }
+
+        .guide-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .guide-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #fff 20%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .guide-message {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .url-box {
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            word-break: break-all;
+            color: var(--primary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .btn-copy {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            border: none;
+            padding: 0.8rem 2.5rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            margin-bottom: 2rem;
+        }
+
+        .btn-copy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-copy:active {
+            transform: translateY(0);
+        }
+
+        .steps {
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: left;
+        }
+
+        .steps h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        .steps ol {
+            list-style: none;
+            counter-reset: step;
+            padding: 0;
+        }
+
+        .steps ol li {
+            counter-increment: step;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            padding: 0.5rem 0;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .steps ol li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+            width: 1.4rem;
+            height: 1.4rem;
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .toast {
+            position: fixed;
+            top: 5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    {{template "header" .}}
+
+    <main class="guide-section">
+        <div class="container">
+            <div class="guide-content">
+                <div class="guide-icon">🌐</div>
+                <h1 class="guide-title">请在浏览器中打开</h1>
+                <p class="guide-message">
+                    当前环境不支持直接跳转，请复制下方链接并在浏览器中打开。
+                </p>
+
+                <div class="url-box" id="targetUrl">{{.TargetURL}}</div>
+
+                <button class="btn-copy" id="copyBtn" onclick="copyLink()">复制链接</button>
+
+                <div class="steps">
+                    <h3>操作步骤</h3>
+                    <ol>
+                        <li>点击上方「复制链接」按钮</li>
+                        <li>点击右上角「...」菜单</li>
+                        <li>选择「在浏览器中打开」</li>
+                        <li>或打开手机浏览器，粘贴链接访问</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast">链接已复制到剪贴板</div>
+
+    {{template "footer" .}}
+
+    <script>
+        function copyLink() {
+            var url = document.getElementById('targetUrl').innerText;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function() {
+                    showToast();
+                }).catch(function() {
+                    fallbackCopy(url);
+                });
+            } else {
+                fallbackCopy(url);
+            }
+        }
+
+        function fallbackCopy(text) {
+            var textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast();
+            } catch (e) {
+                alert('复制失败，请手动复制链接');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function showToast() {
+            var toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

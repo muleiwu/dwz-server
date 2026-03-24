@@ -84,6 +84,7 @@ func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainRespons
 		RandomSuffixLength:   req.RandomSuffixLength,
 		EnableChecksum:       req.EnableChecksum,
 		EnableXorObfuscation: req.EnableXorObfuscation,
+		EnableAntiRed:        req.EnableAntiRed,
 		XorSecret:            xorSecretUint64,
 		XorRot:               xorRotInt,
 		DefaultStartNumber:   &req.DefaultStartNumber,
@@ -162,6 +163,7 @@ func (s *DomainService) UpdateDomain(id uint64, req *dto.DomainRequest) (*dto.Do
 	domain.SiteName = req.SiteName
 	domain.RandomSuffixLength = req.RandomSuffixLength
 	domain.EnableChecksum = req.EnableChecksum
+	domain.EnableAntiRed = req.EnableAntiRed
 
 	if err := s.domainDao.Update(domain); err != nil {
 		return nil, err
@@ -247,6 +249,10 @@ func (s *DomainService) modelToResponse(domain *model.Domain) *dto.DomainRespons
 	if domain.EnableXorObfuscation != nil {
 		enableXorObfuscation = *domain.EnableXorObfuscation
 	}
+	enableAntiRed := false
+	if domain.EnableAntiRed != nil {
+		enableAntiRed = *domain.EnableAntiRed
+	}
 	xorSecret := "0"
 	if domain.XorSecret != nil {
 		xorSecret = strconv.FormatUint(*domain.XorSecret, 10)
@@ -272,6 +278,7 @@ func (s *DomainService) modelToResponse(domain *model.Domain) *dto.DomainRespons
 		RandomSuffixLength:   randomSuffixLength,
 		EnableChecksum:       enableChecksum,
 		EnableXorObfuscation: enableXorObfuscation,
+		EnableAntiRed:        enableAntiRed,
 		XorSecret:            xorSecret,
 		XorRot:               xorRot,
 		DefaultStartNumber:   defaultStartNumber,

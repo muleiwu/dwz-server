@@ -104,6 +104,7 @@ type DomainResponse struct {
 	RandomSuffixLength   int       `json:"random_suffix_length"`   // 随机后缀位数 (0-10)
 	EnableChecksum       bool      `json:"enable_checksum"`        // 是否启用校验位
 	EnableXorObfuscation bool      `json:"enable_xor_obfuscation"` // 是否启用XOR混淆
+	EnableAntiRed        bool      `json:"enable_anti_red"`        // 是否启用微信/QQ防红
 	XorSecret            string    `json:"xor_secret"`             // XOR密钥（字符串格式）
 	XorRot               int       `json:"xor_rot"`                // 旋转位数
 	DefaultStartNumber   uint64    `json:"default_start_number"`   // 默认开始数字
@@ -124,6 +125,7 @@ type DomainRequest struct {
 	RandomSuffixLength   *int    `json:"random_suffix_length" binding:"omitempty,min=0,max=10" example:"2"` // 随机后缀位数 (0-10)，使用指针以支持0值
 	EnableChecksum       *bool   `json:"enable_checksum" example:"true"`                                    // 是否启用校验位，使用指针以支持false值
 	EnableXorObfuscation *bool   `json:"enable_xor_obfuscation" example:"false"`                            // 是否启用XOR混淆，使用指针以支持false值
+	EnableAntiRed        *bool   `json:"enable_anti_red" example:"false"`                                   // 是否启用微信/QQ防红，使用指针以支持false值
 	XorSecret            *string `json:"xor_secret" example:"11817553067636239985"`                         // XOR密钥（字符串格式），不填写时随机生成
 	XorRot               *int    `json:"xor_rot" binding:"omitempty,min=1,max=63" example:"17"`             // 旋转位数 (1-63)，不填写时随机生成
 	DefaultStartNumber   uint64  `json:"default_start_number" example:"0"`                                  // 默认开始数字，0表示从1开始
