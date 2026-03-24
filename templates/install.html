@@ -4,35 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系统安装 - {{.SiteName}}</title>
-    {{template "styles"}}
+    {{template "styles" .}}
     <style>
         .install-container {
-            max-width: 1200px;
+            width: 800px;
+            max-width: 90%;
             margin: 2rem auto;
             padding: 2rem 3rem;
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--glass-bg);
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
         }
-        
-        .install-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        
+
+        .install-header { text-align: center; margin-bottom: 2rem; }
+
         .install-title {
             font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
         }
-        
+
         .install-subtitle {
-            color: #666;
+            color: var(--text-muted);
             font-size: 1.1rem;
         }
-        
+
         .step-indicator {
             display: flex;
             justify-content: space-between;
@@ -40,7 +42,7 @@
             margin-bottom: 2rem;
             padding: 0 1rem;
         }
-        
+
         .step {
             display: flex;
             flex-direction: column;
@@ -48,133 +50,179 @@
             position: relative;
             flex: 1;
         }
-        
+
         .step-number {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: #e0e0e0;
-            color: #999;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
             margin-bottom: 0.5rem;
             transition: all 0.3s ease;
+            border: 1px solid var(--glass-border);
         }
-        
+
         .step.active .step-number {
-            background: #667eea;
+            background: var(--primary);
             color: white;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
         }
-        
+
         .step.completed .step-number {
-            background: #4caf50;
+            background: #22c55e;
             color: white;
+            border-color: #22c55e;
         }
-        
+
         .step-label {
             font-size: 0.9rem;
-            color: #666;
+            color: var(--text-muted);
             text-align: center;
         }
-        
+
         .step.active .step-label {
-            color: #667eea;
+            color: var(--primary);
             font-weight: bold;
         }
-        
+
         .step-connector {
             position: absolute;
             top: 20px;
             left: 60%;
             width: 100%;
             height: 2px;
-            background: #e0e0e0;
+            background: var(--glass-border);
             z-index: -1;
         }
-        
-        .step:last-child .step-connector {
-            display: none;
-        }
-        
-        .step.completed .step-connector {
-            background: #4caf50;
-        }
-        
+
+        .step:last-child .step-connector { display: none; }
+        .step.completed .step-connector { background: #22c55e; }
+
         .step-content {
             display: none;
             padding: 2rem 0;
-            color: #333;
+            color: var(--text-main);
         }
-        
-        .step-content.active {
-            display: block;
+
+        .step-content.active { display: block; }
+
+        .step-content h2 {
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
         }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
+
+        .step-content h3 {
+            color: var(--text-main);
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
         }
-        
+
+        .step-content p {
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .form-group { margin-bottom: 1.5rem; }
+
         .form-label {
             display: block;
             margin-bottom: 0.5rem;
-            font-weight: bold;
-            color: #333;
+            font-weight: 600;
+            color: var(--text-main);
         }
-        
+
         .form-input {
             width: 100%;
             padding: 0.75rem;
-            border: 2px solid #e0e0e0;
+            border: 1px solid var(--glass-border);
             border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
         }
-        
+
         .form-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
         }
-        
+
+        .form-input option {
+            background: var(--surface);
+            color: var(--text-main);
+        }
+
+        .form-help {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
         }
-        
+
         .license-content {
-            background: #f9f9f9;
-            border: 1px solid #e0e0e0;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
             border-radius: 8px;
             padding: 1.5rem;
             height: 300px;
             overflow-y: auto;
             margin-bottom: 1rem;
             line-height: 1.8;
-            color: #000 !important;
+            color: var(--text-muted);
         }
-        
+
         .license-content *,
         .license-content h3,
-        .license-content p,
-        .license-content strong {
-            color: #000 !important;
+        .license-content p {
+            color: var(--text-muted) !important;
         }
-        
+
+        .license-content strong {
+            color: var(--text-main) !important;
+        }
+
+        .license-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .license-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 3px;
+        }
+        .license-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+        .license-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
         .checkbox-group {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             margin-bottom: 1.5rem;
+            color: var(--text-main);
         }
-        
+
         .checkbox-group input[type="checkbox"] {
             width: 18px;
             height: 18px;
+            accent-color: var(--primary);
         }
-        
-        .btn {
+
+        .install-container .btn {
             padding: 0.75rem 2rem;
             border: none;
             border-radius: 8px;
@@ -183,137 +231,155 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
-        .btn-primary {
-            background: #667eea;
+
+        .install-container .btn-primary {
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            box-shadow: none;
+        }
+
+        .install-container .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: none;
+            filter: none;
+        }
+
+        .install-container .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            border: 1px solid var(--glass-border);
+        }
+
+        .install-container .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-main);
+        }
+
+        .install-container .btn-success {
+            background: #22c55e;
             color: white;
         }
-        
-        .btn-primary:hover {
-            background: #5a6fd8;
+
+        .install-container .btn-success:hover {
+            background: #16a34a;
         }
-        
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #666;
-        }
-        
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-        
-        .btn-success {
-            background: #4caf50;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #45a049;
-        }
-        
+
         .btn:disabled {
-            opacity: 0.6;
+            opacity: 0.4;
             cursor: not-allowed;
         }
-        
+
         .button-group {
             display: flex;
             justify-content: space-between;
             margin-top: 2rem;
         }
-        
+
         .alert {
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 1rem;
         }
-        
+
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.2);
         }
-        
+
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
         }
-        
+
         .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.2);
         }
-        
+
         .loading {
             display: none;
             text-align: center;
             padding: 1rem;
         }
-        
-        .loading.show {
-            display: block;
-        }
-        
+
+        .loading.show { display: block; }
+        .loading p { color: var(--text-muted); }
+
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid var(--primary);
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
             margin: 0 auto 1rem;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
+
         .progress-bar {
             width: 100%;
             height: 6px;
-            background: #f0f0f0;
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 3px;
             overflow: hidden;
             margin-bottom: 2rem;
         }
-        
+
         .progress-fill {
             height: 100%;
-            background: #667eea;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
             transition: width 0.3s ease;
         }
-        
+
         .config-summary {
-            background: #f9f9f9;
-            border: 1px solid #e0e0e0;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
             border-radius: 8px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
-        
+
         .config-item {
             display: flex;
             justify-content: space-between;
             margin-bottom: 0.5rem;
             padding: 0.25rem 0;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--glass-border);
         }
-        
+
         .config-item:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
-        
+
         .config-label {
             font-weight: bold;
-            color: #666;
+            color: var(--text-muted);
         }
-        
+
         .config-value {
-            color: #333;
+            color: var(--text-main);
+        }
+
+        @media (max-width: 768px) {
+            .install-container {
+                margin: 1rem;
+                padding: 1.5rem 1rem;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .step-label {
+                font-size: 0.75rem;
+            }
         }
     </style>
 </head>

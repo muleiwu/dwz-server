@@ -3,7 +3,12 @@
     <div class="container">
         <nav class="nav">
             <a href="/" class="logo">{{.SiteName}}</a>
-            <ul class="nav-links">
+            <button class="nav-toggle" id="navToggle" onclick="this.classList.toggle('active'); document.getElementById('navLinks').classList.toggle('open');">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-links" id="navLinks">
                 <li><a href="/">首页</a></li>
                 <li><a href="/admin/">后台</a></li>
             </ul>

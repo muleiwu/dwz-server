@@ -25,6 +25,8 @@
         line-height: 1.6;
         color: var(--text-main);
         background-color: var(--background);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
         background-image:
             radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 25%),
             radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15) 0%, transparent 25%);
@@ -211,7 +213,15 @@
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
+        animation: fadeUp 0.6s ease-out both;
     }
+
+    .feature:nth-child(1) { animation-delay: 0.1s; }
+    .feature:nth-child(2) { animation-delay: 0.2s; }
+    .feature:nth-child(3) { animation-delay: 0.3s; }
+    .feature:nth-child(4) { animation-delay: 0.4s; }
+    .feature:nth-child(5) { animation-delay: 0.5s; }
+    .feature:nth-child(6) { animation-delay: 0.6s; }
 
     .feature::before {
         content: '';
@@ -263,6 +273,14 @@
         padding: 6rem 0;
         text-align: center;
         position: relative;
+    }
+
+    .cta-section h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(to right, #fff 20%, #a5b4fc 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .cta-button {
@@ -343,6 +361,161 @@
         color: var(--text-main);
     }
 
+    /* Error Pages */
+    .error-section {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8rem 1rem 4rem;
+        text-align: center;
+    }
+
+    .error-content {
+        max-width: 560px;
+        margin: 0 auto;
+        animation: fadeUp 0.8s ease-out;
+    }
+
+    .error-icon {
+        font-size: 5rem;
+        margin-bottom: 1.5rem;
+        display: inline-block;
+        animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    .error-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        background: linear-gradient(to right, #fff 20%, #a5b4fc 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .error-message {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        line-height: 1.8;
+        margin-bottom: 1.5rem;
+    }
+
+    .error-code {
+        display: inline-block;
+        padding: 0.4rem 1.2rem;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 2rem;
+        color: var(--primary);
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 2rem;
+    }
+
+    /* Shared Button Styles */
+    .btn {
+        display: inline-block;
+        padding: 0.75rem 1.8rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        filter: brightness(1.1);
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-muted);
+        border: 1px solid var(--glass-border);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: var(--text-main);
+        transform: translateY(-2px);
+    }
+
+    /* Suggestions Box */
+    .suggestions {
+        background: var(--surface);
+        border: 1px solid var(--glass-border);
+        border-radius: 1rem;
+        padding: 1.5rem 2rem;
+        text-align: left;
+        margin-top: 2rem;
+    }
+
+    .suggestions h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 0.75rem;
+    }
+
+    .suggestions ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .suggestions li {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        padding: 0.35rem 0;
+        line-height: 1.6;
+    }
+
+    /* Hamburger Menu */
+    .nav-toggle {
+        display: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        z-index: 1001;
+    }
+
+    .nav-toggle span {
+        display: block;
+        width: 24px;
+        height: 2px;
+        background: var(--text-main);
+        margin: 5px 0;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+    }
+
+    .nav-toggle.active span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+
+    .nav-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .nav-toggle.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(5px, -5px);
+    }
+
+    /* Focus Visible */
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
+
     /* Animations */
     @keyframes fadeUp {
         from {
@@ -356,20 +529,48 @@
         }
     }
 
+    @keyframes iconPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(100%); }
+        to { transform: translateX(0); }
+    }
+
     /* Mobile Responsive */
     @media (max-width: 768px) {
+        .nav-toggle {
+            display: block;
+        }
+
+        .nav-links {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--surface);
+            border-left: 1px solid var(--glass-border);
+            flex-direction: column;
+            padding: 5rem 2rem 2rem;
+            gap: 1.5rem;
+            z-index: 999;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .nav-links.open {
+            display: flex;
+        }
+
         .hero h1 {
             font-size: 2.5rem;
         }
 
         .hero-input-mock {
             display: none;
-            /* Hide on very small screens or adjust */
-        }
-
-        .nav-links {
-            display: none;
-            /* Simple hide for now, could implement hamburger */
         }
 
         .features {
