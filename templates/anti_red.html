@@ -2,145 +2,237 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>请在浏览器中打开 - {{.SiteName}}</title>
     {{template "styles" .}}
     <style>
-        .guide-section {
-            flex: 1;
+        body {
+            overflow: hidden;
+        }
+
+        .antired-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            pointer-events: all;
+            clip-path: polygon(
+                0% 0%,
+                calc(100% - 80px) 0%,
+                calc(100% - 80px) 56px,
+                100% 56px,
+                100% 100%,
+                0% 100%
+            );
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 8rem 1rem 4rem;
         }
 
-        .guide-content {
-            max-width: 500px;
-            margin: 0 auto;
-            text-align: center;
-            animation: fadeUp 0.8s ease-out;
+        body.is-qq .antired-overlay {
+            clip-path: polygon(
+                0% 0%,
+                calc(100% - 64px) 0%,
+                calc(100% - 64px) 56px,
+                100% 56px,
+                100% 100%,
+                0% 100%
+            );
         }
 
-        .guide-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
+        .arrow-guide {
+            position: fixed;
+            top: calc(4px + env(safe-area-inset-top, 0px));
+            right: 82px;
+            z-index: 10000;
+            pointer-events: none;
+            animation: arrowBounce 1.2s ease-in-out infinite;
         }
 
-        .guide-title {
-            font-size: 1.8rem;
+        body.is-qq .arrow-guide {
+            right: 66px;
+        }
+
+        .arrow-guide svg {
+            width: 56px;
+            height: 56px;
+            filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.3));
+        }
+
+        @keyframes arrowBounce {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(4px, -6px); }
+        }
+
+        .antired-content {
+            width: 100%;
+            max-width: 380px;
+            padding: 0 1.25rem;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .antired-title {
+            font-size: 1.6rem;
             font-weight: 700;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, #fff 20%, #a5b4fc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .guide-message {
-            color: var(--text-muted);
-            font-size: 1rem;
-            margin-bottom: 2rem;
-            line-height: 1.8;
-        }
-
-        .url-box {
-            background: var(--surface);
-            border: 1px solid var(--glass-border);
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            word-break: break-all;
-            color: var(--primary);
-            font-size: 0.9rem;
-            line-height: 1.6;
-            text-align: left;
-        }
-
-        .btn-copy {
-            display: inline-block;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: white;
-            border: none;
-            padding: 0.8rem 2.5rem;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-            margin-bottom: 2rem;
-        }
-
-        .btn-copy:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
-            filter: brightness(1.1);
-        }
-
-        .btn-copy:active {
-            transform: translateY(0);
-        }
-
-        .steps {
-            background: var(--surface);
-            border: 1px solid var(--glass-border);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            text-align: left;
-        }
-
-        .steps h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
             color: var(--text-main);
         }
 
-        .steps ol {
-            list-style: none;
-            counter-reset: step;
-            padding: 0;
-        }
-
-        .steps ol li {
-            counter-increment: step;
+        .antired-subtitle {
+            text-align: center;
             color: var(--text-muted);
             font-size: 0.9rem;
-            padding: 0.5rem 0;
-            padding-left: 2rem;
-            position: relative;
+            margin-bottom: 1.5rem;
         }
 
-        .steps ol li::before {
-            content: counter(step);
-            position: absolute;
-            left: 0;
-            top: 0.5rem;
-            width: 1.4rem;
-            height: 1.4rem;
-            background: rgba(99, 102, 241, 0.15);
-            color: var(--primary);
+        .platform-steps {
+            display: none;
+        }
+
+        .step-card {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.9rem 1rem;
+            background: #f8fafc;
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            margin-bottom: 0.6rem;
+            opacity: 0;
+            animation: fadeUp 0.5s ease-out forwards;
+        }
+
+        .step-card:nth-child(1) { animation-delay: 0.2s; }
+        .step-card:nth-child(2) { animation-delay: 0.4s; }
+        .step-card:nth-child(3) { animation-delay: 0.6s; }
+
+        .step-number {
+            width: 1.8rem;
+            height: 1.8rem;
             border-radius: 50%;
+            background: var(--primary);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
+            font-weight: 700;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .step-icon {
+            width: 2.2rem;
+            height: 2.2rem;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .step-text {
+            color: var(--text-main);
+            font-size: 0.92rem;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .step-text strong {
+            color: var(--primary);
+        }
+
+        .fallback-divider {
+            display: flex;
+            align-items: center;
+            margin: 1.25rem 0;
+            gap: 0.75rem;
+        }
+
+        .fallback-divider::before,
+        .fallback-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--glass-border);
+        }
+
+        .fallback-divider span {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .fallback-section {
+            text-align: center;
+        }
+
+        .fallback-hint {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .url-box {
+            background: #f8fafc;
+            border: 1px solid var(--glass-border);
+            border-radius: 0.6rem;
+            padding: 0.75rem;
+            word-break: break-all;
+            color: var(--primary);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            text-align: left;
+            margin-bottom: 0.75rem;
+        }
+
+        .btn-copy {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.65rem 1.8rem;
+            border-radius: 0.75rem;
+            font-size: 0.9rem;
             font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+        }
+
+        .btn-copy:active {
+            transform: scale(0.96);
+        }
+
+        .btn-copy svg {
+            width: 1rem;
+            height: 1rem;
         }
 
         .toast {
             position: fixed;
-            top: 5rem;
+            bottom: 6rem;
             left: 50%;
-            transform: translateX(-50%) translateY(-20px);
+            transform: translateX(-50%) translateY(20px);
             background: var(--primary);
             color: white;
-            padding: 0.75rem 1.5rem;
+            padding: 0.7rem 1.4rem;
             border-radius: 0.5rem;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             opacity: 0;
             transition: all 0.3s ease;
             pointer-events: none;
-            z-index: 2000;
+            z-index: 10001;
         }
 
         .toast.show {
@@ -152,37 +244,147 @@
 <body>
     {{template "header" .}}
 
-    <main class="guide-section">
-        <div class="container">
-            <div class="guide-content">
-                <div class="guide-icon">🌐</div>
-                <h1 class="guide-title">请在浏览器中打开</h1>
-                <p class="guide-message">
-                    当前环境不支持直接跳转，请复制下方链接并在浏览器中打开。
-                </p>
+    <!-- Bouncing arrow pointing to the top-right "..." menu -->
+    <div class="arrow-guide" id="arrowGuide">
+        <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 48 C 16 24, 30 12, 48 6" stroke="#7dd3fc" stroke-width="2.5" stroke-linecap="round" fill="none" stroke-dasharray="4 3" opacity="0.5"/>
+            <path d="M12 48 C 16 24, 30 12, 48 6" stroke="url(#arrowGrad)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M42 2 L 50 6 L 44 13" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <circle cx="12" cy="48" r="4" fill="#0ea5e9" opacity="0.3">
+                <animate attributeName="r" values="4;7;4" dur="1.2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.3;0.1;0.3" dur="1.2s" repeatCount="indefinite"/>
+            </circle>
+            <defs>
+                <linearGradient id="arrowGrad" x1="12" y1="48" x2="48" y2="6" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#0ea5e9"/>
+                    <stop offset="100%" stop-color="#7dd3fc"/>
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
 
-                <div class="url-box" id="targetUrl">{{.TargetURL}}</div>
+    <!-- Full-screen overlay -->
+    <div class="antired-overlay">
+        <div class="antired-content">
+            <h1 class="antired-title">请在浏览器中打开</h1>
+            <p class="antired-subtitle">当前环境不支持直接跳转</p>
 
-                <button class="btn-copy" id="copyBtn" onclick="copyLink()">复制链接</button>
-
-                <div class="steps">
-                    <h3>操作步骤</h3>
-                    <ol>
-                        <li>点击上方「复制链接」按钮</li>
-                        <li>点击右上角「...」菜单</li>
-                        <li>选择「在浏览器中打开」</li>
-                        <li>或打开手机浏览器，粘贴链接访问</li>
-                    </ol>
+            <!-- iOS steps -->
+            <div id="steps-ios" class="platform-steps">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="6" width="24" height="20" rx="4" stroke="#7dd3fc" stroke-width="2"/>
+                            <circle cx="10" cy="16" r="1.5" fill="#38bdf8"/>
+                            <circle cx="16" cy="16" r="1.5" fill="#38bdf8"/>
+                            <circle cx="22" cy="16" r="1.5" fill="#38bdf8"/>
+                        </svg>
+                    </div>
+                    <div class="step-text">点击右上角 <strong>「...」</strong></div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="12" stroke="#7dd3fc" stroke-width="2"/>
+                            <path d="M16 8 L16 16 L22 20" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M10 24 C12 20, 20 20, 22 24" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="step-text">选择 <strong>「在 Safari 中打开」</strong></div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="12" stroke="#7dd3fc" stroke-width="2"/>
+                            <path d="M10 16 L14 20 L22 12" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="step-text">即可正常访问页面</div>
                 </div>
             </div>
+
+            <!-- Android steps -->
+            <div id="steps-android" class="platform-steps">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="6" width="24" height="20" rx="4" stroke="#7dd3fc" stroke-width="2"/>
+                            <circle cx="16" cy="10" r="1.5" fill="#38bdf8"/>
+                            <circle cx="16" cy="16" r="1.5" fill="#38bdf8"/>
+                            <circle cx="16" cy="22" r="1.5" fill="#38bdf8"/>
+                        </svg>
+                    </div>
+                    <div class="step-text">点击右上角 <strong>「&#8942;」</strong> 或 <strong>「...」</strong></div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="12" stroke="#7dd3fc" stroke-width="2"/>
+                            <path d="M10 12 L16 8 L22 12" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M10 20 L22 20" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M12 24 L20 24" stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+                        </svg>
+                    </div>
+                    <div class="step-text">选择 <strong>「在浏览器中打开」</strong></div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="12" stroke="#7dd3fc" stroke-width="2"/>
+                            <path d="M10 16 L14 20 L22 12" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="step-text">即可正常访问页面</div>
+                </div>
+            </div>
+
+            <!-- Fallback: copy link -->
+            <div class="fallback-section">
+                <div class="fallback-divider"><span>或者复制链接</span></div>
+                <p class="fallback-hint">在手机浏览器中粘贴链接访问</p>
+                <div class="url-box" id="targetUrl">{{.TargetURL}}</div>
+                <button class="btn-copy" id="copyBtn" onclick="copyLink()">
+                    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="white" stroke-width="1.5"/>
+                        <path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="white" stroke-width="1.5"/>
+                    </svg>
+                    复制链接
+                </button>
+            </div>
         </div>
-    </main>
+    </div>
 
     <div class="toast" id="toast">链接已复制到剪贴板</div>
 
     {{template "footer" .}}
 
     <script>
+        (function() {
+            var ua = navigator.userAgent.toLowerCase();
+            var isIOS = /iphone|ipad|ipod/.test(ua);
+            var isQQ = /\bqq\//.test(ua);
+
+            if (isIOS) {
+                document.getElementById('steps-ios').style.display = 'block';
+                document.body.classList.add('is-ios');
+            } else {
+                document.getElementById('steps-android').style.display = 'block';
+                document.body.classList.add('is-android');
+            }
+
+            if (isQQ) {
+                document.body.classList.add('is-qq');
+            } else {
+                document.body.classList.add('is-wechat');
+            }
+        })();
+
         function copyLink() {
             var url = document.getElementById('targetUrl').innerText;
             if (navigator.clipboard && navigator.clipboard.writeText) {
