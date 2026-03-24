@@ -15,8 +15,6 @@
             inset: 0;
             z-index: 9999;
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             pointer-events: all;
             clip-path: polygon(
                 0% 0%,
@@ -45,7 +43,7 @@
         .arrow-guide {
             position: fixed;
             top: calc(4px + env(safe-area-inset-top, 0px));
-            right: 82px;
+            right: 48px;
             z-index: 10000;
             pointer-events: none;
             animation: arrowBounce 1.2s ease-in-out infinite;
