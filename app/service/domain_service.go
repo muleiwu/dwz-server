@@ -29,7 +29,7 @@ func NewDomainService(helper interfaces.HelperInterface) *DomainService {
 func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainResponse, error) {
 	// 验证域名格式
 	if err := domain_validate.ValidateDomain(req.Domain); err != nil {
-		return nil, errors.New("无效的域名格式")
+		return nil, err
 	}
 
 	// 检查域名是否已存在
@@ -131,7 +131,7 @@ func (s *DomainService) UpdateStatusDomain(id uint64, req *dto.UpdateStatusDomai
 func (s *DomainService) UpdateDomain(id uint64, req *dto.DomainRequest) (*dto.DomainResponse, error) {
 
 	if err := domain_validate.ValidateDomain(req.Domain); err != nil {
-		return nil, errors.New("无效的域名格式")
+		return nil, err
 	}
 
 	domain, err := s.domainDao.FindByDomain(req.Domain)
