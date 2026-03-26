@@ -24,27 +24,37 @@ func ValidateDomain(domain string) error {
 		return errors.New("域名不应包含协议头(http://或https://)")
 	}
 
-	// IP的格式也可以，支持IP:端口
+	// 域名正则
+	domainRegex := regexp.MustCompile(`^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$`)
+
+	// 包含冒号时，解析为 host:port 格式
 	if strings.Contains(domain, ":") {
-		// 可能是IP:端口格式
 		parts := strings.Split(domain, ":")
-		if len(parts) == 2 {
-			// 检查IP部分
-			if netIP := net.ParseIP(parts[0]); netIP != nil {
-				// 检查端口部分
-				port, err := strconv.Atoi(parts[1])
-				if err == nil && port >= 0 && port <= 65535 {
-					return nil
-				}
-			}
+		if len(parts) != 2 {
+			return errors.New("无效的域名格式")
 		}
-	} else if netIP := net.ParseIP(domain); netIP != nil {
-		// 如果是有效的纯IP地址，直接返回
+		host, portStr := parts[0], parts[1]
+		// 验证端口
+		port, err := strconv.Atoi(portStr)
+		if err != nil || port < 0 || port > 65535 {
+			return errors.New("无效的端口号")
+		}
+		// host 部分可以是 IP 或域名
+		if net.ParseIP(host) != nil {
+			return nil
+		}
+		if domainRegex.MatchString(host) {
+			return nil
+		}
+		return errors.New("无效的域名格式")
+	}
+
+	// 纯 IP
+	if net.ParseIP(domain) != nil {
 		return nil
 	}
 
-	// 使用正则表达式验证域名格式
-	domainRegex := regexp.MustCompile(`^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$`)
+	// 纯域名
 	if !domainRegex.MatchString(domain) {
 		return errors.New("无效的域名格式")
 	}
