@@ -19,6 +19,7 @@ func (receiver Jwt) InitConfig(helper envInterface.HelperInterface) map[string]a
 	if secret == "" {
 		secret = generateRandomSecret(32)
 		appendJWTConfig(secret, expireHours)
+		fmt.Printf("JWT Secret 自动生成: %s，并写入文件\n", secret)
 	}
 
 	return map[string]any{
@@ -43,8 +44,12 @@ func appendJWTConfig(secret string, expireHours int) {
 			if err == nil {
 				f.WriteString(content)
 				f.Close()
+			} else {
+				fmt.Println(fmt.Sprintf("[JWT]写入配置文件失败: %s", err.Error()))
 			}
 			return
+		} else {
+			fmt.Println(fmt.Sprintf("[JWT]读取配置文件失败: %s", err.Error()))
 		}
 	}
 }
