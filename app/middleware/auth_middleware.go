@@ -26,7 +26,7 @@ const (
 )
 
 // AuthMiddleware 用户认证中间件
-// 支持双模式认证：签名认证 > Bearer Token
+// 支持三模式认证：签名认证 > JWT登录Token > API Bearer Token
 func AuthMiddleware(helperInstance envInterface.HelperInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 1. 优先尝试签名认证
@@ -47,6 +47,14 @@ func AuthMiddleware(helperInstance envInterface.HelperInterface) gin.HandlerFunc
 				return
 			}
 
+			// 2a. 先尝试 JWT 登录Token 验证
+			if user, err := validateJWTToken(token, helperInstance); err == nil {
+				c.Set("current_user", user)
+				c.Next()
+				return
+			}
+
+			// 2b. JWT验证失败，尝试 API Token（数据库查询）
 			user, err := validateAPIToken(token, helperInstance)
 			if err != nil {
 				respondUnauthorized(c, err.Error())
@@ -221,6 +229,32 @@ func validateAPIToken(tokenString string, helperInstance envInterface.HelperInte
 	tokenDAO.Update(token)
 
 	return &token.User, nil
+}
+
+// validateJWTToken 验证JWT登录Token
+func validateJWTToken(tokenString string, helperInstance envInterface.HelperInterface) (*model.User, error) {
+	jwtSecret := helperInstance.GetConfig().GetString("jwt.secret", "")
+	if jwtSecret == "" {
+		return nil, errors.New("JWT not configured")
+	}
+	helper.InitJWTHelper(jwtSecret, helperInstance.GetConfig().GetInt("jwt.expire_hours", 24))
+
+	claims, err := helper.GetJWTHelper().ValidateToken(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	userDAO := dao.NewUserDAO(helperInstance)
+	user, err := userDAO.GetByID(claims.UserID)
+	if err != nil {
+		return nil, errors.New("用户不存在")
+	}
+
+	if !user.IsActive() {
+		return nil, errors.New("用户已被禁用")
+	}
+
+	return user, nil
 }
 
 // respondUnauthorized 返回未授权响应

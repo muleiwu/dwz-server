@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -188,6 +190,15 @@ redis:
   idle_timeout: 300s`, redisInfo.Host, redisInfo.Port, redisInfo.Password, redisInfo.DB)
 	}
 
+	// JWT配置
+	jwtSecret := generateInstallSecret(32)
+	configContent += fmt.Sprintf(`
+
+# JWT配置
+jwt:
+  secret: %s
+  expire_hours: 24`, jwtSecret)
+
 	// 继续添加其他配置
 	configContent += fmt.Sprintf(`
 
@@ -328,4 +339,11 @@ func (receiver *InitInstallService) TestRedisConnection(config config2.RedisConf
 	}
 
 	return fmt.Errorf("redis连接测试失败 (已重试%d次): %v", maxRetries, lastErr)
+}
+
+// generateInstallSecret 生成安装时的随机密钥
+func generateInstallSecret(length int) string {
+	bytes := make([]byte, length)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
 }
