@@ -2,12 +2,11 @@ package service
 
 import (
 	"errors"
-	"strconv"
-	"time"
 
 	"cnb.cool/mliev/dwz/dwz-server/app/dao"
 	"cnb.cool/mliev/dwz/dwz-server/app/dto"
 	"cnb.cool/mliev/dwz/dwz-server/app/model"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
 	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
 	"gorm.io/gorm"
 )
@@ -50,9 +49,17 @@ func (s *UserService) Login(req *dto.LoginRequest) (*dto.LoginResponse, error) {
 		// 记录日志但不中断登录流程
 	}
 
-	// 生成Token（这里简化处理，实际应该使用JWT）
-	token := "user_" + strconv.FormatUint(user.ID, 10) + "_" + strconv.FormatInt(time.Now().Unix(), 10)
-	expiresAt := time.Now().Add(24 * time.Hour) // 24小时过期
+	// 生成JWT Token
+	jwtSecret := s.helper.GetConfig().GetString("jwt.secret", "")
+	if jwtSecret == "" {
+		return nil, errors.New("JWT secret 未配置")
+	}
+	helper.InitJWTHelper(jwtSecret, s.helper.GetConfig().GetInt("jwt.expire_hours", 24))
+
+	token, expiresAt, err := helper.GetJWTHelper().GenerateToken(user.ID, user.Username)
+	if err != nil {
+		return nil, errors.New("生成Token失败")
+	}
 
 	return &dto.LoginResponse{
 		Token:     token,
