@@ -47,7 +47,7 @@ func AuthMiddleware(helperInstance envInterface.HelperInterface) gin.HandlerFunc
 				return
 			}
 
-			user, err := validateToken(token, helperInstance)
+			user, err := validateAPIToken(token, helperInstance)
 			if err != nil {
 				respondUnauthorized(c, err.Error())
 				return
@@ -200,17 +200,6 @@ func extractBearerToken(c *gin.Context) (string, error) {
 	return "", errors.New("Token格式错误")
 }
 
-// validateToken 验证Token并返回用户信息
-func validateToken(tokenString string, helperInstance envInterface.HelperInterface) (*model.User, error) {
-	// 尝试验证API Token
-	if user, err := validateAPIToken(tokenString, helperInstance); err == nil {
-		return user, nil
-	}
-
-	// 尝试验证登录Token
-	return validateLoginToken(tokenString, helperInstance)
-}
-
 // validateAPIToken 验证API Token
 func validateAPIToken(tokenString string, helperInstance envInterface.HelperInterface) (*model.User, error) {
 	tokenDAO := dao.NewUserTokenDAO(helperInstance)
@@ -232,35 +221,6 @@ func validateAPIToken(tokenString string, helperInstance envInterface.HelperInte
 	tokenDAO.Update(token)
 
 	return &token.User, nil
-}
-
-// validateLoginToken 验证登录Token（简化版）
-func validateLoginToken(tokenString string, helperInstance envInterface.HelperInterface) (*model.User, error) {
-	if !strings.HasPrefix(tokenString, "user_") {
-		return nil, errors.New("无效的Token格式")
-	}
-
-	parts := strings.Split(tokenString, "_")
-	if len(parts) < 2 {
-		return nil, errors.New("Token格式错误")
-	}
-
-	userID, err := strconv.ParseUint(parts[1], 10, 64)
-	if err != nil {
-		return nil, errors.New("无效的用户ID")
-	}
-
-	userDAO := dao.NewUserDAO(helperInstance)
-	user, err := userDAO.GetByID(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	if !user.IsActive() {
-		return nil, errors.New("用户已被禁用")
-	}
-
-	return user, nil
 }
 
 // respondUnauthorized 返回未授权响应
