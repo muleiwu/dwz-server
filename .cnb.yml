@@ -175,7 +175,7 @@ $:
     - <<: *git-clone
     - <<: *build-amd64
     - <<: *build-arm
-#    - <<: *build-bin
+    - <<: *build-bin
     - services:
         - docker
       name: "push"
@@ -190,10 +190,10 @@ $:
           type: cnb:await
           options:
             key: build-arm64
-#        - name: await the build-bin
-#          type: cnb:await
-#          options:
-#            key: build-bin
+        - name: await the build-bin
+          type: cnb:await
+          options:
+            key: build-bin
         - name: manifest latest
           image: cnbcool/manifest
           settings:
