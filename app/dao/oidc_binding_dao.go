@@ -64,3 +64,14 @@ func (dao *OIDCBindingDAO) DeleteByUserAndProvider(userID uint64, provider strin
 		Where("user_id = ? AND provider = ?", userID, provider).
 		Delete(&model.OIDCBinding{}).Error
 }
+
+// CountByProvider 统计某个 provider 下已有绑定数量。用于开启 OIDC 唯一登录前
+// 校验"至少一个账户已绑定",避免自锁。
+func (dao *OIDCBindingDAO) CountByProvider(provider string) (int64, error) {
+	var count int64
+	err := dao.helper.GetDatabase().
+		Model(&model.OIDCBinding{}).
+		Where("provider = ?", provider).
+		Count(&count).Error
+	return count, err
+}

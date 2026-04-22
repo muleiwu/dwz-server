@@ -19,12 +19,20 @@ type OIDCProvider struct {
 	Scopes       string         `gorm:"size:255" json:"scopes"`
 	RedirectURI  string         `gorm:"size:255;column:redirect_uri" json:"redirect_uri"`
 	Enabled      int8           `gorm:"default:0" json:"enabled"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	// Exclusive 表示当 provider 处于启用态时,是否禁用本地用户名/密码登录,
+	// 只允许走 OIDC。仅当 Enabled == 1 && Exclusive == 1 才生效。
+	Exclusive int8           `gorm:"default:0" json:"exclusive"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (*OIDCProvider) TableName() string { return "oidc_providers" }
 
 // IsEnabled 判断是否启用。
 func (p *OIDCProvider) IsEnabled() bool { return p != nil && p.Enabled == 1 }
+
+// IsExclusive 判断 provider 是否同时启用且强制 OIDC-only。
+func (p *OIDCProvider) IsExclusive() bool {
+	return p != nil && p.Enabled == 1 && p.Exclusive == 1
+}

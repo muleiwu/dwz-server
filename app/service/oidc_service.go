@@ -118,8 +118,38 @@ func (s *OIDCService) GetLoginOptions() (*dto.LoginOptionsResponse, error) {
 		} else {
 			resp.OIDCDisplayName = p.Name
 		}
+		// 只有 exclusive 启用且当前没有 bypass 时才让前端隐藏密码表单。
+		if p.IsExclusive() && !s.IsExclusiveBypass() {
+			resp.LocalLoginDisabled = true
+		}
 	}
 	return resp, nil
+}
+
+// IsExclusiveMode 返回 (是否处于 OIDC 唯一登录态, provider 名)。
+// 仅当存在启用的 provider 且 exclusive=1 才为 true。错误只在 DB 异常时返回,
+// 调用方可按"未启用"处理以保守地放行。
+func (s *OIDCService) IsExclusiveMode() (bool, string, error) {
+	p, err := s.GetEnabledProvider()
+	if err != nil {
+		return false, "", err
+	}
+	if p == nil || !p.IsExclusive() {
+		return false, "", nil
+	}
+	return true, p.Name, nil
+}
+
+// IsExclusiveBypass 读环境变量 OIDC_EXCLUSIVE_BYPASS(viper 里对应 key
+// oidc.exclusive_bypass)判断 breakglass 是否开启。兼容 "1" / "true" / "yes"
+// / "on" 这几种常见写法。
+func (s *OIDCService) IsExclusiveBypass() bool {
+	v := strings.ToLower(strings.TrimSpace(s.helper.GetEnv().GetString("oidc.exclusive_bypass", "")))
+	switch v {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
 }
 
 // BuildAuthURL 生成授权 URL 并将 state 写入缓存。
@@ -551,6 +581,17 @@ func (s *OIDCService) SaveConfig(req *dto.SaveOIDCConfigRequest) (*dto.OIDCConfi
 		return nil, err
 	}
 
+	// 开启 OIDC 唯一模式前,先校验至少已有一个绑定,防止管理员把自己锁在外面。
+	if req.Enabled && req.Exclusive {
+		count, err := s.bindingDAO.CountByProvider(req.Name)
+		if err != nil {
+			return nil, fmt.Errorf("校验已有绑定失败: %w", err)
+		}
+		if count == 0 {
+			return nil, errors.New("开启 OIDC 唯一登录前,需要至少有一位管理员先完成 OIDC 绑定")
+		}
+	}
+
 	entity := &model.OIDCProvider{
 		Name:        req.Name,
 		DisplayName: req.DisplayName,
@@ -561,6 +602,10 @@ func (s *OIDCService) SaveConfig(req *dto.SaveOIDCConfigRequest) (*dto.OIDCConfi
 	}
 	if req.Enabled {
 		entity.Enabled = 1
+	}
+	// exclusive 仅在 enabled 时有意义;如果调用方要求 disable 自然也会关掉 exclusive。
+	if req.Enabled && req.Exclusive {
+		entity.Exclusive = 1
 	}
 
 	if req.ClientSecret != "" {
@@ -631,6 +676,7 @@ func providerToResponse(p *model.OIDCProvider) *dto.OIDCConfigResponse {
 		Scopes:      p.Scopes,
 		RedirectURI: p.RedirectURI,
 		Enabled:     p.IsEnabled(),
+		Exclusive:   p.Enabled == 1 && p.Exclusive == 1,
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 	}

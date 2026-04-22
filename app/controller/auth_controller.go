@@ -1,14 +1,15 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/middleware"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
-	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
 // AuthController 认证控制器
@@ -19,11 +20,27 @@ type AuthController struct {
 // Login 用户登录
 func (ctrl AuthController) Login(c httpInterfaces.RouterContextInterface) {
 	helper := helperPkg.GetHelper()
-	_ = helper
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
 		return
+	}
+
+	// OIDC 唯一登录模式:除非通过 OIDC_EXCLUSIVE_BYPASS 显式放行,
+	// 否则密码登录直接 403。破开 glass 后仍然记录一次 WARN 便于审计。
+	oidcSvc := service.NewOIDCService(helper)
+	if exclusive, providerName, err := oidcSvc.IsExclusiveMode(); err != nil {
+		helper.GetLogger().Warn("[oidc] 检查 exclusive 状态失败: " + err.Error())
+	} else if exclusive {
+		if oidcSvc.IsExclusiveBypass() {
+			helper.GetLogger().Warn(fmt.Sprintf(
+				"[oidc] 密码登录因 OIDC_EXCLUSIVE_BYPASS 放行, username=%s provider=%s",
+				req.Username, providerName,
+			))
+		} else {
+			ctrl.Error(c, constants.ErrCodeForbidden, "系统已启用 OIDC 唯一登录,请使用 SSO 登录")
+			return
+		}
 	}
 
 	// 获取客户端IP地址

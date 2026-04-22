@@ -7,6 +7,9 @@ type LoginOptionsResponse struct {
 	OIDCEnabled     bool   `json:"oidc_enabled"`
 	OIDCDisplayName string `json:"oidc_display_name,omitempty"`
 	OIDCProvider    string `json:"oidc_provider,omitempty"`
+	// LocalLoginDisabled 为 true 时前端应隐藏密码表单,仅显示 SSO 按钮。
+	// 当 OIDC 开启 exclusive 且 OIDC_EXCLUSIVE_BYPASS 未生效时该字段为 true。
+	LocalLoginDisabled bool `json:"local_login_disabled"`
 }
 
 // OIDCConfigResponse 后台查询 OIDC 配置的返回。client_secret 永远不回显,
@@ -21,6 +24,7 @@ type OIDCConfigResponse struct {
 	Scopes      string    `json:"scopes"`
 	RedirectURI string    `json:"redirect_uri"`
 	Enabled     bool      `json:"enabled"`
+	Exclusive   bool      `json:"exclusive"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -35,6 +39,10 @@ type SaveOIDCConfigRequest struct {
 	Scopes       string `json:"scopes" binding:"max=255"`
 	RedirectURI  string `json:"redirect_uri" binding:"omitempty,url,max=255"`
 	Enabled      bool   `json:"enabled"`
+	// Exclusive 仅在 Enabled=true 时有意义:true 时禁用本地密码登录,
+	// 强制所有 UI 用户走 OIDC。保存时后端会校验至少存在 1 条该 provider 的
+	// 用户绑定,避免自锁。
+	Exclusive bool `json:"exclusive"`
 }
 
 // TestOIDCConnectionRequest 用于「测试连接」按钮;字段语义与保存一致但不落库。
