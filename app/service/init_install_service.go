@@ -7,141 +7,84 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/dao"
-	"cnb.cool/mliev/dwz/dwz-server/app/model"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	database2 "cnb.cool/mliev/dwz/dwz-server/pkg/service/database/config"
-	config2 "cnb.cool/mliev/dwz/dwz-server/pkg/service/redis/config"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	_ "github.com/glebarez/sqlite"
 	"github.com/redis/go-redis/v9"
 )
+
+// InstallDatabaseConfig is the install-time DB descriptor. Mirrored locally so
+// the install flow doesn't depend on go-web's narrower DatabaseConfig struct
+// (which lacks the SQLite Filepath field).
+type InstallDatabaseConfig struct {
+	Driver   string
+	Filepath string
+	Host     string
+	Port     int
+	DBName   string
+	Username string
+	Password string
+}
+
+type InstallRedisConfig struct {
+	Host     string
+	Port     int
+	Password string
+	DB       int
+}
 
 type InitInstallService struct {
 	helper interfaces.HelperInterface
 }
 
-const lockFile = "./config/install.lock"
-const configFile = "./config/config.yaml"
+const (
+	lockFile   = "./config/install.lock"
+	configFile = "./config/config.yaml"
+)
 
 func NewInitInstallService(helper interfaces.HelperInterface) *InitInstallService {
-	return &InitInstallService{
-		helper: helper,
-	}
+	return &InitInstallService{helper: helper}
 }
 
-func (receiver *InitInstallService) AutoInstall(migration []any) {
-	// 自动安装流程
-	databaseConfig := database2.DatabaseConfig{
-		Driver:   receiver.helper.GetConfig().GetString("database.driver", ""),
-		Host:     receiver.helper.GetConfig().GetString("database.host", ""),
-		Port:     receiver.helper.GetConfig().GetInt("database.port", 0),
-		DBName:   receiver.helper.GetConfig().GetString("database.dbname", ""),
-		Username: receiver.helper.GetConfig().GetString("database.username", ""),
-		Password: receiver.helper.GetConfig().GetString("database.password", ""),
-	}
-
-	redisConfig := config2.RedisConfig{
-		Host:     receiver.helper.GetConfig().GetString("redis.host", ""),
-		Port:     receiver.helper.GetConfig().GetInt("redis.port", 0),
-		Password: receiver.helper.GetConfig().GetString("redis.password", ""),
-		DB:       receiver.helper.GetConfig().GetInt("redis.db", 0),
-	}
-
-	err := receiver.TestDatabaseConnection(databaseConfig, 60)
-	if err != nil {
-		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 检查数据库连接失败, 原因: %s", err.Error()))
-		os.Exit(1)
-	}
-
-	err = receiver.TestRedisConnection(redisConfig, 60)
-	if err != nil {
-		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 检查Redis连接失败, 原因: %s", err.Error()))
-		os.Exit(1)
-	}
-
-	// 自动安装默认使用redis作为缓存和发号器驱动
-	err = receiver.CreateConfigFile(databaseConfig, redisConfig, "redis", "redis")
-	if err != nil {
-		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 写入配置文件失败, 原因: %s", err.Error()))
-		os.Exit(1)
-	}
-
-	// 未安装，且配置自动初始化
-	err = receiver.helper.GetDatabase().AutoMigrate(migration...)
-	if err != nil {
-		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 数据库迁移失败, 原因: %s", err.Error()))
-		os.Exit(1)
-	}
-
-	err = receiver.CreateInstallLock()
-
-	if err != nil {
-		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 写入安装成功锁定文件失败, 原因: %s", err.Error()))
-		os.Exit(1)
-	}
-
-	err = receiver.CreateAdminUser("admin", "admin", "system@system.local", "", "admin")
-
-	if err != nil {
-		receiver.helper.GetLogger().Error(fmt.Sprintf("[自动安装] 自动添默认用户失败, 原因: %s", err.Error()))
-		os.Exit(1)
-	}
-
-	// 标记系统为已安装
-	receiver.helper.GetInstalled().SetInstalled(true)
-
-	receiver.helper.GetLogger().Info("【自动安装】成功， 用户名：admin 密码：admin")
-	receiver.helper.GetLogger().Info("【自动安装】成功， 请打开系统后，立刻修改密码！！！")
-	receiver.helper.GetLogger().Info("【自动安装】成功， 请打开系统后，立刻修改密码！！！")
-	receiver.helper.GetLogger().Info("【自动安装】成功， 请打开系统后，立刻修改密码！！！")
-}
-
-func (receiver *InitInstallService) CreateAdminUser(username, realName, email, phone, password string) error {
-	// 由于安装过程中数据库连接可能尚未初始化，这里简化处理
-	// 实际实现中应该直接使用数据库连接创建用户
-
-	// 创建用户
+func (s *InitInstallService) CreateAdminUser(username, realName, email, phone, password string) error {
 	user := &model.User{
 		Username: username,
 		RealName: realName,
 		Email:    email,
 		Phone:    phone,
-		Status:   1, // 默认启用
+		Status:   1,
 	}
-
-	// 设置密码
 	if err := user.SetPassword(password); err != nil {
 		return err
 	}
-
-	userDAO := dao.NewUserDAO(receiver.helper)
-	// 保存到数据库
+	userDAO := dao.NewUserDAO(s.helper)
 	if err := userDAO.Create(user); err != nil {
 		return err
 	}
-
-	receiver.helper.GetLogger().Info(fmt.Sprintf("管理员账户创建完成: %s\n", username))
-
+	s.helper.GetLogger().Info(fmt.Sprintf("管理员账户创建完成: %s\n", username))
 	return nil
 }
 
-func (receiver *InitInstallService) CreateInstallLock() error {
-
+func (s *InitInstallService) CreateInstallLock() error {
 	lockContent := fmt.Sprintf("系统已安装\n安装时间: %s\n", time.Now().Format("2006-01-02 15:04:05"))
-
-	if err := os.WriteFile(lockFile, []byte(lockContent), 0644); err != nil {
-		return fmt.Errorf("安装标记文件创建失败: %v", err)
+	if err := os.MkdirAll(filepath.Dir(lockFile), 0755); err != nil {
+		return fmt.Errorf("创建配置目录失败 (%s): %v", filepath.Dir(lockFile), err)
 	}
-
+	if err := os.WriteFile(lockFile, []byte(lockContent), 0644); err != nil {
+		return fmt.Errorf("安装标记文件创建失败 (%s): %v", lockFile, err)
+	}
+	if abs, err := filepath.Abs(lockFile); err == nil {
+		s.helper.GetLogger().Info("[install] 安装锁已写入: " + abs)
+	}
 	return nil
 }
 
-func (receiver *InitInstallService) CreateConfigFile(databaseInfo database2.DatabaseConfig, redisInfo config2.RedisConfig, cacheDriver string, idGeneratorDriver string) error {
-
-	// 基础配置内容
-	configContent := fmt.Sprintf(`# 短网址服务配置文件
+func (s *InitInstallService) CreateConfigFile(db InstallDatabaseConfig, rd InstallRedisConfig, cacheDriver, idGeneratorDriver string) error {
+	content := fmt.Sprintf(`# 短网址服务配置文件
 # 由安装向导自动生成于 %s
 
 # 服务配置
@@ -153,31 +96,29 @@ server:
 database:
   driver: %s`,
 		time.Now().Format("2006-01-02 15:04:05"),
-		databaseInfo.Driver)
+		db.Driver)
 
-	// 根据数据库类型添加相应配置
-	if databaseInfo.Driver == "sqlite" {
-		configContent += fmt.Sprintf(`
-  filepath: %s`, databaseInfo.Filepath)
+	if db.Driver == "sqlite" {
+		content += fmt.Sprintf(`
+  filepath: %s`, db.Filepath)
 	} else {
-		configContent += fmt.Sprintf(`
+		content += fmt.Sprintf(`
   host: %s
   port: %d
   dbname: %s
   username: %s
-  password: %s`, databaseInfo.Host, databaseInfo.Port, databaseInfo.DBName, databaseInfo.Username, databaseInfo.Password)
+  password: %s`, db.Host, db.Port, db.DBName, db.Username, db.Password)
 	}
 
-	configContent += `
+	content += `
   charset: utf8mb4
   max_open_conns: 100
   max_idle_conns: 20
   conn_max_lifetime: 300s`
 
-	// 只有在需要Redis时才添加Redis配置
 	needsRedis := cacheDriver == "redis" || idGeneratorDriver == "redis"
 	if needsRedis {
-		configContent += fmt.Sprintf(`
+		content += fmt.Sprintf(`
 
 # Redis配置
 redis:
@@ -187,20 +128,16 @@ redis:
   db: %d
   max_idle: 10
   max_active: 100
-  idle_timeout: 300s`, redisInfo.Host, redisInfo.Port, redisInfo.Password, redisInfo.DB)
+  idle_timeout: 300s`, rd.Host, rd.Port, rd.Password, rd.DB)
 	}
 
-	// JWT配置
 	jwtSecret := generateInstallSecret(32)
-	configContent += fmt.Sprintf(`
+	content += fmt.Sprintf(`
 
 # JWT配置
 jwt:
   secret: %s
-  expire_hours: 24`, jwtSecret)
-
-	// 继续添加其他配置
-	configContent += fmt.Sprintf(`
+  expire_hours: 24
 
 # 日志配置
 logger:
@@ -210,28 +147,6 @@ logger:
   max_age: 7
   max_backups: 10
 
-# 中间件配置
-middleware:
-  cors:
-    allow_origins: ["*"]
-    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers: ["*"]
-    expose_headers: ["*"]
-    allow_credentials: true
-    max_age: 12h
-
-# 操作日志配置
-operation_log:
-  enabled: true
-  max_age: 30d
-  batch_size: 100
-  flush_interval: 10s
-
-# 迁移配置
-migration:
-  enabled: true
-  auto_migrate: true
-
 # 缓存配置
 cache:
   driver: %s
@@ -239,34 +154,38 @@ cache:
 # ID生成器配置
 id_generator:
   driver: %s
-`, cacheDriver, idGeneratorDriver)
+`, jwtSecret, cacheDriver, idGeneratorDriver)
 
-	// 写入配置文件
-	if err := os.WriteFile(configFile, []byte(configContent), 0644); err != nil {
-		return fmt.Errorf("配置文件写入失败: %v", err)
+	// Ensure parent directory exists — common cause of silent failures when the
+	// binary is launched from a fresh checkout without a config/ folder.
+	if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
+		return fmt.Errorf("创建配置目录失败 (%s): %v", filepath.Dir(configFile), err)
 	}
-
+	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
+		return fmt.Errorf("配置文件写入失败 (%s): %v", configFile, err)
+	}
+	if abs, err := filepath.Abs(configFile); err == nil {
+		s.helper.GetLogger().Info("[install] 配置文件已写入: " + abs)
+	}
 	return nil
 }
 
-func (receiver *InitInstallService) TestDatabaseConnection(config database2.DatabaseConfig, maxRetries int) error {
-	var dsn string
-	var driver string
-
-	switch config.Driver {
+func (s *InitInstallService) TestDatabaseConnection(cfg InstallDatabaseConfig, maxRetries int) error {
+	var dsn, driver string
+	switch cfg.Driver {
 	case "mysql":
 		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-			config.Username, config.Password, config.Host, config.Port, config.DBName)
+			cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
 		driver = "mysql"
 	case "postgresql":
 		dsn = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-			config.Host, config.Port, config.Username, config.Password, config.DBName)
+			cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.DBName)
 		driver = "postgres"
 	case "sqlite":
-		dsn = config.Filepath
+		dsn = cfg.Filepath
 		driver = "sqlite"
 	default:
-		return fmt.Errorf("不支持的数据库类型: %s", config.Driver)
+		return fmt.Errorf("不支持的数据库类型: %s", cfg.Driver)
 	}
 
 	db, err := sql.Open(driver, dsn)
@@ -274,76 +193,58 @@ func (receiver *InitInstallService) TestDatabaseConnection(config database2.Data
 		return fmt.Errorf("数据库连接失败: %v", err)
 	}
 	defer db.Close()
-
-	// 设置连接池参数
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 	db.SetConnMaxLifetime(time.Second * 10)
 
 	retryInterval := 2 * time.Second
 	var lastErr error
-
 	for i := 0; i < maxRetries; i++ {
 		if err := db.Ping(); err != nil {
 			lastErr = err
-			receiver.helper.GetLogger().Warn(fmt.Sprintf("数据库连接测试失败 (第%d次重试): %v", i+1, err))
-
-			// 如果不是最后一次重试，等待后重试
+			s.helper.GetLogger().Warn(fmt.Sprintf("数据库连接测试失败 (第%d次重试): %v", i+1, err))
 			if i < maxRetries-1 {
 				time.Sleep(retryInterval)
 			}
-		} else {
-			// 连接成功
-			receiver.helper.GetLogger().Info("数据库连接测试成功")
-			return nil
+			continue
 		}
+		s.helper.GetLogger().Info("数据库连接测试成功")
+		return nil
 	}
-
 	return fmt.Errorf("数据库连接测试失败 (已重试%d次): %v", maxRetries, lastErr)
 }
 
-func (receiver *InitInstallService) TestRedisConnection(config config2.RedisConfig, maxRetries int) error {
-	// 如果主机为空，说明不需要Redis，直接返回
-	if config.Host == "" {
+func (s *InitInstallService) TestRedisConnection(cfg InstallRedisConfig, maxRetries int) error {
+	if cfg.Host == "" {
 		return nil
 	}
-
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
-		Password: config.Password,
-		DB:       config.DB,
+		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Password: cfg.Password,
+		DB:       cfg.DB,
 	})
-
 	defer rdb.Close()
 
 	ctx := context.Background()
-
 	retryInterval := 2 * time.Second
 	var lastErr error
-
 	for i := 0; i < maxRetries; i++ {
-		_, err := rdb.Ping(ctx).Result()
-		if err != nil {
+		if _, err := rdb.Ping(ctx).Result(); err != nil {
 			lastErr = err
-			receiver.helper.GetLogger().Warn(fmt.Sprintf("Redis连接测试失败 (第%d次重试): %v", i+1, err))
-
-			// 如果不是最后一次重试，等待后重试
+			s.helper.GetLogger().Warn(fmt.Sprintf("Redis连接测试失败 (第%d次重试): %v", i+1, err))
 			if i < maxRetries-1 {
 				time.Sleep(retryInterval)
 			}
-		} else {
-			// 连接成功
-			receiver.helper.GetLogger().Info("Redis连接测试成功")
-			return nil
+			continue
 		}
+		s.helper.GetLogger().Info("Redis连接测试成功")
+		return nil
 	}
-
 	return fmt.Errorf("redis连接测试失败 (已重试%d次): %v", maxRetries, lastErr)
 }
 
-// generateInstallSecret 生成安装时的随机密钥
 func generateInstallSecret(length int) string {
-	bytes := make([]byte, length)
-	rand.Read(bytes)
-	return hex.EncodeToString(bytes)
+	b := make([]byte, length)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }

@@ -1,161 +1,149 @@
 package autoload
 
 import (
-	"cnb.cool/mliev/dwz/dwz-server/app/controller"
-	"cnb.cool/mliev/dwz/dwz-server/app/middleware"
-	envInterface "cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/service/http_server/impl"
-	"github.com/gin-gonic/gin"
-	"github.com/jxskiss/ginregex"
+	"net/http"
+
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/controller"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/middleware"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
-type Router struct {
-}
+type Router struct{}
 
-func (receiver Router) InitConfig(helper envInterface.HelperInterface) map[string]any {
+func (Router) InitConfig() map[string]any {
 	return map[string]any{
-		"http.router": func(router *gin.Engine, deps *impl.HttpDeps) {
-
-			regexRouter := ginregex.New(router, nil)
-
-			// 添加安装检查中间件
-			router.Use(middleware.InstallMiddleware(helper))
-
-			router.GET("/favicon.ico", func(c *gin.Context) {
-				c.Status(204) // 返回204 No Content
+		"http.router": func(router httpInterfaces.RouterInterface) {
+			router.GET("/favicon.ico", func(c httpInterfaces.RouterContextInterface) {
+				c.Status(http.StatusNoContent)
 			})
 
-			// 健康检查接口
-			router.GET("/health", deps.WrapHandler(controller.HealthController{}.GetHealth))
-			router.GET("/health/simple", deps.WrapHandler(controller.HealthController{}.GetHealthSimple))
-
-			router.GET("/install/index", deps.WrapHandler(controller.InstallController{}.GetInstall))
-
-			// 安装接口路由（不需要认证）
-			installRoutes := router.Group("/api/v1/install")
+			// 健康检查
+			health := router.Group("/health")
 			{
-				installRoutes.POST("/test-db", deps.WrapHandler(controller.InstallController{}.TestConnection)) // 测试数据库连接
-				installRoutes.POST("", deps.WrapHandler(controller.InstallController{}.Install))                // 执行安装
+				health.GET("", controller.HealthController{}.GetHealth)
+				health.GET("/simple", controller.HealthController{}.GetHealthSimple)
+			}
+
+			// 安装页面 + 安装 API（无认证）
+			router.GET("/install/index", controller.InstallController{}.GetInstall)
+			install := router.Group("/api/v1/install")
+			{
+				install.POST("/test-db", controller.InstallController{}.TestConnection)
+				install.POST("", controller.InstallController{}.Install)
 			}
 
 			// 首页
-			router.GET("/", deps.WrapHandler(controller.IndexController{}.GetIndex))
+			router.GET("/", controller.IndexController{}.GetIndex)
 
-			// 认证路由组（不需要认证）
-			auth := router.Group("/api/v1/auth")
+			// 登录路由（无认证，但记录操作日志）
+			authPublic := router.Group("/api/v1/auth")
+			authPublic.Use(middleware.OperationLogMiddleware())
 			{
-				auth.POST("/login", middleware.OperationLogMiddleware(helper), deps.WrapHandler(controller.AuthController{}.Login)) // 用户登录
+				authPublic.POST("/login", controller.AuthController{}.Login)
+			}
+			// 兼容老登录路径
+			compatLogin := router.Group("/api/v1")
+			compatLogin.Use(middleware.OperationLogMiddleware())
+			{
+				compatLogin.POST("/login", controller.AuthController{}.Login)
 			}
 
-			// 保留原有登录路由以保持向后兼容（指向新的AuthController）
-			// todo 后续删除
-			router.POST("/api/v1/login", middleware.OperationLogMiddleware(helper), deps.WrapHandler(controller.AuthController{}.Login)) // 用户登录（向后兼容）
-
-			// API路由组
-			v1 := router.Group("/api/v1", middleware.OperationLogMiddleware(helper), middleware.AuthMiddleware(helper))
+			// 受保护的 API：操作日志 + 鉴权
+			v1 := router.Group("/api/v1")
+			v1.Use(middleware.OperationLogMiddleware())
+			v1.Use(middleware.AuthMiddleware())
 			{
-				// 认证相关路由（需要认证）
-				authRoutes := v1.Group("/auth")
+				auth := v1.Group("/auth")
 				{
-					authRoutes.POST("/logout", deps.WrapHandler(controller.AuthController{}.Logout)) // 用户登出
+					auth.POST("/logout", controller.AuthController{}.Logout)
 				}
 
-				// 短网址管理路由
-				shortLinks := v1.Group("/short_links")
+				short := v1.Group("/short_links")
 				{
-					shortLinks.POST("", deps.WrapHandler(controller.ShortLinkController{}.CreateShortLink))                      // 创建短网址
-					shortLinks.GET("", deps.WrapHandler(controller.ShortLinkController{}.GetShortLinkList))                      // 获取短网址列表
-					shortLinks.GET("/:id", deps.WrapHandler(controller.ShortLinkController{}.GetShortLink))                      // 获取短网址详情
-					shortLinks.PUT("/:id", deps.WrapHandler(controller.ShortLinkController{}.UpdateShortLink))                   // 更新短网址
-					shortLinks.PUT("/:id/status", deps.WrapHandler(controller.ShortLinkController{}.UpdateShortLinkStatus))      // 更新短网址状态
-					shortLinks.DELETE("/:id", deps.WrapHandler(controller.ShortLinkController{}.DeleteShortLink))                // 删除短网址
-					shortLinks.GET("/:id/statistics", deps.WrapHandler(controller.ShortLinkController{}.GetShortLinkStatistics)) // 获取统计信息
-					shortLinks.POST("/batch", deps.WrapHandler(controller.ShortLinkController{}.BatchCreateShortLinks))          // 批量创建短网址
+					short.POST("", controller.ShortLinkController{}.CreateShortLink)
+					short.GET("", controller.ShortLinkController{}.GetShortLinkList)
+					short.GET("/:id", controller.ShortLinkController{}.GetShortLink)
+					short.PUT("/:id", controller.ShortLinkController{}.UpdateShortLink)
+					short.PUT("/:id/status", controller.ShortLinkController{}.UpdateShortLinkStatus)
+					short.DELETE("/:id", controller.ShortLinkController{}.DeleteShortLink)
+					short.GET("/:id/statistics", controller.ShortLinkController{}.GetShortLinkStatistics)
+					short.POST("/batch", controller.ShortLinkController{}.BatchCreateShortLinks)
 				}
 
-				// 域名管理路由
 				domains := v1.Group("/domains")
 				{
-					domains.POST("", deps.WrapHandler(controller.DomainController{}.CreateDomain))                 // 创建域名配置
-					domains.GET("", deps.WrapHandler(controller.DomainController{}.GetDomainList))                 // 获取域名列表
-					domains.GET("/active", deps.WrapHandler(controller.DomainController{}.GetActiveDomains))       // 获取活跃域名列表
-					domains.PUT("/:id", deps.WrapHandler(controller.DomainController{}.UpdateDomain))              // 更新域名配置
-					domains.PUT("/:id/status", deps.WrapHandler(controller.DomainController{}.UpdateStatusDomain)) // 更新域名状态
-					domains.DELETE("/:id", deps.WrapHandler(controller.DomainController{}.DeleteDomain))           // 删除域名配置
+					domains.POST("", controller.DomainController{}.CreateDomain)
+					domains.GET("", controller.DomainController{}.GetDomainList)
+					domains.GET("/active", controller.DomainController{}.GetActiveDomains)
+					domains.PUT("/:id", controller.DomainController{}.UpdateDomain)
+					domains.PUT("/:id/status", controller.DomainController{}.UpdateStatusDomain)
+					domains.DELETE("/:id", controller.DomainController{}.DeleteDomain)
 				}
 
-				// AB测试管理路由
-				abTests := v1.Group("/ab_tests")
+				ab := v1.Group("/ab_tests")
 				{
-					abTests.POST("", deps.WrapHandler(controller.ABTestController{}.CreateABTest))                      // 创建AB测试
-					abTests.GET("", deps.WrapHandler(controller.ABTestController{}.GetABTestList))                      // 获取AB测试列表
-					abTests.GET("/:id", deps.WrapHandler(controller.ABTestController{}.GetABTest))                      // 获取AB测试详情
-					abTests.PUT("/:id", deps.WrapHandler(controller.ABTestController{}.UpdateABTest))                   // 更新AB测试
-					abTests.DELETE("/:id", deps.WrapHandler(controller.ABTestController{}.DeleteABTest))                // 删除AB测试
-					abTests.POST("/:id/start", deps.WrapHandler(controller.ABTestController{}.StartABTest))             // 启动AB测试
-					abTests.POST("/:id/stop", deps.WrapHandler(controller.ABTestController{}.StopABTest))               // 停止AB测试
-					abTests.GET("/:id/statistics", deps.WrapHandler(controller.ABTestController{}.GetABTestStatistics)) // 获取AB测试统计
+					ab.POST("", controller.ABTestController{}.CreateABTest)
+					ab.GET("", controller.ABTestController{}.GetABTestList)
+					ab.GET("/:id", controller.ABTestController{}.GetABTest)
+					ab.PUT("/:id", controller.ABTestController{}.UpdateABTest)
+					ab.DELETE("/:id", controller.ABTestController{}.DeleteABTest)
+					ab.POST("/:id/start", controller.ABTestController{}.StartABTest)
+					ab.POST("/:id/stop", controller.ABTestController{}.StopABTest)
+					ab.GET("/:id/statistics", controller.ABTestController{}.GetABTestStatistics)
 				}
 
-				// 用户管理路由（需要认证）
 				users := v1.Group("/users")
 				{
-					users.POST("", deps.WrapHandler(controller.UserController{}.CreateUser))                       // 创建用户
-					users.GET("", deps.WrapHandler(controller.UserController{}.GetUserList))                       // 获取用户列表
-					users.GET("/:id", deps.WrapHandler(controller.UserController{}.GetUser))                       // 获取用户详情
-					users.PUT("/:id", deps.WrapHandler(controller.UserController{}.UpdateUser))                    // 更新用户
-					users.DELETE("/:id", deps.WrapHandler(controller.UserController{}.DeleteUser))                 // 删除用户
-					users.POST("/:id/reset-password", deps.WrapHandler(controller.UserController{}.ResetPassword)) // 重置密码
+					users.POST("", controller.UserController{}.CreateUser)
+					users.GET("", controller.UserController{}.GetUserList)
+					users.GET("/:id", controller.UserController{}.GetUser)
+					users.PUT("/:id", controller.UserController{}.UpdateUser)
+					users.DELETE("/:id", controller.UserController{}.DeleteUser)
+					users.POST("/:id/reset-password", controller.UserController{}.ResetPassword)
 				}
 
-				// 当前用户相关路由（需要认证）
 				profile := v1.Group("/profile")
 				{
-					profile.GET("", deps.WrapHandler(controller.UserController{}.GetCurrentUser))                  // 获取当前用户信息
-					profile.POST("/change-password", deps.WrapHandler(controller.UserController{}.ChangePassword)) // 修改密码
+					profile.GET("", controller.UserController{}.GetCurrentUser)
+					profile.POST("/change-password", controller.UserController{}.ChangePassword)
 				}
 
-				// Token管理路由（需要认证）
-				tokens := v1.Group("/tokens", middleware.AuthMiddleware(helper))
+				tokens := v1.Group("/tokens")
 				{
-					tokens.POST("", deps.WrapHandler(controller.UserController{}.CreateToken))             // 创建Token
-					tokens.GET("", deps.WrapHandler(controller.UserController{}.GetTokenList))             // 获取Token列表
-					tokens.DELETE("/:token_id", deps.WrapHandler(controller.UserController{}.DeleteToken)) // 删除Token
+					tokens.POST("", controller.UserController{}.CreateToken)
+					tokens.GET("", controller.UserController{}.GetTokenList)
+					tokens.DELETE("/:token_id", controller.UserController{}.DeleteToken)
 				}
 
-				// 操作日志路由（需要认证）
-				logs := v1.Group("/logs", middleware.AuthMiddleware(helper))
+				logs := v1.Group("/logs")
 				{
-					logs.GET("", deps.WrapHandler(controller.UserController{}.GetOperationLogs)) // 获取操作日志
+					logs.GET("", controller.UserController{}.GetOperationLogs)
 				}
 
-				// 点击统计路由
 				clickStats := v1.Group("/click_statistics")
 				{
-					clickStats.GET("", deps.WrapHandler(controller.ClickStatisticController{}.GetClickStatisticList))              // 获取点击统计列表
-					clickStats.GET("/analysis", deps.WrapHandler(controller.ClickStatisticController{}.GetClickStatisticAnalysis)) // 获取点击统计分析
+					clickStats.GET("", controller.ClickStatisticController{}.GetClickStatisticList)
+					clickStats.GET("/analysis", controller.ClickStatisticController{}.GetClickStatisticAnalysis)
 				}
 
-				statistics := v1.Group("/statistics")
+				stats := v1.Group("/statistics")
 				{
-					statistics.GET("/system", deps.WrapHandler(controller.StatisticsController{}.GetSystem))
-					statistics.GET("/dashboard", deps.WrapHandler(controller.StatisticsController{}.GetDashboard))
-					statistics.GET("/short-links", deps.WrapHandler(controller.StatisticsController{}.GetShortLinks))
+					stats.GET("/system", controller.StatisticsController{}.GetSystem)
+					stats.GET("/dashboard", controller.StatisticsController{}.GetDashboard)
+					stats.GET("/short-links", controller.StatisticsController{}.GetShortLinks)
 				}
 
-				// AB测试点击统计路由
-				abTestClickStats := v1.Group("/ab_test_click_statistics")
+				abClick := v1.Group("/ab_test_click_statistics")
 				{
-					abTestClickStats.GET("", deps.WrapHandler(controller.ABTestClickStatisticController{}.GetABTestClickStatisticList))              // 获取AB测试点击统计列表
-					abTestClickStats.GET("/analysis", deps.WrapHandler(controller.ABTestClickStatisticController{}.GetABTestClickStatisticAnalysis)) // 获取AB测试点击统计分析
-					abTestClickStats.GET("/:id/variants", deps.WrapHandler(controller.ABTestClickStatisticController{}.GetABTestVariantStatistics))  // 获取AB测试版本统计
+					abClick.GET("", controller.ABTestClickStatisticController{}.GetABTestClickStatisticList)
+					abClick.GET("/analysis", controller.ABTestClickStatisticController{}.GetABTestClickStatisticAnalysis)
+					abClick.GET("/:id/variants", controller.ABTestClickStatisticController{}.GetABTestVariantStatistics)
 				}
 			}
 
-			// 短网址跳转路由
-			regexRouter.GET(`^/(?P<code>[a-zA-Z0-9\-_.]+)$`, deps.WrapHandler(controller.ShortLinkController{}.RedirectShortLink))        // 短网址跳转
-			regexRouter.GET(`^/preview/(?P<code>[a-zA-Z0-9\-_.]+)$`, deps.WrapHandler(controller.ShortLinkController{}.PreviewShortLink)) // 预览短网址
-
+			// 短码跳转 (`/<code>` 与 `/preview/<code>`) 由
+			// config/autoload/short_code_dispatch.go 注册的中间件处理，避免
+			// go-web RegexGroup 在根路径与具体路由的 catch-all 冲突。
 		},
 	}
 }

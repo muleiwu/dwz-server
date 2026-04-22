@@ -1,51 +1,57 @@
 package assembly
 
 import (
-	"errors"
-	"fmt"
-	"time"
+	"reflect"
 
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	gocache "github.com/muleiwu/go-cache"
-	"github.com/muleiwu/go-cache/serializer"
+	installedImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/installed/impl"
+	"cnb.cool/mliev/open/go-web/pkg/container"
+	cacheDriver "cnb.cool/mliev/open/go-web/pkg/server/cache/driver"
 	"github.com/muleiwu/gsr"
+	"github.com/redis/go-redis/v9"
 )
 
-type Cache struct {
-	Helper interfaces.HelperInterface
+// Cache wraps go-web's cache driver. Pre-install we always fall back to the
+// in-memory driver so the HTTP server can boot and serve the install page.
+// After install completes, a SIGHUP reload picks up the configured driver.
+type Cache struct{}
+
+func (Cache) Type() reflect.Type { return reflect.TypeFor[gsr.Cacher]() }
+func (Cache) DependsOn() []reflect.Type {
+	return []reflect.Type{
+		reflect.TypeFor[gsr.Provider](),
+		reflect.TypeFor[gsr.Logger](),
+		reflect.TypeFor[*installedImpl.Installed](),
+		reflect.TypeFor[*redis.Client](),
+	}
 }
 
-func (receiver *Cache) Assembly() error {
+func (Cache) Assembly() (any, error) {
+	logger := container.MustGet[gsr.Logger]()
+	installed := container.MustGet[*installedImpl.Installed]()
 
-	if receiver.Helper.GetInstalled() == nil || !receiver.Helper.GetInstalled().IsInstalled() {
-		receiver.Helper.GetLogger().Warn("应用未安装，停止初始化缓存")
-		return nil
+	driverName := "memory"
+	if installed.IsInstalled() {
+		driverName = container.MustGet[gsr.Provider]().GetString("cache.driver", "memory")
 	}
 
-	driver := receiver.Helper.GetConfig().GetString("cache.driver", "redis")
-	receiver.Helper.GetLogger().Debug("加载缓存驱动" + driver)
-
-	if driver == "redis" && receiver.Helper.GetRedis() == nil {
-		panic(errors.New("缓存服务驱动配置为：redis，但Redis服务不可用，拒绝启动"))
+	var driverConfig any
+	if driverName == "redis" {
+		client, err := container.Get[*redis.Client]()
+		if err != nil || client == nil {
+			logger.Warn("[cache] 配置为 redis 但 Redis 不可用，回退到 memory 驱动")
+			driverName = "memory"
+		} else {
+			driverConfig = client
+		}
 	}
 
-	cacheDriver, err := receiver.GetDriver(driver)
+	c, err := cacheDriver.CacheDriverManager.Make(driverName, driverConfig)
 	if err != nil {
-		fmt.Printf("[cache] 加载缓存驱动失败: %s", err.Error())
+		logger.Error("[cache] 加载驱动失败，降级到 memory: " + err.Error())
+		c, err = cacheDriver.CacheDriverManager.Make("memory", nil)
+		if err != nil {
+			return nil, err
+		}
 	}
-	receiver.Helper.SetCache(cacheDriver)
-
-	return nil
-}
-
-func (receiver *Cache) GetDriver(driver string) (gsr.Cacher, error) {
-
-	if driver == "redis" {
-		return gocache.NewRedis(receiver.Helper.GetRedis(), gocache.WithRedisSerializer(serializer.NewJson())), nil
-	} else if driver == "memory" || driver == "local" {
-		// 设置超时时间和清理时间
-		return gocache.NewMemory(5*time.Minute, 10*time.Minute), nil
-	} else {
-		return gocache.NewNone(), nil
-	}
+	return c, nil
 }

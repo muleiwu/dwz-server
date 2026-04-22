@@ -3,12 +3,12 @@ package controller
 import (
 	"net/http"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/constants"
-	"cnb.cool/mliev/dwz/dwz-server/app/dto"
-	"cnb.cool/mliev/dwz/dwz-server/app/middleware"
-	"cnb.cool/mliev/dwz/dwz-server/app/service"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"github.com/gin-gonic/gin"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/middleware"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
+	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
 )
 
 // AuthController 认证控制器
@@ -17,7 +17,9 @@ type AuthController struct {
 }
 
 // Login 用户登录
-func (ctrl AuthController) Login(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl AuthController) Login(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -52,7 +54,7 @@ func (ctrl AuthController) Login(c *gin.Context, helper interfaces.HelperInterfa
 			}
 
 			// 认证失败（用户名或密码错误）
-			ctrl.ErrorWithData(c, constants.ErrCodeUnauthorized, authErr.Message, gin.H{
+			ctrl.ErrorWithData(c, constants.ErrCodeUnauthorized, authErr.Message, map[string]any{
 				"remaining_attempts": authErr.RemainingAttempts,
 			})
 			return
@@ -67,7 +69,9 @@ func (ctrl AuthController) Login(c *gin.Context, helper interfaces.HelperInterfa
 }
 
 // Logout 用户登出
-func (ctrl AuthController) Logout(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl AuthController) Logout(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	// 获取当前用户信息
 	currentUser := middleware.GetCurrentUser(c)
 	if currentUser == nil {

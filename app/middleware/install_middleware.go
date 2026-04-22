@@ -4,22 +4,19 @@ import (
 	"net/http"
 	"strings"
 
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"github.com/gin-gonic/gin"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
-// InstallMiddleware 安装检查中间件
-func InstallMiddleware(helper interfaces.HelperInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		path := c.Request.URL.Path
-
-		// 如果系统已经安装，继续处理
-		if helper.GetInstalled().IsInstalled() {
+func InstallMiddleware() httpInterfaces.HandlerFunc {
+	return func(c httpInterfaces.RouterContextInterface) {
+		if installed := helper.GetHelper().GetInstalled(); installed != nil && installed.IsInstalled() {
 			c.Next()
 			return
 		}
 
-		// 如果系统未安装，只允许访问安装相关的页面
+		path := c.Path()
+
 		allowedPaths := []string{
 			"/install/index",
 			"/api/v1/install",
@@ -27,8 +24,6 @@ func InstallMiddleware(helper interfaces.HelperInterface) gin.HandlerFunc {
 			"/health",
 			"/health/simple",
 		}
-
-		// 检查是否为允许的路径
 		for _, allowedPath := range allowedPaths {
 			if path == allowedPath || strings.HasPrefix(path, allowedPath) {
 				c.Next()
@@ -36,7 +31,6 @@ func InstallMiddleware(helper interfaces.HelperInterface) gin.HandlerFunc {
 			}
 		}
 
-		// 静态资源放行
 		if strings.HasPrefix(path, "/static/") ||
 			strings.HasPrefix(path, "/assets/") ||
 			strings.HasPrefix(path, "/css/") ||
@@ -46,11 +40,10 @@ func InstallMiddleware(helper interfaces.HelperInterface) gin.HandlerFunc {
 			return
 		}
 
-		// 其他路径重定向到安装页面
-		if c.Request.Method == "GET" {
+		if c.Method() == http.MethodGet {
 			c.Redirect(http.StatusFound, "/install/index")
 		} else {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
+			c.JSON(http.StatusServiceUnavailable, map[string]any{
 				"code":    503,
 				"message": "系统尚未安装，请先完成安装",
 			})

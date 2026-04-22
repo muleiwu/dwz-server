@@ -1,25 +1,23 @@
 package config
 
 import (
-	"cnb.cool/mliev/dwz/dwz-server/config/autoload"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/v2/config/autoload"
+	"cnb.cool/mliev/open/go-web/pkg/interfaces"
 )
 
-type Config struct {
-}
+type Config struct{}
 
-func (receiver Config) Get() []interfaces.InitConfig {
+func (Config) Get() []interfaces.InitConfig {
 	return []interfaces.InitConfig{
-		autoload.Base{},
+		autoload.App{},
 		autoload.Http{},
-		autoload.Config{},
-		autoload.IdGenerator{},
-		autoload.Migration{},
 		autoload.StaticFs{},
-		autoload.Database{},
-		autoload.Redis{},
-		autoload.Jwt{},
 		autoload.Middleware{},
 		autoload.Router{},
+		autoload.Database{},
+		autoload.Redis{},
+		autoload.Cache{},
+		autoload.IdGenerator{},
+		autoload.Jwt{},
 	}
 }

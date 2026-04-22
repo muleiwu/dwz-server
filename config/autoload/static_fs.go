@@ -1,21 +1,13 @@
 package autoload
 
-import (
-	"embed"
+import "embed"
 
-	envInterface "cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-)
+type StaticFs struct{}
 
-type StaticFs struct {
-}
-
-func (receiver StaticFs) InitConfig(helper envInterface.HelperInterface) map[string]any {
+// InitConfig provides a placeholder for the static FS map.
+// The real value is injected by cmd.WithTemplateFs / cmd.WithWebStaticFs in main.go.
+func (StaticFs) InitConfig() map[string]any {
 	return map[string]any{
-		"static.fs": func() map[string]embed.FS {
-			return map[string]embed.FS{
-				// 这里会在启动的时候在 main.go 注入静态资源进来，请在main.go 添加静态资源
-				//"tempe": embed.FS{},
-			}
-		},
+		"static.fs": map[string]embed.FS{},
 	}
 }

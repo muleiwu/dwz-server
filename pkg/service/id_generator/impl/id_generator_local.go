@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"sync"
 
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	"github.com/muleiwu/base_n"
 )
 
