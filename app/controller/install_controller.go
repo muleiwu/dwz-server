@@ -2,12 +2,14 @@ package controller
 
 import (
 	"net/http"
+	"os"
+	"syscall"
 	"time"
 
 	"cnb.cool/mliev/dwz/dwz-server/app/service"
 	helperPkg "cnb.cool/mliev/dwz/dwz-server/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/install_bootstrap"
 	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
-	"cnb.cool/mliev/open/go-web/pkg/server/reload"
 )
 
 type InstallController struct {
@@ -131,6 +133,7 @@ func (ctrl InstallController) Install(c httpInterfaces.RouterContextInterface) {
 	}
 
 	helper := helperPkg.GetHelper()
+	logger := helper.GetLogger()
 	if installed := helper.GetInstalled(); installed != nil && installed.IsInstalled() {
 		ctrl.Error(c, http.StatusBadRequest, "系统已经安装")
 		return
@@ -163,55 +166,40 @@ func (ctrl InstallController) Install(c httpInterfaces.RouterContextInterface) {
 		return
 	}
 
+	// Drop the admin credentials in a one-shot bootstrap file. The migration
+	// server picks this up after it runs the schema, creates the user, and
+	// deletes the file.
+	if err := install_bootstrap.Write(install_bootstrap.AdminPayload{
+		Username: req.Admin.Username,
+		Password: req.Admin.Password,
+		Email:    req.Admin.Email,
+	}); err != nil {
+		ctrl.Error(c, http.StatusInternalServerError, "管理员账户写入失败: "+err.Error())
+		return
+	}
+
 	if err := installer.CreateInstallLock(); err != nil {
 		ctrl.Error(c, http.StatusInternalServerError, "安装标记创建失败: "+err.Error())
 		return
 	}
 
-	// Mark in-memory state installed so the next request after reload sees the lock.
-	if installed := helper.GetInstalled(); installed != nil {
-		installed.SetInstalled(true)
-	}
+	ctrl.SuccessWithMessage(c, "安装完成，服务即将重启...", nil)
 
-	// Trigger a SIGHUP-equivalent reload so the new config / DB / cache /
-	// id_generator are picked up by the assemblies. The admin user is created
-	// after reload completes via a one-shot env hook.
-	go func(req installRequest) {
-		// brief delay so the response can be flushed
-		// before the HTTP server is torn down by reload.
-		// 100ms is enough on local; production reload also tolerates this.
-		// (kept inline to avoid an extra import for time.Sleep semantics.)
-		// no-op below
-		reload.TriggerReload()
-		// After reload, the new container has fresh DB/Redis/etc.
-		// Create the admin user using the freshly wired helper.
-		// Note: reload is asynchronous from the perspective of this goroutine;
-		// the install_controller responds before this completes.
-		_ = createAdminPostInstall(req.Admin)
-	}(req)
-
-	ctrl.SuccessWithMessage(c, "安装完成，正在重载服务...", nil)
-}
-
-func createAdminPostInstall(admin installAdminPayload) error {
-	// After the install endpoint triggers reload, the new container builds a
-	// fresh DB and the migration server creates the schema. We poll for the
-	// users table to exist before inserting; 50 × 100ms = 5s ceiling.
-	const attempts = 50
-	for i := 0; i < attempts; i++ {
-		time.Sleep(100 * time.Millisecond)
-		h := helperPkg.GetHelper()
-		db := h.GetDatabase()
-		if db == nil {
-			continue
+	// go-web's reload reuses the existing container providers (same priority
+	// rejects replacement), so the freshly written config.yaml would be
+	// ignored. Re-exec the binary instead — that gives us a guaranteed clean
+	// container, and gomander preserves the daemon lifecycle.
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		binary, err := os.Executable()
+		if err != nil {
+			logger.Error("[install] 无法定位可执行文件，请手动重启服务: " + err.Error())
+			return
 		}
-		if err := db.Exec("SELECT 1 FROM users LIMIT 1").Error; err != nil {
-			continue
+		if err := syscall.Exec(binary, os.Args, os.Environ()); err != nil {
+			logger.Error("[install] 重启服务失败，请手动重启: " + err.Error())
 		}
-		installer := service.NewInitInstallService(h)
-		return installer.CreateAdminUser(admin.Username, "", admin.Email, "", admin.Password)
-	}
-	return nil
+	}()
 }
 
 func toInstallDB(p installDatabasePayload) service.InstallDatabaseConfig {

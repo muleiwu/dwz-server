@@ -3,18 +3,18 @@ package config
 import (
 	"embed"
 
+	cacheAssembly "cnb.cool/mliev/dwz/dwz-server/pkg/service/cache/assembly"
+	databaseAssembly "cnb.cool/mliev/dwz/dwz-server/pkg/service/database/assembly"
 	idGenerator "cnb.cool/mliev/dwz/dwz-server/pkg/service/id_generator/service"
 	installedAssembly "cnb.cool/mliev/dwz/dwz-server/pkg/service/installed/assembly"
 	"cnb.cool/mliev/dwz/dwz-server/pkg/service/migration"
+	redisAssembly "cnb.cool/mliev/dwz/dwz-server/pkg/service/redis/assembly"
 	versionAssembly "cnb.cool/mliev/dwz/dwz-server/pkg/service/version/assembly"
 	"cnb.cool/mliev/open/go-web/pkg/interfaces"
-	cacheAssembly "cnb.cool/mliev/open/go-web/pkg/server/cache/assembly"
 	configAssembly "cnb.cool/mliev/open/go-web/pkg/server/config/assembly"
-	databaseAssembly "cnb.cool/mliev/open/go-web/pkg/server/database/assembly"
 	envAssembly "cnb.cool/mliev/open/go-web/pkg/server/env/assembly"
 	httpServer "cnb.cool/mliev/open/go-web/pkg/server/http_server/service"
 	loggerAssembly "cnb.cool/mliev/open/go-web/pkg/server/logger/assembly"
-	redisAssembly "cnb.cool/mliev/open/go-web/pkg/server/redis/assembly"
 )
 
 // App is the dwz-server AppProvider implementation. main.go populates
@@ -30,16 +30,22 @@ func (a App) Servers() []interfaces.ServerInterface      { return DefaultServers
 // DefaultAssemblies returns the CE assembly chain. EE consumers wrap this and
 // append their own assemblies before passing the combined slice to the
 // AppProvider they hand to cmd.WithApp.
+//
+// The chain is ordered so that `installed` resolves before any service that
+// depends on external resources (DB / Redis / Cache). The dwz-private
+// database / redis / cache assemblies short-circuit pre-install so a fresh
+// download boots straight into the install wizard regardless of whether
+// MySQL or Redis is running.
 func DefaultAssemblies() []interfaces.AssemblyInterface {
 	return []interfaces.AssemblyInterface{
 		&envAssembly.Env{},
 		&configAssembly.Config{DefaultConfigs: Config{}.Get()},
 		&loggerAssembly.Logger{},
+		&installedAssembly.Installed{},
+		&versionAssembly.Version{},
 		&databaseAssembly.Database{},
 		&redisAssembly.Redis{},
 		&cacheAssembly.Cache{},
-		&installedAssembly.Installed{},
-		&versionAssembly.Version{},
 	}
 }
 

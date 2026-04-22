@@ -7,6 +7,7 @@ import (
 	"io/fs"
 
 	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/pkg/service/install_bootstrap"
 	"github.com/pressly/goose/v3"
 )
 
@@ -90,6 +91,13 @@ func (m *Migration) Run() error {
 	}
 
 	m.fixEmptyTokenFields()
+
+	// One-shot post-install bootstrap: when /api/v1/install ran and dropped
+	// the admin payload at config/install_admin.json, create the user now
+	// that the schema is in place.
+	if err := install_bootstrap.Consume(); err != nil {
+		logger.Warn("[migration] 创建初始管理员失败: " + err.Error())
+	}
 	return nil
 }
 
