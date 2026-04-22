@@ -40,6 +40,9 @@ func (Router) InitConfig() map[string]any {
 			authPublic.Use(middleware.OperationLogMiddleware())
 			{
 				authPublic.POST("/login", controller.AuthController{}.Login)
+				authPublic.GET("/login-options", controller.AuthController{}.GetLoginOptions)
+				authPublic.GET("/oidc/authorize", controller.OIDCController{}.Authorize)
+				authPublic.GET("/oidc/callback", controller.OIDCController{}.Callback)
 			}
 			// 兼容老登录路径
 			compatLogin := router.Group("/api/v1")
@@ -56,6 +59,16 @@ func (Router) InitConfig() map[string]any {
 				auth := v1.Group("/auth")
 				{
 					auth.POST("/logout", controller.AuthController{}.Logout)
+					auth.POST("/oidc/bind", controller.OIDCController{}.Bind)
+					auth.GET("/oidc/my-bindings", controller.OIDCController{}.GetMyBindings)
+					auth.DELETE("/oidc/bindings/:provider", controller.OIDCController{}.Unbind)
+				}
+
+				adminOIDC := v1.Group("/admin/oidc")
+				{
+					adminOIDC.GET("/config", controller.OIDCAdminController{}.GetConfig)
+					adminOIDC.PUT("/config", controller.OIDCAdminController{}.SaveConfig)
+					adminOIDC.POST("/test", controller.OIDCAdminController{}.TestConnection)
 				}
 
 				short := v1.Group("/short_links")

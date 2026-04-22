@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	cnb.cool/mliev/open/go-web v1.7.0
+	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/muleiwu/base_n v1.0.0
@@ -13,6 +14,7 @@ require (
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/redis/go-redis/v9 v9.17.3
 	golang.org/x/crypto v0.48.0
+	golang.org/x/oauth2 v0.36.0
 	gorm.io/gorm v1.31.1
 )
 
@@ -30,6 +32,7 @@ require (
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/gin-gonic/gin v1.11.0 // indirect
 	github.com/glebarez/go-sqlite v1.22.0 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.30.1 // indirect

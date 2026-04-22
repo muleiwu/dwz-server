@@ -68,6 +68,19 @@ func (ctrl AuthController) Login(c httpInterfaces.RouterContextInterface) {
 	ctrl.Success(c, response)
 }
 
+// GetLoginOptions 免认证接口,返回登录页渲染所需的开关(目前用于 OIDC SSO 按钮)。
+func (ctrl AuthController) GetLoginOptions(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	oidcSvc := service.NewOIDCService(helper)
+	opts, err := oidcSvc.GetLoginOptions()
+	if err != nil {
+		// 未配置或读取失败时返回保守默认,避免阻塞登录页。
+		ctrl.Success(c, map[string]any{"oidc_enabled": false})
+		return
+	}
+	ctrl.Success(c, opts)
+}
+
 // Logout 用户登出
 func (ctrl AuthController) Logout(c httpInterfaces.RouterContextInterface) {
 	helper := helperPkg.GetHelper()

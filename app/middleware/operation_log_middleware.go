@@ -261,6 +261,15 @@ var defaultOperationMappings = []OperationMapping{
 	{"POST", "/api/v1/login", "登录", "认证"},
 	{"POST", "/api/v1/auth/login", "登录", "认证"},
 	{"POST", "/api/v1/auth/logout", "登出", "认证"},
+	{"GET", "/api/v1/auth/login-options", "查看登录选项", "认证"},
+	{"GET", "/api/v1/auth/oidc/authorize", "发起SSO登录", "认证"},
+	{"GET", "/api/v1/auth/oidc/callback", "SSO回调", "认证"},
+	{"POST", "/api/v1/auth/oidc/bind", "发起SSO绑定", "认证"},
+	{"GET", "/api/v1/auth/oidc/my-bindings", "查看SSO绑定", "认证"},
+	{"DELETE", "/api/v1/auth/oidc/bindings/[^/]+", "解绑SSO", "认证"},
+	{"GET", "/api/v1/admin/oidc/config", "查看SSO配置", "OIDC"},
+	{"PUT", "/api/v1/admin/oidc/config", "更新SSO配置", "OIDC"},
+	{"POST", "/api/v1/admin/oidc/test", "测试SSO连接", "OIDC"},
 }
 
 func getOperationAndResource(method, path string) (string, string) {
