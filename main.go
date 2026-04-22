@@ -3,7 +3,7 @@ package main
 import (
 	"embed"
 
-	"cnb.cool/mliev/dwz/dwz-server/config"
+	"cnb.cool/mliev/dwz/dwz-server/v2/config"
 	"cnb.cool/mliev/open/go-web/cmd"
 	"github.com/muleiwu/gomander"
 )

@@ -3,8 +3,8 @@ package controller
 import (
 	"net/http"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/constants"
-	"cnb.cool/mliev/dwz/dwz-server/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
 	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 

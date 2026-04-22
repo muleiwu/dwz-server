@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
 	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 

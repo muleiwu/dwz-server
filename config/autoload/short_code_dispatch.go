@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/controller"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/controller"
 	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 

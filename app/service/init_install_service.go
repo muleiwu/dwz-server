@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/dao"
-	"cnb.cool/mliev/dwz/dwz-server/app/model"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	_ "github.com/glebarez/sqlite"
 	"github.com/redis/go-redis/v9"
 )

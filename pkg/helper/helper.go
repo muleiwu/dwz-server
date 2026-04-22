@@ -1,9 +1,9 @@
 package helper
 
 import (
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	installedImpl "cnb.cool/mliev/dwz/dwz-server/pkg/service/installed/impl"
-	versionImpl "cnb.cool/mliev/dwz/dwz-server/pkg/service/version/impl"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
+	installedImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/installed/impl"
+	versionImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/version/impl"
 	"cnb.cool/mliev/open/go-web/pkg/container"
 	gowebHelper "cnb.cool/mliev/open/go-web/pkg/helper"
 	"github.com/muleiwu/gsr"

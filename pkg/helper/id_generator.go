@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	"cnb.cool/mliev/open/go-web/pkg/container"
 )
 

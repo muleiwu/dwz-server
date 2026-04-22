@@ -7,11 +7,11 @@ import (
 	mathrand "math/rand"
 	"strconv"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/dao"
-	"cnb.cool/mliev/dwz/dwz-server/app/dto"
-	"cnb.cool/mliev/dwz/dwz-server/app/model"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/service/domain_validate"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/domain_validate"
 	"gorm.io/gorm"
 )
 

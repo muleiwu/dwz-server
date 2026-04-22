@@ -3,9 +3,9 @@ package dao
 import (
 	"time"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/dto"
-	"cnb.cool/mliev/dwz/dwz-server/app/model"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 )
 
 type ABTestClickStatisticDao struct {

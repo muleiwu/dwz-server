@@ -1,7 +1,7 @@
 package config
 
 import (
-	"cnb.cool/mliev/dwz/dwz-server/config/autoload"
+	"cnb.cool/mliev/dwz/dwz-server/v2/config/autoload"
 	"cnb.cool/mliev/open/go-web/pkg/interfaces"
 )
 

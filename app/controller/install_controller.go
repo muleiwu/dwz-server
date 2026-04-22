@@ -6,9 +6,9 @@ import (
 	"syscall"
 	"time"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/service"
-	helperPkg "cnb.cool/mliev/dwz/dwz-server/pkg/helper"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/service/install_bootstrap"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
+	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/install_bootstrap"
 	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 

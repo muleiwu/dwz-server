@@ -3,8 +3,8 @@ package autoload
 import (
 	"net/http"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/controller"
-	"cnb.cool/mliev/dwz/dwz-server/app/middleware"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/controller"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/middleware"
 	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 

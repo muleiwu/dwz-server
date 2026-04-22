@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"reflect"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/dao"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/service/id_generator/assembly"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/id_generator/assembly"
 	"cnb.cool/mliev/open/go-web/pkg/container"
 )
 

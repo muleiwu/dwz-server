@@ -3,7 +3,7 @@ package assembly
 import (
 	"reflect"
 
-	"cnb.cool/mliev/dwz/dwz-server/pkg/service/version/impl"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/version/impl"
 )
 
 // Version assembles the build-info holder. No dependencies; populated by

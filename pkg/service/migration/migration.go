@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io/fs"
 
-	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/service/install_bootstrap"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/install_bootstrap"
 	"github.com/pressly/goose/v3"
 )
 

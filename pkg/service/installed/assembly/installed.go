@@ -3,8 +3,8 @@ package assembly
 import (
 	"reflect"
 
-	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/service/installed/impl"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/installed/impl"
 	"github.com/muleiwu/gsr"
 )
 

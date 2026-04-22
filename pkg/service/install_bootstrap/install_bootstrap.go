@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/dao"
-	"cnb.cool/mliev/dwz/dwz-server/app/model"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
 )
 
 // AdminFile is where the install endpoint drops the admin credentials so the

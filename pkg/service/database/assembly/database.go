@@ -3,7 +3,7 @@ package assembly
 import (
 	"reflect"
 
-	installedImpl "cnb.cool/mliev/dwz/dwz-server/pkg/service/installed/impl"
+	installedImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/installed/impl"
 	"cnb.cool/mliev/open/go-web/pkg/container"
 	"cnb.cool/mliev/open/go-web/pkg/server/database/config"
 	dbDriver "cnb.cool/mliev/open/go-web/pkg/server/database/driver"

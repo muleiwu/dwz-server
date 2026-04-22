@@ -1,4 +1,4 @@
-module cnb.cool/mliev/dwz/dwz-server
+module cnb.cool/mliev/dwz/dwz-server/v2
 
 go 1.25.0
 
@@ -7,6 +7,7 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/muleiwu/base_n v1.0.0
+	github.com/muleiwu/golog v1.1.1
 	github.com/muleiwu/gomander v1.0.0
 	github.com/muleiwu/gsr v1.1.0
 	github.com/pressly/goose/v3 v3.27.0
@@ -53,7 +54,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/muleiwu/anyto v1.1.0 // indirect
 	github.com/muleiwu/go-cache v1.1.0 // indirect
-	github.com/muleiwu/golog v1.1.1 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect

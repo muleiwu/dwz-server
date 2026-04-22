@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/constants"
-	"cnb.cool/mliev/dwz/dwz-server/app/dao"
-	"cnb.cool/mliev/dwz/dwz-server/app/model"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/helper"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
 	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
