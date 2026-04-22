@@ -5,3 +5,5 @@ config.yaml
 /static/admin/
 AGENTS.md
 WARP.md
+go.work
+go.work.sum
