@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
@@ -48,8 +49,8 @@ func (ctrl OIDCController) Bind(c httpInterfaces.RouterContextInterface) {
 }
 
 // Callback IdP 授权码回调,免认证。完成后:
-// - login 流:302 到 {return_to 或 admin 首页}?token=...
-// - bind 流:302 到 {return_to 或 admin profile}?oidc_bind=ok
+// - login 流:302 到 admin SPA 的 SSO 接管页(#/auth/oidc-redirect),带 token + final_to
+// - bind 流:302 到 {return_to 或 admin profile},带 oidc_bind=ok
 func (ctrl OIDCController) Callback(c httpInterfaces.RouterContextInterface) {
 	code := c.Query("code")
 	state := c.Query("state")
@@ -67,17 +68,20 @@ func (ctrl OIDCController) Callback(c httpInterfaces.RouterContextInterface) {
 
 	switch result.Flow {
 	case service.OIDCFlowLogin:
-		target := result.ReturnTo
-		if target == "" {
-			target = defaultLoginReturn()
+		params := map[string]string{
+			"token":      result.Token,
+			"expires_at": strconv.FormatInt(result.ExpiresAt.Unix(), 10),
 		}
-		c.Redirect(http.StatusFound, service.AppendReturnToken(target, result.Token, result.ExpiresAt))
+		if result.ReturnTo != "" {
+			params["final_to"] = result.ReturnTo
+		}
+		c.Redirect(http.StatusFound, appendHashAwareQuery(defaultLoginReturn(), params))
 	case service.OIDCFlowBind:
 		target := result.ReturnTo
 		if target == "" {
 			target = defaultBindReturn()
 		}
-		c.Redirect(http.StatusFound, appendQuery(target, "oidc_bind", "ok"))
+		c.Redirect(http.StatusFound, appendHashAwareQuery(target, map[string]string{"oidc_bind": "ok"}))
 	default:
 		ctrl.Error(c, constants.ErrCodeInternal, "未知授权流")
 	}
@@ -120,16 +124,20 @@ func (ctrl OIDCController) GetMyBindings(c httpInterfaces.RouterContextInterface
 
 // redirectWithError 登录失败时跳回登录页,带上可读 error 参数供前端 Toast。
 func (ctrl OIDCController) redirectWithError(c httpInterfaces.RouterContextInterface, msg string) {
-	target := defaultLoginReturn()
-	c.Redirect(http.StatusFound, appendQuery(target, "oidc_error", msg))
+	// 错误跳登录页 (不是 oidc-redirect),让用户可以立即重试。
+	cfg := helperPkg.GetHelper().GetConfig()
+	target := cfg.GetString("oidc.error_return_uri", "/admin/#/auth/login")
+	c.Redirect(http.StatusFound, appendHashAwareQuery(target, map[string]string{"oidc_error": msg}))
 }
 
+// defaultLoginReturn 成功登录后 302 的目标。必须指向 SPA 的 SSO 接管页,
+// 由其消费 token 并跳转到业务首页(或 final_to 指定的路径)。
 func defaultLoginReturn() string {
 	cfg := helperPkg.GetHelper().GetConfig()
 	if v := cfg.GetString("oidc.login_return_uri", ""); v != "" {
 		return v
 	}
-	return "/admin/#/login"
+	return "/admin/#/auth/oidc-redirect"
 }
 
 func defaultBindReturn() string {
@@ -153,16 +161,44 @@ func sanitizeReturnTo(raw string) string {
 	return raw
 }
 
-func appendQuery(target, key, value string) string {
-	if target == "" {
+// appendHashAwareQuery 在支持 hash 模式 SPA 路由的前提下追加 query 参数。
+// - target 形如 "/admin/#/auth/oidc-redirect":把参数放进 hash 的 query
+//   ("/admin/#/auth/oidc-redirect?token=xxx"),这样 Vue Router 读得到
+// - target 无 "#":按标准 URL query 处理
+// 早期实现用 url.Parse + RawQuery 放在真 query 里(`?...#...`),
+// 对 hash 模式路由来说那段 query 读不到,token 实际上就丢了。
+func appendHashAwareQuery(target string, params map[string]string) string {
+	if target == "" || len(params) == 0 {
 		return target
 	}
+	if idx := strings.Index(target, "#"); idx >= 0 {
+		base := target[:idx]
+		hash := target[idx+1:]
+		hashPath := hash
+		hashQuery := ""
+		if q := strings.Index(hash, "?"); q >= 0 {
+			hashPath = hash[:q]
+			hashQuery = hash[q+1:]
+		}
+		values, _ := url.ParseQuery(hashQuery)
+		for k, v := range params {
+			values.Set(k, v)
+		}
+		encoded := values.Encode()
+		if encoded == "" {
+			return base + "#" + hashPath
+		}
+		return base + "#" + hashPath + "?" + encoded
+	}
+
 	u, err := url.Parse(target)
 	if err != nil {
 		return target
 	}
 	q := u.Query()
-	q.Set(key, value)
+	for k, v := range params {
+		q.Set(k, v)
+	}
 	u.RawQuery = q.Encode()
 	return u.String()
 }

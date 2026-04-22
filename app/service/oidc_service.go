@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -701,20 +700,3 @@ func sanitizeUsername(raw string) string {
 	return out
 }
 
-// AppendReturnToken 把签发的 JWT 以 query 形式拼接到 returnTo URL 上。
-// 调用方负责保证 returnTo 合法,若为空则返回固定的 admin 回跳路径。
-func AppendReturnToken(returnTo, token string, expires time.Time) string {
-	target := returnTo
-	if target == "" {
-		target = "/admin/"
-	}
-	u, err := url.Parse(target)
-	if err != nil {
-		return target
-	}
-	q := u.Query()
-	q.Set("token", token)
-	q.Set("expires_at", fmt.Sprintf("%d", expires.Unix()))
-	u.RawQuery = q.Encode()
-	return u.String()
-}
