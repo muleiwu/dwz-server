@@ -7,8 +7,8 @@ import (
 	"cnb.cool/mliev/dwz/dwz-server/app/constants"
 	"cnb.cool/mliev/dwz/dwz-server/app/dto"
 	"cnb.cool/mliev/dwz/dwz-server/app/service"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"github.com/gin-gonic/gin"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
+	helperPkg "cnb.cool/mliev/dwz/dwz-server/pkg/helper"
 )
 
 type ABTestController struct {
@@ -16,7 +16,9 @@ type ABTestController struct {
 }
 
 // CreateABTest 创建AB测试
-func (ctrl ABTestController) CreateABTest(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestController) CreateABTest(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	var req dto.CreateABTestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -34,7 +36,9 @@ func (ctrl ABTestController) CreateABTest(c *gin.Context, helper interfaces.Help
 }
 
 // GetABTest 获取AB测试详情
-func (ctrl ABTestController) GetABTest(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestController) GetABTest(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -57,7 +61,9 @@ func (ctrl ABTestController) GetABTest(c *gin.Context, helper interfaces.HelperI
 }
 
 // UpdateABTest 更新AB测试
-func (ctrl ABTestController) UpdateABTest(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestController) UpdateABTest(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -86,7 +92,9 @@ func (ctrl ABTestController) UpdateABTest(c *gin.Context, helper interfaces.Help
 }
 
 // DeleteABTest 删除AB测试
-func (ctrl ABTestController) DeleteABTest(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestController) DeleteABTest(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -109,7 +117,9 @@ func (ctrl ABTestController) DeleteABTest(c *gin.Context, helper interfaces.Help
 }
 
 // GetABTestList 获取AB测试列表
-func (ctrl ABTestController) GetABTestList(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestController) GetABTestList(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	var req dto.ABTestListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -127,7 +137,9 @@ func (ctrl ABTestController) GetABTestList(c *gin.Context, helper interfaces.Hel
 }
 
 // StartABTest 启动AB测试
-func (ctrl ABTestController) StartABTest(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestController) StartABTest(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -156,7 +168,9 @@ func (ctrl ABTestController) StartABTest(c *gin.Context, helper interfaces.Helpe
 }
 
 // StopABTest 停止AB测试
-func (ctrl ABTestController) StopABTest(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestController) StopABTest(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -185,7 +199,9 @@ func (ctrl ABTestController) StopABTest(c *gin.Context, helper interfaces.Helper
 }
 
 // GetABTestStatistics 获取AB测试统计信息
-func (ctrl ABTestController) GetABTestStatistics(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestController) GetABTestStatistics(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {

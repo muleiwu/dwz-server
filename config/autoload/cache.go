@@ -1,14 +1,13 @@
 package autoload
 
-import envInterface "cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+import (
+	"cnb.cool/mliev/open/go-web/pkg/helper"
+)
 
-type Config struct {
-}
+type Cache struct{}
 
-// cache.driver
-
-func (receiver Config) InitConfig(helper envInterface.HelperInterface) map[string]any {
+func (Cache) InitConfig() map[string]any {
 	return map[string]any{
-		"cache.driver": helper.GetEnv().GetString("cache.driver", "local"),
+		"cache.driver": helper.GetEnv().GetString("cache.driver", "memory"),
 	}
 }

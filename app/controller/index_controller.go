@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"cnb.cool/mliev/dwz/dwz-server/app/service"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"github.com/gin-gonic/gin"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
+	helperPkg "cnb.cool/mliev/dwz/dwz-server/pkg/helper"
 )
 
 type IndexController struct {
@@ -21,9 +21,11 @@ type IndexPageData struct {
 	Copyright    string
 }
 
-func (receiver IndexController) GetIndex(c *gin.Context, helper interfaces.HelperInterface) {
+func (receiver IndexController) GetIndex(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	// 获取当前访问的域名
-	host := c.Request.Host
+	host := c.Host()
 
 	// 获取域名信息
 	domainService := service.NewDomainService(helper)

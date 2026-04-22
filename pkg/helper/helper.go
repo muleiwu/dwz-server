@@ -1,95 +1,54 @@
 package helper
 
 import (
-	"sync"
-
 	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+	installedImpl "cnb.cool/mliev/dwz/dwz-server/pkg/service/installed/impl"
+	versionImpl "cnb.cool/mliev/dwz/dwz-server/pkg/service/version/impl"
+	"cnb.cool/mliev/open/go-web/pkg/container"
+	gowebHelper "cnb.cool/mliev/open/go-web/pkg/helper"
 	"github.com/muleiwu/gsr"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
-var helperOnce sync.Once
-var helperData interfaces.HelperInterface
+// Helper proxies the legacy dwz HelperInterface to go-web's container. All
+// Get* methods resolve via container.MustGet[T](). The container's lifecycle
+// is owned by go-web's cmd.Start; runtime swaps go through SIGHUP reload.
+type Helper struct{}
 
-type Helper struct {
-	env       interfaces.EnvInterface
-	config    interfaces.ConfigInterface
-	logger    interfaces.LoggerInterface
-	cache     gsr.Cacher
-	redis     *redis.Client
-	database  *gorm.DB
-	installed interfaces.Installed
-	version   interfaces.VersionInterface
+var helperInstance interfaces.HelperInterface = &Helper{}
+
+func GetHelper() interfaces.HelperInterface { return helperInstance }
+
+func (Helper) GetEnv() interfaces.EnvInterface       { return gowebHelper.GetEnv() }
+func (Helper) GetConfig() interfaces.ConfigInterface { return gowebHelper.GetConfig() }
+func (Helper) GetLogger() interfaces.LoggerInterface { return gowebHelper.GetLogger() }
+func (Helper) GetCache() gsr.Cacher                  { return gowebHelper.GetCache() }
+
+func (Helper) GetRedis() *redis.Client {
+	if c, err := container.Get[*redis.Client](); err == nil {
+		return c
+	}
+	return nil
 }
 
-func GetHelper() interfaces.HelperInterface {
-	helperOnce.Do(func() {
-		helperData = &Helper{}
-	})
-	return helperData
+func (Helper) GetDatabase() *gorm.DB {
+	if db, err := container.Get[*gorm.DB](); err == nil {
+		return db
+	}
+	return nil
 }
 
-func (receiver *Helper) GetEnv() interfaces.EnvInterface {
-	return receiver.env
+func (Helper) GetInstalled() interfaces.Installed {
+	if v, err := container.Get[*installedImpl.Installed](); err == nil {
+		return v
+	}
+	return nil
 }
 
-func (receiver *Helper) GetConfig() interfaces.ConfigInterface {
-	return receiver.config
-}
-
-func (receiver *Helper) GetLogger() interfaces.LoggerInterface {
-	return receiver.logger
-}
-
-func (receiver *Helper) GetCache() gsr.Cacher {
-	return receiver.cache
-}
-
-func (receiver *Helper) GetRedis() *redis.Client {
-	return receiver.redis
-}
-
-func (receiver *Helper) GetDatabase() *gorm.DB {
-	return receiver.database
-}
-
-func (receiver *Helper) GetInstalled() interfaces.Installed {
-	return receiver.installed
-}
-
-func (receiver *Helper) GetVersion() interfaces.VersionInterface {
-	return receiver.version
-}
-
-func (receiver *Helper) SetEnv(env interfaces.EnvInterface) {
-	receiver.env = env
-}
-
-func (receiver *Helper) SetConfig(config interfaces.ConfigInterface) {
-	receiver.config = config
-}
-
-func (receiver *Helper) SetLogger(logger interfaces.LoggerInterface) {
-	receiver.logger = logger
-}
-
-func (receiver *Helper) SetCache(cache gsr.Cacher) {
-	receiver.cache = cache
-}
-
-func (receiver *Helper) SetRedis(redis *redis.Client) {
-	receiver.redis = redis
-}
-
-func (receiver *Helper) SetDatabase(database *gorm.DB) {
-	receiver.database = database
-}
-
-func (receiver *Helper) SetInstalled(installed interfaces.Installed) {
-	receiver.installed = installed
-}
-
-func (receiver *Helper) SetVersion(version interfaces.VersionInterface) {
-	receiver.version = version
+func (Helper) GetVersion() interfaces.VersionInterface {
+	if v, err := container.Get[*versionImpl.Version](); err == nil {
+		return v
+	}
+	return nil
 }

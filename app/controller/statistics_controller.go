@@ -7,8 +7,8 @@ import (
 	"cnb.cool/mliev/dwz/dwz-server/app/constants"
 	"cnb.cool/mliev/dwz/dwz-server/app/dao"
 	"cnb.cool/mliev/dwz/dwz-server/app/model"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"github.com/gin-gonic/gin"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
+	helperPkg "cnb.cool/mliev/dwz/dwz-server/pkg/helper"
 )
 
 type StatisticsController struct {
@@ -57,7 +57,9 @@ type DashboardData struct {
 	TopLinks         []TopLink        `json:"top_links"`
 }
 
-func (s StatisticsController) GetSystem(c *gin.Context, helper interfaces.HelperInterface) {
+func (s StatisticsController) GetSystem(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	// 创建各种DAO实例
 	shortLinkDao := dao.NewShortLinkDao(helper)
 	clickStatisticDao := dao.NewClickStatisticDao(helper)
@@ -133,7 +135,9 @@ func (s StatisticsController) GetSystem(c *gin.Context, helper interfaces.Helper
 	s.Success(c, statistics)
 }
 
-func (s StatisticsController) GetDashboard(c *gin.Context, helper interfaces.HelperInterface) {
+func (s StatisticsController) GetDashboard(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	// 创建短链接服务实例
 	shortLinkDao := dao.NewShortLinkDao(helper)
 	clickStatisticDao := dao.NewClickStatisticDao(helper)
@@ -206,7 +210,9 @@ func (s StatisticsController) GetDashboard(c *gin.Context, helper interfaces.Hel
 	s.Success(c, dashboardData)
 }
 
-func (s StatisticsController) GetShortLinks(c *gin.Context, helper interfaces.HelperInterface) {
+func (s StatisticsController) GetShortLinks(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	// 创建短链接DAO实例
 	shortLinkDao := dao.NewShortLinkDao(helper)
 

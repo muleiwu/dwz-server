@@ -1,15 +1,11 @@
 package interfaces
 
-type LoggerInterface interface {
-	Debug(format string, args ...LoggerFieldInterface)
-	Info(format string, args ...LoggerFieldInterface)
-	Notice(format string, args ...LoggerFieldInterface)
-	Error(format string, args ...LoggerFieldInterface)
-	Warn(format string, args ...LoggerFieldInterface)
-	Fatal(format string, args ...LoggerFieldInterface)
-}
+import "github.com/muleiwu/gsr"
 
-type LoggerFieldInterface interface {
-	GetKey() string
-	GetValue() any
-}
+// LoggerInterface aliases gsr.Logger so that any implementation satisfying gsr
+// (notably go-web's logger) is directly usable everywhere the dwz codebase
+// references the legacy interface name.
+type LoggerInterface = gsr.Logger
+
+// LoggerFieldInterface aliases gsr.LoggerField for the same reason.
+type LoggerFieldInterface = gsr.LoggerField

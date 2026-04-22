@@ -1,11 +1,12 @@
 package autoload
 
-import envInterface "cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
+import (
+	"cnb.cool/mliev/open/go-web/pkg/helper"
+)
 
-type IdGenerator struct {
-}
+type IdGenerator struct{}
 
-func (receiver IdGenerator) InitConfig(helper envInterface.HelperInterface) map[string]any {
+func (IdGenerator) InitConfig() map[string]any {
 	return map[string]any{
 		"id_generator.driver": helper.GetEnv().GetString("id_generator.driver", "local"),
 	}
