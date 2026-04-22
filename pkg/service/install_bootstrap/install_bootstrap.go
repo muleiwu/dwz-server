@@ -2,7 +2,9 @@ package install_bootstrap
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"path/filepath"
 
 	"cnb.cool/mliev/dwz/dwz-server/app/dao"
 	"cnb.cool/mliev/dwz/dwz-server/app/model"
@@ -25,6 +27,9 @@ func Write(admin AdminPayload) error {
 	data, err := json.Marshal(admin)
 	if err != nil {
 		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(AdminFile), 0755); err != nil {
+		return fmt.Errorf("创建配置目录失败 (%s): %v", filepath.Dir(AdminFile), err)
 	}
 	return os.WriteFile(AdminFile, data, 0600)
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"cnb.cool/mliev/dwz/dwz-server/app/dao"
@@ -70,8 +71,14 @@ func (s *InitInstallService) CreateAdminUser(username, realName, email, phone, p
 
 func (s *InitInstallService) CreateInstallLock() error {
 	lockContent := fmt.Sprintf("系统已安装\n安装时间: %s\n", time.Now().Format("2006-01-02 15:04:05"))
+	if err := os.MkdirAll(filepath.Dir(lockFile), 0755); err != nil {
+		return fmt.Errorf("创建配置目录失败 (%s): %v", filepath.Dir(lockFile), err)
+	}
 	if err := os.WriteFile(lockFile, []byte(lockContent), 0644); err != nil {
-		return fmt.Errorf("安装标记文件创建失败: %v", err)
+		return fmt.Errorf("安装标记文件创建失败 (%s): %v", lockFile, err)
+	}
+	if abs, err := filepath.Abs(lockFile); err == nil {
+		s.helper.GetLogger().Info("[install] 安装锁已写入: " + abs)
 	}
 	return nil
 }
@@ -149,8 +156,16 @@ id_generator:
   driver: %s
 `, jwtSecret, cacheDriver, idGeneratorDriver)
 
+	// Ensure parent directory exists — common cause of silent failures when the
+	// binary is launched from a fresh checkout without a config/ folder.
+	if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
+		return fmt.Errorf("创建配置目录失败 (%s): %v", filepath.Dir(configFile), err)
+	}
 	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
-		return fmt.Errorf("配置文件写入失败: %v", err)
+		return fmt.Errorf("配置文件写入失败 (%s): %v", configFile, err)
+	}
+	if abs, err := filepath.Abs(configFile); err == nil {
+		s.helper.GetLogger().Info("[install] 配置文件已写入: " + abs)
 	}
 	return nil
 }
