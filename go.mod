@@ -9,7 +9,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/muleiwu/base_n v1.0.0
 	github.com/muleiwu/golog v1.1.1
-	github.com/muleiwu/gomander v1.0.0
+	github.com/muleiwu/gomander v1.1.0
 	github.com/muleiwu/gsr v1.1.0
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/redis/go-redis/v9 v9.17.3
