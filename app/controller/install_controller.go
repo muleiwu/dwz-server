@@ -166,21 +166,29 @@ func (ctrl InstallController) Install(c httpInterfaces.RouterContextInterface) {
 		return
 	}
 
-	// Drop the admin credentials in a one-shot bootstrap file. The migration
-	// server picks this up after it runs the schema, creates the user, and
-	// deletes the file.
-	if err := install_bootstrap.Write(install_bootstrap.AdminPayload{
+	// 同步在当前请求里跑迁移并创建管理员。失败会沿 HTTP 响应直接返回给前端,
+	// 避免原先"推迟到 syscall.Exec 之后 Migration server 跑"的路径:go-web 的
+	// initializeServices 会静默吞掉 server.Run() 的错误,一旦重启 / 重装失败,
+	// 用户会看到 HTTP 正常但数据库空无一表。install.lock 放到迁移成功之后才写,
+	// 保证 lock 与 schema 状态一致,失败可以直接重试安装向导。
+	adminPayload := install_bootstrap.AdminPayload{
 		Username: req.Admin.Username,
 		Password: req.Admin.Password,
 		Email:    req.Admin.Email,
-	}); err != nil {
-		ctrl.Error(c, http.StatusInternalServerError, "管理员账户写入失败: "+err.Error())
+	}
+	if err := installer.RunMigrationsAndSeed(dbCfg, adminPayload); err != nil {
+		ctrl.Error(c, http.StatusInternalServerError, "数据库初始化失败: "+err.Error())
 		return
 	}
 
 	if err := installer.CreateInstallLock(); err != nil {
 		ctrl.Error(c, http.StatusInternalServerError, "安装标记创建失败: "+err.Error())
 		return
+	}
+
+	// 翻转当前进程的 installed 标记,让在 exec 完成前到达的请求不再走安装向导。
+	if installed := helper.GetInstalled(); installed != nil {
+		installed.SetInstalled(true)
 	}
 
 	ctrl.SuccessWithMessage(c, "安装完成，服务即将重启...", nil)

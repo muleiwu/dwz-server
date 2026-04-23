@@ -110,8 +110,6 @@ github.com/muleiwu/go-cache v1.1.0 h1:mbMYIB342Q6yK7IyQv15gYLxDL2jU7PCcLDWKnSXvK
 github.com/muleiwu/go-cache v1.1.0/go.mod h1:I5Lb8CB31GBUwqo6s+UgBVPhM3Ic34jj1pfxVJqVUn0=
 github.com/muleiwu/golog v1.1.1 h1:jdNaxhVRumfL1d1YjNB7wlJ9MM8fJulxKKYD3fqP1BY=
 github.com/muleiwu/golog v1.1.1/go.mod h1:d+EsBuHuwLsMAZ9KEendX1ItW1RLcEBRB+ecBWnElPM=
-github.com/muleiwu/gomander v1.0.0 h1:Ndno1BbueQVVEnenWy/fZtrQRitcUOui8iJY99P/RrA=
-github.com/muleiwu/gomander v1.0.0/go.mod h1:Vv+vreRHGcix9ByKxQBvoRRygbqx+kfjyh6YyGFMKVk=
 github.com/muleiwu/gomander v1.1.0 h1:3amI5M4oifeswV9YBv4e3Z1jG+6UrUp+x4NQVZHyIsA=
 github.com/muleiwu/gomander v1.1.0/go.mod h1:Vv+vreRHGcix9ByKxQBvoRRygbqx+kfjyh6YyGFMKVk=
 github.com/muleiwu/gsr v1.1.0 h1:9esZfjzDRPpwz4AI5FCCUjhODUmkrkkcpHYdMPgYkrA=
