@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"time"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/constants"
-	"cnb.cool/mliev/dwz/dwz-server/app/dto"
-	"cnb.cool/mliev/dwz/dwz-server/app/service"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"github.com/gin-gonic/gin"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
+	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
 type ABTestClickStatisticController struct {
@@ -16,7 +16,9 @@ type ABTestClickStatisticController struct {
 }
 
 // GetABTestClickStatisticList 获取AB测试点击统计列表
-func (ctrl ABTestClickStatisticController) GetABTestClickStatisticList(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestClickStatisticController) GetABTestClickStatisticList(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	var req dto.ABTestClickStatisticListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -34,7 +36,9 @@ func (ctrl ABTestClickStatisticController) GetABTestClickStatisticList(c *gin.Co
 }
 
 // GetABTestClickStatisticAnalysis 获取AB测试点击统计分析
-func (ctrl ABTestClickStatisticController) GetABTestClickStatisticAnalysis(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestClickStatisticController) GetABTestClickStatisticAnalysis(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	abTestIDStr := c.Query("ab_test_id")
 	daysStr := c.DefaultQuery("days", "7")
 	startDateStr := c.Query("start_date")
@@ -96,7 +100,9 @@ func (ctrl ABTestClickStatisticController) GetABTestClickStatisticAnalysis(c *gi
 }
 
 // GetABTestVariantStatistics 获取AB测试版本统计
-func (ctrl ABTestClickStatisticController) GetABTestVariantStatistics(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ABTestClickStatisticController) GetABTestVariantStatistics(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	abTestIDStr := c.Param("id")
 	daysStr := c.DefaultQuery("days", "7")
 

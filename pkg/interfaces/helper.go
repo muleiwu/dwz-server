@@ -6,7 +6,10 @@ import (
 	"gorm.io/gorm"
 )
 
-type GetHelperInterface interface {
+// HelperInterface is the legacy aggregate handle that controllers, services
+// and DAOs receive via constructor injection. Methods resolve to go-web's
+// container-managed singletons.
+type HelperInterface interface {
 	GetEnv() EnvInterface
 	GetConfig() ConfigInterface
 	GetLogger() LoggerInterface
@@ -15,20 +18,4 @@ type GetHelperInterface interface {
 	GetDatabase() *gorm.DB
 	GetInstalled() Installed
 	GetVersion() VersionInterface
-}
-
-type SetHelperInterface interface {
-	SetEnv(env EnvInterface)
-	SetConfig(config ConfigInterface)
-	SetLogger(logger LoggerInterface)
-	SetCache(cache gsr.Cacher)
-	SetRedis(redis *redis.Client)
-	SetDatabase(database *gorm.DB)
-	SetInstalled(installed Installed)
-	SetVersion(version VersionInterface)
-}
-
-type HelperInterface interface {
-	GetHelperInterface
-	SetHelperInterface
 }

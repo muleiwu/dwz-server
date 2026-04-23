@@ -1,18 +1,17 @@
 package assembly
 
 import (
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/service/version/impl"
+	"reflect"
+
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/version/impl"
 )
 
-// Version 版本组装器
-type Version struct {
-	Helper interfaces.HelperInterface
-}
+// Version assembles the build-info holder. No dependencies; populated by
+// AppProvider after assembly via SetVersionInfo (see config/app.go).
+type Version struct{}
 
-// Assembly 组装版本管理器
-func (receiver *Version) Assembly() error {
-	version := impl.NewVersion()
-	receiver.Helper.SetVersion(version)
-	return nil
+func (Version) Type() reflect.Type        { return reflect.TypeFor[*impl.Version]() }
+func (Version) DependsOn() []reflect.Type { return nil }
+func (Version) Assembly() (any, error) {
+	return impl.NewVersion(), nil
 }

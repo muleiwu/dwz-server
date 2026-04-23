@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"time"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/constants"
-	"cnb.cool/mliev/dwz/dwz-server/app/dto"
-	"cnb.cool/mliev/dwz/dwz-server/app/service"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"github.com/gin-gonic/gin"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
+	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
 )
 
 type ClickStatisticController struct {
@@ -16,7 +16,9 @@ type ClickStatisticController struct {
 }
 
 // GetClickStatisticList 获取点击统计列表
-func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ClickStatisticController) GetClickStatisticList(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	var req dto.ClickStatisticListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -34,7 +36,9 @@ func (ctrl ClickStatisticController) GetClickStatisticList(c *gin.Context, helpe
 }
 
 // GetClickStatisticAnalysis 获取点击统计分析
-func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	shortLinkIDStr := c.Query("short_link_id")
 	daysStr := c.DefaultQuery("days", "7")
 	startDateStr := c.Query("start_date")

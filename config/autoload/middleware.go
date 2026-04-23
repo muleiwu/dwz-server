@@ -1,18 +1,18 @@
 package autoload
 
 import (
-	"cnb.cool/mliev/dwz/dwz-server/app/middleware"
-	envInterface "cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"github.com/gin-gonic/gin"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/middleware"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
-type Middleware struct {
-}
+type Middleware struct{}
 
-func (receiver Middleware) InitConfig(helper envInterface.HelperInterface) map[string]any {
+func (Middleware) InitConfig() map[string]any {
 	return map[string]any{
-		"http.middleware": []gin.HandlerFunc{
-			middleware.CorsMiddleware(helper),
+		"http.middleware": []httpInterfaces.HandlerFunc{
+			middleware.CorsMiddleware(),
+			shortCodeDispatch(),
+			middleware.InstallMiddleware(),
 		},
 	}
 }

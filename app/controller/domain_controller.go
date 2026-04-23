@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"strings"
 
-	"cnb.cool/mliev/dwz/dwz-server/app/constants"
-	"cnb.cool/mliev/dwz/dwz-server/app/dto"
-	"cnb.cool/mliev/dwz/dwz-server/app/service"
-	"cnb.cool/mliev/dwz/dwz-server/pkg/interfaces"
-	"github.com/gin-gonic/gin"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
+	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
 )
 
 type DomainController struct {
@@ -16,7 +16,9 @@ type DomainController struct {
 }
 
 // CreateDomain 创建域名
-func (ctrl DomainController) CreateDomain(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl DomainController) CreateDomain(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	var req dto.DomainRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
@@ -38,7 +40,9 @@ func (ctrl DomainController) CreateDomain(c *gin.Context, helper interfaces.Help
 }
 
 // GetDomainList 获取域名列表
-func (ctrl DomainController) GetDomainList(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl DomainController) GetDomainList(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	response, err := service.NewDomainService(helper).GetDomainList()
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
@@ -49,7 +53,9 @@ func (ctrl DomainController) GetDomainList(c *gin.Context, helper interfaces.Hel
 }
 
 // UpdateDomain 更新域名
-func (ctrl DomainController) UpdateDomain(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl DomainController) UpdateDomain(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -109,7 +115,9 @@ func (ctrl DomainController) UpdateDomain(c *gin.Context, helper interfaces.Help
 }
 
 // UpdateStatusDomain UpdateDomain 更新域名
-func (ctrl DomainController) UpdateStatusDomain(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl DomainController) UpdateStatusDomain(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -139,7 +147,9 @@ func (ctrl DomainController) UpdateStatusDomain(c *gin.Context, helper interface
 }
 
 // DeleteDomain 删除域名
-func (ctrl DomainController) DeleteDomain(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl DomainController) DeleteDomain(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
@@ -163,7 +173,9 @@ func (ctrl DomainController) DeleteDomain(c *gin.Context, helper interfaces.Help
 }
 
 // GetActiveDomains 获取活跃域名列表
-func (ctrl DomainController) GetActiveDomains(c *gin.Context, helper interfaces.HelperInterface) {
+func (ctrl DomainController) GetActiveDomains(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	_ = helper
 	response, err := service.NewDomainService(helper).GetActiveDomains()
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
