@@ -1,4 +1,5 @@
-// Package impl 提供 IP 归属地查询的实现，基于 lionsoul2014/ip2region v2 (xdb) 格式。
+// Package impl 提供 IP 归属地查询的实现，基于 lionsoul2014/ip2region v3 xdb 格式
+// (国家|省份|城市|ISP|国家代码，参见 ip2region-3.15.0/README.md)。
 //
 // 设计要点：
 //  1. IPRegion 是业务侧面向的窄接口，仅暴露 Lookup；这样数据库未加载成功时
