@@ -69,40 +69,66 @@ func upBackfillClickRegion(_ context.Context, _ *sql.DB) error {
 	return nil
 }
 
-// backfillTable 对单张表执行 DISTINCT IP → Lookup → UPDATE，返回
-// (unique_ip 数, 累计 rows_affected)。
+// updateBatchSize 控制 UPDATE ... WHERE id IN (...) 的单批 ID 数量。
+// 太小 => 单 IP 下 round-trip 变多；太大 => 单条 SQL 过长、可能触发
+// MySQL max_allowed_packet / PG max_statement_len。500 是常见折中。
+const updateBatchSize = 500
+
+// backfillTable 对单张表执行扫全表 → 内存分桶 → 按主键 IN(...) 批量
+// UPDATE，返回 (unique_ip 数, 累计 rows_affected)。
+//
+// 之所以不走 `UPDATE ... WHERE ip = ?` 的朴素写法：`ip` 列没有索引，每条
+// UPDATE 都是全表扫描，在 6w unique IP × 百万行规模下会跑几个小时。走主
+// 键批量：一次顺序全表扫拉出 (id, ip)（单次 IO）、在内存里按 ip 分桶，
+// 最后 UPDATE 走 PK 索引 seek，总耗时能压到分钟级。
 func backfillTable(db *gorm.DB, ipr ipRegionImpl.IPRegion, table string) (int, int64, error) {
-	// 1. 拉去重后的 IP 集合。表可能巨大但 DISTINCT ip 的基数通常只有几千到
-	//    几万，可以一次性吞内存。
-	var ips []string
+	type row struct {
+		ID uint64 `gorm:"column:id"`
+		IP string `gorm:"column:ip"`
+	}
+	// 1. 一次性拉 (id, ip)。表大时这里是最大的内存开销：100 万行大约占
+	//    ~30MB（8 字节 id + 平均 15 字节 ip string header + 内容），对现代
+	//    服务器是可接受的常数级开销，比发数十万条 SQL 轻得多。
+	var rows []row
 	if err := db.
 		Table(table).
-		Distinct("ip").
+		Select("id, ip").
 		Where("ip <> ?", "").
 		Where("ip IS NOT NULL").
-		Pluck("ip", &ips).Error; err != nil {
-		return 0, 0, fmt.Errorf("select distinct ip: %w", err)
+		Find(&rows).Error; err != nil {
+		return 0, 0, fmt.Errorf("select id,ip: %w", err)
 	}
 
-	// 2. 逐 IP 查 xdb + UPDATE。失败直接中断当前 table，上层返回错误 ——
-	//    goose 不会写 applied，下次启动重试。
-	var totalAffected int64
-	for _, ip := range ips {
-		region := ipr.Lookup(ip)
-		res := db.Exec(
-			"UPDATE "+table+" SET country = ?, province = ?, city = ?, isp = ? WHERE ip = ?",
-			domain_validate.TruncateString(region.Country, 100),
-			domain_validate.TruncateString(region.Province, 100),
-			domain_validate.TruncateString(region.City, 100),
-			domain_validate.TruncateString(region.ISP, 100),
-			ip,
-		)
-		if res.Error != nil {
-			return len(ips), totalAffected, fmt.Errorf("update ip=%s: %w", ip, res.Error)
-		}
-		totalAffected += res.RowsAffected
+	// 2. 按 IP 在内存分桶。
+	idsByIP := make(map[string][]uint64, len(rows)/2+1)
+	for _, r := range rows {
+		idsByIP[r.IP] = append(idsByIP[r.IP], r.ID)
 	}
-	return len(ips), totalAffected, nil
+
+	// 3. 逐 IP 查 xdb + 按 PK IN (batch) 批量 UPDATE。单批 500 既避免 SQL
+	//    过长，又足够让 PK 索引 seek 的批内开销摊薄掉。
+	var totalAffected int64
+	for ip, ids := range idsByIP {
+		region := ipr.Lookup(ip)
+		country := domain_validate.TruncateString(region.Country, 100)
+		province := domain_validate.TruncateString(region.Province, 100)
+		city := domain_validate.TruncateString(region.City, 100)
+		isp := domain_validate.TruncateString(region.ISP, 100)
+
+		for start := 0; start < len(ids); start += updateBatchSize {
+			end := min(start+updateBatchSize, len(ids))
+			chunk := ids[start:end]
+			res := db.Exec(
+				"UPDATE "+table+" SET country = ?, province = ?, city = ?, isp = ? WHERE id IN ?",
+				country, province, city, isp, chunk,
+			)
+			if res.Error != nil {
+				return len(idsByIP), totalAffected, fmt.Errorf("update ip=%s chunk=%d: %w", ip, start/updateBatchSize, res.Error)
+			}
+			totalAffected += res.RowsAffected
+		}
+	}
+	return len(idsByIP), totalAffected, nil
 }
 
 // downBackfillClickRegion 把两张表的 region 四列统统置空，满足 goose 回滚
