@@ -543,12 +543,17 @@ func (s *ShortLinkService) removeCacheShortLink(domain, shortCode string) {
 
 // recordClickStatistic 记录点击统计
 func (s *ShortLinkService) recordClickStatistic(shortLinkID uint64, clientIP, userAgent, referer string, queryParams string) {
+	region := s.helper.GetIPRegion().Lookup(clientIP)
 	statistic := &model.ClickStatistic{
 		ShortLinkID: shortLinkID,
 		IP:          domain_validate.TruncateString(clientIP, 45),
 		UserAgent:   domain_validate.TruncateString(userAgent, 1024),
 		Referer:     domain_validate.TruncateString(referer, 2048),
 		QueryParams: domain_validate.TruncateString(queryParams, 2048), // 截断过长的参数
+		Country:     domain_validate.TruncateString(region.Country, 100),
+		Province:    domain_validate.TruncateString(region.Province, 100),
+		City:        domain_validate.TruncateString(region.City, 100),
+		ISP:         domain_validate.TruncateString(region.ISP, 100),
 		ClickDate:   time.Now(),
 	}
 

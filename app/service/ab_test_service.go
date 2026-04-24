@@ -15,12 +15,14 @@ import (
 )
 
 type ABTestService struct {
+	helper       interfaces.HelperInterface
 	abTestDao    *dao.ABTestDao
 	shortLinkDao *dao.ShortLinkDao
 }
 
 func NewABTestService(helper interfaces.HelperInterface) *ABTestService {
 	return &ABTestService{
+		helper:       helper,
 		abTestDao:    dao.NewABTestDao(helper),
 		shortLinkDao: dao.NewShortLinkDao(helper),
 	}
@@ -318,6 +320,7 @@ func (s *ABTestService) RecordABTestClick(redirectInfo *dto.ABTestRedirectInfo, 
 	}
 
 	// 创建统计记录
+	region := s.helper.GetIPRegion().Lookup(clientIP)
 	stat := &model.ABTestClickStatistic{
 		ABTestID:    redirectInfo.ABTestID,
 		VariantID:   redirectInfo.VariantID,
@@ -326,6 +329,10 @@ func (s *ABTestService) RecordABTestClick(redirectInfo *dto.ABTestRedirectInfo, 
 		UserAgent:   userAgent,
 		Referer:     referer,
 		QueryParams: queryParams,
+		Country:     region.Country,
+		Province:    region.Province,
+		City:        region.City,
+		ISP:         region.ISP,
 		SessionID:   redirectInfo.SessionID,
 		ClickDate:   time.Now(),
 	}

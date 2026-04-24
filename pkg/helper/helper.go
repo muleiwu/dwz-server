@@ -3,6 +3,7 @@ package helper
 import (
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	installedImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/installed/impl"
+	ipRegionImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/ip_region/impl"
 	versionImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/version/impl"
 	"cnb.cool/mliev/open/go-web/pkg/container"
 	gowebHelper "cnb.cool/mliev/open/go-web/pkg/helper"
@@ -51,4 +52,11 @@ func (Helper) GetVersion() interfaces.VersionInterface {
 		return v
 	}
 	return nil
+}
+
+func (Helper) GetIPRegion() ipRegionImpl.IPRegion {
+	if v, err := container.Get[ipRegionImpl.IPRegion](); err == nil && v != nil {
+		return v
+	}
+	return ipRegionImpl.Noop{}
 }

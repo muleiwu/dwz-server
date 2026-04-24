@@ -11,7 +11,9 @@ type ClickStatistic struct {
 	Referer     string    `gorm:"size:2048" json:"referer"`
 	QueryParams string    `gorm:"size:2048" json:"query_params"`
 	Country     string    `gorm:"size:100" json:"country"`
+	Province    string    `gorm:"size:100" json:"province"`
 	City        string    `gorm:"size:100" json:"city"`
+	ISP         string    `gorm:"size:100" json:"isp"`
 	ClickDate   time.Time `gorm:"index:idx_short_link_date" json:"click_date"`
 	CreatedAt   time.Time `json:"created_at"`
 }

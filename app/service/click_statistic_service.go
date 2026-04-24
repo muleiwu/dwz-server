@@ -75,7 +75,9 @@ func (s *ClickStatisticService) modelToResponse(statistic *model.ClickStatistic)
 		Referer:     statistic.Referer,
 		QueryParams: statistic.QueryParams,
 		Country:     statistic.Country,
+		Province:    statistic.Province,
 		City:        statistic.City,
+		ISP:         statistic.ISP,
 		ClickDate:   statistic.ClickDate,
 		CreatedAt:   statistic.CreatedAt,
 	}

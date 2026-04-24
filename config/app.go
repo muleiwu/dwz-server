@@ -7,6 +7,7 @@ import (
 	databaseAssembly "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/database/assembly"
 	idGenerator "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/id_generator/service"
 	installedAssembly "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/installed/assembly"
+	ipRegionAssembly "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/ip_region/assembly"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/migration"
 	redisAssembly "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/redis/assembly"
 	versionAssembly "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/version/assembly"
@@ -46,6 +47,7 @@ func DefaultAssemblies() []interfaces.AssemblyInterface {
 		&databaseAssembly.Database{},
 		&redisAssembly.Redis{},
 		&cacheAssembly.Cache{},
+		&ipRegionAssembly.IPRegion{},
 	}
 }
 
