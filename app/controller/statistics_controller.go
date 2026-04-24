@@ -98,14 +98,14 @@ func (s StatisticsController) GetSystem(c httpInterfaces.RouterContextInterface)
 	helper.GetDatabase().Model(&model.Domain{}).Count(&totalDomains)
 
 	var activeDomains int64
-	helper.GetDatabase().Model(&model.Domain{}).Where("status = ? AND deleted_at IS NULL", 1).Count(&activeDomains)
+	helper.GetDatabase().Model(&model.Domain{}).Where("is_active = ?", true).Count(&activeDomains)
 
 	// 获取AB测试统计数据
 	var totalAbTests int64
 	helper.GetDatabase().Model(&model.ABTest{}).Count(&totalAbTests)
 
 	var runningAbTests int64
-	helper.GetDatabase().Model(&model.ABTest{}).Where("status = ? AND deleted_at IS NULL", 1).Count(&runningAbTests)
+	helper.GetDatabase().Model(&model.ABTest{}).Where("is_active = ? AND status = ?", true, "running").Count(&runningAbTests)
 
 	// 获取Token统计数据
 	var totalTokens int64
