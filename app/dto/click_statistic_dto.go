@@ -9,7 +9,9 @@ type ClickStatisticListRequest struct {
 	ShortLinkID uint64    `form:"short_link_id" example:"1"`                                // 短链接ID筛选
 	IP          string    `form:"ip" example:"192.168.1.1"`                                 // IP地址筛选
 	Country     string    `form:"country" example:"中国"`                                     // 国家筛选
+	Province    string    `form:"province" example:"广东省"`                                   // 省份筛选
 	City        string    `form:"city" example:"北京"`                                        // 城市筛选
+	ISP         string    `form:"isp" example:"电信"`                                         // 运营商筛选
 	StartDate   time.Time `form:"start_date" time_format:"2006-01-02" example:"2023-01-01"` // 开始日期
 	EndDate     time.Time `form:"end_date" time_format:"2006-01-02" example:"2023-12-31"`   // 结束日期
 }
@@ -26,7 +28,9 @@ type ClickStatisticDetailResponse struct {
 	Referer     string    `json:"referer"`
 	QueryParams string    `json:"query_params"`
 	Country     string    `json:"country"`
+	Province    string    `json:"province"`
 	City        string    `json:"city"`
+	ISP         string    `json:"isp"`
 	ClickDate   time.Time `json:"click_date"`
 	CreatedAt   time.Time `json:"created_at"`
 }
@@ -41,13 +45,15 @@ type ClickStatisticListResponse struct {
 
 // ClickStatisticAnalysisResponse 点击统计分析响应
 type ClickStatisticAnalysisResponse struct {
-	TotalClicks  int64              `json:"total_clicks"`  // 总点击数
-	UniqueIPs    int64              `json:"unique_ips"`    // 独立IP数
-	TopCountries []CountryStatistic `json:"top_countries"` // 热门国家
-	TopCities    []CityStatistic    `json:"top_cities"`    // 热门城市
-	TopReferers  []RefererStatistic `json:"top_referers"`  // 热门来源
-	HourlyStats  []HourlyStatistic  `json:"hourly_stats"`  // 小时统计
-	DailyStats   []DailyStatistic   `json:"daily_stats"`   // 日统计
+	TotalClicks  int64               `json:"total_clicks"`  // 总点击数
+	UniqueIPs    int64               `json:"unique_ips"`    // 独立IP数
+	TopCountries []CountryStatistic  `json:"top_countries"` // 热门国家
+	TopProvinces []ProvinceStatistic `json:"top_provinces"` // 热门省份
+	TopCities    []CityStatistic     `json:"top_cities"`    // 热门城市
+	TopISPs      []ISPStatistic      `json:"top_isps"`      // 热门运营商
+	TopReferers  []RefererStatistic  `json:"top_referers"`  // 热门来源
+	HourlyStats  []HourlyStatistic   `json:"hourly_stats"`  // 小时统计
+	DailyStats   []DailyStatistic    `json:"daily_stats"`   // 日统计
 }
 
 // CountryStatistic 国家统计
@@ -56,9 +62,21 @@ type CountryStatistic struct {
 	Count   int64  `json:"count"`
 }
 
+// ProvinceStatistic 省份统计
+type ProvinceStatistic struct {
+	Province string `json:"province"`
+	Count    int64  `json:"count"`
+}
+
 // CityStatistic 城市统计
 type CityStatistic struct {
 	City  string `json:"city"`
+	Count int64  `json:"count"`
+}
+
+// ISPStatistic 运营商统计
+type ISPStatistic struct {
+	ISP   string `json:"isp"`
 	Count int64  `json:"count"`
 }
 

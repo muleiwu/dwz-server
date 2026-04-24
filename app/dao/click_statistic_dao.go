@@ -42,8 +42,16 @@ func (d *ClickStatisticDao) List(req *dto.ClickStatisticListRequest) ([]model.Cl
 		query = query.Where("country = ?", req.Country)
 	}
 
+	if req.Province != "" {
+		query = query.Where("province = ?", req.Province)
+	}
+
 	if req.City != "" {
 		query = query.Where("city = ?", req.City)
+	}
+
+	if req.ISP != "" {
+		query = query.Where("isp = ?", req.ISP)
 	}
 
 	if !req.StartDate.IsZero() {
@@ -123,6 +131,17 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 		Find(&countryStats)
 	analysis.TopCountries = countryStats
 
+	// 热门省份统计
+	var provinceStats []dto.ProvinceStatistic
+	d.helper.GetDatabase().Model(&model.ClickStatistic{}).
+		Select("province, COUNT(*) as count").
+		Where(whereSQL+" AND province != ''", whereConditions...).
+		Group("province").
+		Order("count DESC").
+		Limit(10).
+		Find(&provinceStats)
+	analysis.TopProvinces = provinceStats
+
 	// 热门城市统计
 	var cityStats []dto.CityStatistic
 	d.helper.GetDatabase().Model(&model.ClickStatistic{}).
@@ -133,6 +152,17 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 		Limit(10).
 		Find(&cityStats)
 	analysis.TopCities = cityStats
+
+	// 热门运营商统计
+	var ispStats []dto.ISPStatistic
+	d.helper.GetDatabase().Model(&model.ClickStatistic{}).
+		Select("isp, COUNT(*) as count").
+		Where(whereSQL+" AND isp != ''", whereConditions...).
+		Group("isp").
+		Order("count DESC").
+		Limit(10).
+		Find(&ispStats)
+	analysis.TopISPs = ispStats
 
 	// 热门来源统计
 	var refererStats []dto.RefererStatistic

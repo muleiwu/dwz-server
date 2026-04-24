@@ -7,6 +7,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20260424014102-c314ef54ca8c
 	github.com/muleiwu/base_n v1.0.0
 	github.com/muleiwu/golog v1.1.1
 	github.com/muleiwu/gomander v1.1.0
@@ -15,6 +16,8 @@ require (
 	github.com/redis/go-redis/v9 v9.17.3
 	golang.org/x/crypto v0.48.0
 	golang.org/x/oauth2 v0.36.0
+	gorm.io/driver/mysql v1.6.0
+	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )
 
@@ -83,8 +86,6 @@ require (
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	gorm.io/driver/mysql v1.6.0 // indirect
-	gorm.io/driver/postgres v1.6.0 // indirect
 	modernc.org/libc v1.68.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect

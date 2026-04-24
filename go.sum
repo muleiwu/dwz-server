@@ -93,6 +93,8 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/leodido/go-urn v1.4.0 h1:WT9HwE9SGECu3lg4d/dIA+jxlljEa1/ffXKmRjqdmIQ=
 github.com/leodido/go-urn v1.4.0/go.mod h1:bvxc+MVxLKB4z00jd1z+Dvzr47oO32F/QSNjSBOlFxI=
+github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20260424014102-c314ef54ca8c h1:dv+MnCYSUdVibULxmT1xY7NhznN4kjeJES3DxxhEGDo=
+github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20260424014102-c314ef54ca8c/go.mod h1:sj5LMpsqB4IWdwIrcmmBJM6m+rW/uOQLSGUPhKkqdh8=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mfridman/interpolate v0.0.2 h1:pnuTK7MQIxxFz1Gr+rjSIx9u7qVjf5VOoM/u6BbAxPY=
@@ -110,8 +112,6 @@ github.com/muleiwu/go-cache v1.1.0 h1:mbMYIB342Q6yK7IyQv15gYLxDL2jU7PCcLDWKnSXvK
 github.com/muleiwu/go-cache v1.1.0/go.mod h1:I5Lb8CB31GBUwqo6s+UgBVPhM3Ic34jj1pfxVJqVUn0=
 github.com/muleiwu/golog v1.1.1 h1:jdNaxhVRumfL1d1YjNB7wlJ9MM8fJulxKKYD3fqP1BY=
 github.com/muleiwu/golog v1.1.1/go.mod h1:d+EsBuHuwLsMAZ9KEendX1ItW1RLcEBRB+ecBWnElPM=
-github.com/muleiwu/gomander v1.0.0 h1:Ndno1BbueQVVEnenWy/fZtrQRitcUOui8iJY99P/RrA=
-github.com/muleiwu/gomander v1.0.0/go.mod h1:Vv+vreRHGcix9ByKxQBvoRRygbqx+kfjyh6YyGFMKVk=
 github.com/muleiwu/gomander v1.1.0 h1:3amI5M4oifeswV9YBv4e3Z1jG+6UrUp+x4NQVZHyIsA=
 github.com/muleiwu/gomander v1.1.0/go.mod h1:Vv+vreRHGcix9ByKxQBvoRRygbqx+kfjyh6YyGFMKVk=
 github.com/muleiwu/gsr v1.1.0 h1:9esZfjzDRPpwz4AI5FCCUjhODUmkrkkcpHYdMPgYkrA=

@@ -13,7 +13,9 @@ type ABTestClickStatistic struct {
 	Referer     string    `gorm:"size:2048" json:"referer"`                                    // 来源
 	QueryParams string    `gorm:"size:2048" json:"query_params"`                               // 查询参数
 	Country     string    `gorm:"size:100" json:"country"`                                     // 国家
+	Province    string    `gorm:"size:100" json:"province"`                                    // 省份 / 省级行政区
 	City        string    `gorm:"size:100" json:"city"`                                        // 城市
+	ISP         string    `gorm:"size:100" json:"isp"`                                         // 运营商
 	SessionID   string    `gorm:"size:128;index" json:"session_id"`                            // 会话ID，用于去重
 	ClickDate   time.Time `gorm:"index:idx_ab_test_click,idx_variant_click" json:"click_date"` // 点击日期
 	CreatedAt   time.Time `json:"created_at"`

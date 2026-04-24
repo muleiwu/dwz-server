@@ -19,5 +19,6 @@ func (Config) Get() []interfaces.InitConfig {
 		autoload.Cache{},
 		autoload.IdGenerator{},
 		autoload.Jwt{},
+		autoload.IPRegion{},
 	}
 }
