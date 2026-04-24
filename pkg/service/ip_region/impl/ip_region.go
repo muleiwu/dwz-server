@@ -97,9 +97,9 @@ func (s *Searcher) Lookup(ip string) Region {
 	}
 
 	var (
-		target   *versionedSearcher
-		queryIP  string
-		isIPv4   = parsed.To4() != nil
+		target  *versionedSearcher
+		queryIP string
+		isIPv4  = parsed.To4() != nil
 	)
 	if isIPv4 {
 		target = s.v4
@@ -116,8 +116,9 @@ func (s *Searcher) Lookup(ip string) Region {
 	return parseRegion(raw)
 }
 
-// parseRegion 把 ip2region 的 "国家|区域|省份|城市|ISP" 字符串切成 Region。
-// 库中用 "0" 作为「无数据」的占位，这里统一替换为空串，便于上层判空。
+// parseRegion 把 ip2region v3 xdb 的 "国家|省份|城市|ISP|国家代码" 字符串切成
+// Region（例如 "中国|福建省|福州市|中国电信|CN"）。库中用 "0" 作为「无数据」
+// 的占位，这里统一替换为空串，便于上层判空。国家代码（字段 4）目前不落库。
 func parseRegion(raw string) Region {
 	parts := strings.SplitN(raw, "|", 5)
 	get := func(idx int) string {
@@ -130,12 +131,12 @@ func parseRegion(raw string) Region {
 		}
 		return v
 	}
-	// 格式顺序：country | region | province | city | isp
+	// 格式顺序：country | province | city | isp | countryCode
 	return Region{
 		Country:  get(0),
-		Province: get(2),
-		City:     get(3),
-		ISP:      get(4),
+		Province: get(1),
+		City:     get(2),
+		ISP:      get(3),
 	}
 }
 

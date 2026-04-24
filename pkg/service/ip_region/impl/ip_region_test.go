@@ -27,13 +27,19 @@ func newTestSearcher(t *testing.T) *Searcher {
 
 func TestSearcher_Lookup_IPv4PublicIP(t *testing.T) {
 	s := newTestSearcher(t)
-	// 223.5.5.5 是阿里公共 DNS，归属稳定为中国。
+	// 223.5.5.5 是阿里公共 DNS，归属稳定为中国浙江杭州阿里云。
+	// 这里同时断言省/市/ISP 非空 —— 如果 xdb 字段顺序变化（例如 ISP 被错位
+	// 解析成国家代码），只断言 Country 会漏掉这种退化。
 	region := s.Lookup("223.5.5.5")
-	if region.Country == "" {
-		t.Fatalf("期望拿到国家，得到空：%+v", region)
-	}
 	if region.Country != "中国" {
-		t.Logf("公网 IP 223.5.5.5 归属国：%s（库变更可接受）", region.Country)
+		t.Fatalf("Country 错误：%+v", region)
+	}
+	if region.Province == "" || region.City == "" || region.ISP == "" {
+		t.Fatalf("省/市/ISP 应全部有值，可能字段错位：%+v", region)
+	}
+	// ISP 不应是 "CN" —— 那是国家代码字段（索引 4），说明解析偏移了。
+	if region.ISP == "CN" {
+		t.Fatalf("ISP 被错位成国家代码 CN，parseRegion 下标错误：%+v", region)
 	}
 }
 
@@ -90,16 +96,18 @@ func TestNoop_ReturnsEmpty(t *testing.T) {
 }
 
 func TestParseRegion_ZeroPlaceholderStripped(t *testing.T) {
-	r := parseRegion("中国|0|广东省|深圳市|电信")
-	if r.Country != "中国" || r.Province != "广东省" || r.City != "深圳市" || r.ISP != "电信" {
+	// ip2region v3 xdb 标准格式：国家|省份|城市|ISP|国家代码
+	r := parseRegion("中国|广东省|深圳市|中国电信|CN")
+	if r.Country != "中国" || r.Province != "广东省" || r.City != "深圳市" || r.ISP != "中国电信" {
 		t.Fatalf("解析失败：%+v", r)
 	}
 
-	r2 := parseRegion("美国|0|0|0|0")
-	if r2.Country != "美国" {
-		t.Fatalf("country 应保留：%+v", r2)
+	// 省 / 市 / ISP 缺失时上游用 "0" 占位（参见 Australia|Queensland|0|0|AU）。
+	r2 := parseRegion("Australia|Queensland|0|0|AU")
+	if r2.Country != "Australia" || r2.Province != "Queensland" {
+		t.Fatalf("country/province 应保留：%+v", r2)
 	}
-	if r2.Province != "" || r2.City != "" || r2.ISP != "" {
+	if r2.City != "" || r2.ISP != "" {
 		t.Fatalf("0 占位应被清空：%+v", r2)
 	}
 }
