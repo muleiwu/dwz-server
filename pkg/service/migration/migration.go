@@ -122,6 +122,11 @@ func (m *Migration) Run() error {
 	if err := install_bootstrap.Consume(); err != nil {
 		logger.Warn("[migration] 创建初始管理员失败: " + err.Error())
 	}
+
+	// 后台回填历史归属地：Schema / 索引已就绪，IPRegion assembly 也早已初始化。
+	// 这是一次性任务，写 ./config/ip_region_backfill.done 作为完成标记，走
+	// 协程不阻塞启动。
+	StartBackfillIPRegion()
 	return nil
 }
 
