@@ -16,7 +16,12 @@
 //     一次性任务的权衡 —— 失败恢复需要运维手工
 //     `DELETE FROM goose_db_version WHERE version_id=15;` 触发重跑。协程本
 //     身天然幂等（DISTINCT ip → Lookup → UPDATE），重跑结果收敛。
-package migration
+//
+// 文件位置说明：放在 migrations/ 下与 SQL 迁移并列。注册 init() 在
+// migrations 包加载时触发；pkg/service/migration 通过 blank import 拉起
+// 这个包，确保 goose.Up 之前就完成注册。goose 自身只 glob *.sql，不会把
+// 这个 .go 当成迁移源文件。
+package migrations
 
 import (
 	"context"
