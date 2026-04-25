@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -177,45 +176,25 @@ id_generator:
 }
 
 func (s *InitInstallService) TestDatabaseConnection(cfg InstallDatabaseConfig, maxRetries int) error {
-	var dsn, driver string
-	switch cfg.Driver {
-	case "mysql":
-		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-			cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
-		driver = "mysql"
-	case "postgresql":
-		dsn = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-			cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.DBName)
-		driver = "postgres"
-	case "sqlite":
-		dsn = cfg.Filepath
-		driver = "sqlite"
-	default:
-		return fmt.Errorf("不支持的数据库类型: %s", cfg.Driver)
-	}
-
-	db, err := sql.Open(driver, dsn)
-	if err != nil {
-		return fmt.Errorf("数据库连接失败: %v", err)
-	}
-	defer db.Close()
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
-	db.SetConnMaxLifetime(time.Second * 10)
+	// 复用 openInstallGormDB —— 走 GORM 各 driver 的 init 注册路径，避免直接
+	// 调 sql.Open("postgres", ...) 时因没有 _ "github.com/lib/pq" /
+	// _ "github.com/jackc/pgx/v5/stdlib" blank import 触发
+	// `sql: unknown driver "postgres" (forgotten import?)`。GORM 的 postgres
+	// driver 直接用 pgx，不会自动注册 database/sql 名下的 "postgres" 驱动。
 
 	retryInterval := 2 * time.Second
 	var lastErr error
 	for i := 0; i < maxRetries; i++ {
-		if err := db.Ping(); err != nil {
-			lastErr = err
-			s.helper.GetLogger().Warn(fmt.Sprintf("数据库连接测试失败 (第%d次重试): %v", i+1, err))
-			if i < maxRetries-1 {
-				time.Sleep(retryInterval)
-			}
-			continue
+		err := pingInstallDB(cfg)
+		if err == nil {
+			s.helper.GetLogger().Info("数据库连接测试成功")
+			return nil
 		}
-		s.helper.GetLogger().Info("数据库连接测试成功")
-		return nil
+		lastErr = err
+		s.helper.GetLogger().Warn(fmt.Sprintf("数据库连接测试失败 (第%d次重试): %v", i+1, err))
+		if i < maxRetries-1 {
+			time.Sleep(retryInterval)
+		}
 	}
 	return fmt.Errorf("数据库连接测试失败 (已重试%d次): %v", maxRetries, lastErr)
 }
@@ -325,6 +304,24 @@ func (s *InitInstallService) RunMigrationsAndSeed(cfg InstallDatabaseConfig, adm
 		s.helper.GetLogger().Warn("[install] 清理 admin bootstrap 文件失败: " + err.Error())
 	}
 	return nil
+}
+
+// pingInstallDB 用 GORM 打开一次连接，立即 ping，再关掉。给 TestDatabaseConnection
+// 复用，避开 sql.Open("postgres", ...) 找不到 driver 的坑。
+func pingInstallDB(cfg InstallDatabaseConfig) error {
+	gormDB, err := openInstallGormDB(cfg)
+	if err != nil {
+		return err
+	}
+	sqlDB, err := gormDB.DB()
+	if err != nil {
+		return err
+	}
+	defer sqlDB.Close()
+	sqlDB.SetMaxOpenConns(1)
+	sqlDB.SetMaxIdleConns(1)
+	sqlDB.SetConnMaxLifetime(time.Second * 10)
+	return sqlDB.Ping()
 }
 
 func openInstallGormDB(cfg InstallDatabaseConfig) (*gorm.DB, error) {
