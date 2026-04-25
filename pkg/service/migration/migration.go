@@ -7,6 +7,9 @@ import (
 	"io/fs"
 	"time"
 
+	// 触发 migrations 包加载 —— 包内的 Go 迁移（如 0015）需要在
+	// goose.Up 之前完成 goose.AddNamedMigration* 注册。
+	_ "cnb.cool/mliev/dwz/dwz-server/v2/migrations"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/install_bootstrap"
 	"github.com/pressly/goose/v3"
