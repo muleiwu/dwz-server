@@ -1,4 +1,4 @@
-// 0015_backfill_click_statistics_region 把 click_statistics 与
+// Package migrations 0015_backfill_click_statistics_region 把 click_statistics 与
 // ab_test_click_statistics 两张表所有历史行的 country/province/city/isp
 // 按当前 ip2region xdb 重新计算一遍。
 //
@@ -12,6 +12,9 @@
 //     按 PK IN (…) 批量 UPDATE；PK / ip 索引都 seek，不再全表扫。
 //  4. **IPRegion 未就绪 → up 直接报错**：此时不让 goose 记账，下次启动重试；
 //     否则一旦标记 applied，xdb 再就绪也不会触发回填。
+//     特例：首次安装路径（install 控制器的 RunMigrationsAndSeed）容器里的
+//     Database assembly 还没注入，helper.GetDatabase() 是 nil。这时点击表
+//     必然是刚 CREATE 的空表，up 直接 return nil 让 goose 记账即可。
 //  5. **up 返回后协程才启动**：所以即使协程中途失败，goose 已经记账。这是
 //     一次性任务的权衡 —— 失败恢复需要运维手工
 //     `DELETE FROM goose_db_version WHERE version_id=15;` 触发重跑。协程本
@@ -60,11 +63,17 @@ func upBackfillClickRegion(_ context.Context, _ *sql.DB) error {
 	h := helper.GetHelper()
 	logger := h.GetLogger()
 
+	// 首次安装路径：install 控制器走 RunMigrationsAndSeed 用一个独立 *sql.DB
+	// 跑 goose.Up，但容器里的 Database assembly 在 installed=true 之前是 nil。
+	// 此时 click_statistics / ab_test_click_statistics 必然是刚 CREATE 的空表，
+	// 没东西可回填 —— 返回 nil 让 goose 把 0015 标记 applied，安装完成重启后
+	// 直接跳过这条迁移即可。
 	if h.GetDatabase() == nil {
-		return errors.New("[migration 0015] 数据库不可用")
+		logger.Info("[migration 0015] 安装阶段：容器 DB 未注入，表必空，跳过回填")
+		return nil
 	}
 	if _, isNoop := h.GetIPRegion().(ipRegionImpl.Noop); isNoop {
-		// 不记账 → 下次启动再试。
+		// 已安装但 xdb 未就绪 → 不记账，下次启动再试。
 		return errors.New("[migration 0015] IPRegion 尚未就绪（Noop），请确认 xdb 加载成功后重启以触发回填")
 	}
 
