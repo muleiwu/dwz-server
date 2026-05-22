@@ -21,8 +21,12 @@ func NewOperationLogService(helper interfaces.HelperInterface) *OperationLogServ
 }
 
 // CreateLog 创建操作日志
-func (s *OperationLogService) CreateLog(userID *uint64, username, operation, resource, resourceID, method, path, requestBody, responseBody, ip, userAgent string, responseCode int, executeTime int64, status int8, errorMessage string) error {
+func (s *OperationLogService) CreateLog(workspaceID uint64, userID *uint64, username, operation, resource, resourceID, method, path, requestBody, responseBody, ip, userAgent string, responseCode int, executeTime int64, status int8, errorMessage string) error {
+	if workspaceID == 0 {
+		workspaceID = 1
+	}
 	log := &model.OperationLog{
+		WorkspaceID:  workspaceID,
 		UserID:       userID,
 		Username:     username,
 		Operation:    operation,
@@ -76,6 +80,34 @@ func (s *OperationLogService) GetLogList(req *dto.OperationLogListRequest) (*dto
 	}, nil
 }
 
+func (s *OperationLogService) GetLogListByWorkspace(workspaceID uint64, req *dto.OperationLogListRequest) (*dto.OperationLogListResponse, error) {
+	offset := (req.Page - 1) * req.PageSize
+	var startTime, endTime *time.Time
+	if req.StartTime != "" {
+		if t, err := time.Parse("2006-01-02 15:04:05", req.StartTime); err == nil {
+			startTime = &t
+		}
+	}
+	if req.EndTime != "" {
+		if t, err := time.Parse("2006-01-02 15:04:05", req.EndTime); err == nil {
+			endTime = &t
+		}
+	}
+
+	logs, total, err := s.logDAO.GetListByWorkspace(workspaceID, offset, req.PageSize, req.UserID, req.Username, req.Operation, req.Resource, req.Method, req.Status, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	logInfos := make([]dto.OperationLogInfo, 0, len(logs))
+	for _, log := range logs {
+		logInfos = append(logInfos, s.convertToLogInfo(&log))
+	}
+	return &dto.OperationLogListResponse{
+		List:       logInfos,
+		Pagination: dto.NewPagination(total, req.Page, req.PageSize),
+	}, nil
+}
+
 // CleanOldLogs 清理过期日志
 func (s *OperationLogService) CleanOldLogs(days int) error {
 	return s.logDAO.DeleteOldLogs(days)
@@ -85,6 +117,7 @@ func (s *OperationLogService) CleanOldLogs(days int) error {
 func (s *OperationLogService) convertToLogInfo(log *model.OperationLog) dto.OperationLogInfo {
 	return dto.OperationLogInfo{
 		ID:           log.ID,
+		WorkspaceID:  log.WorkspaceID,
 		UserID:       log.UserID,
 		Username:     log.Username,
 		Operation:    log.Operation,
@@ -139,5 +172,5 @@ func (s *OperationLogService) LogRequest(userID *uint64, username, operation, re
 	}
 
 	// 创建日志
-	s.CreateLog(userID, username, operation, resource, resourceID, method, path, reqBodyStr, respBodyStr, ip, userAgent, responseCode, executeTime, status, errorMessage)
+	s.CreateLog(1, userID, username, operation, resource, resourceID, method, path, reqBodyStr, respBodyStr, ip, userAgent, responseCode, executeTime, status, errorMessage)
 }

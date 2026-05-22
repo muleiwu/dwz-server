@@ -8,7 +8,8 @@ import (
 
 // Domain 域名配置模型
 type Domain struct {
-	ID                   uint64         `gorm:"primaryKey" json:"id"`                             // 自增主键
+	ID                   uint64         `gorm:"primaryKey" json:"id"` // 自增主键
+	WorkspaceID          uint64         `gorm:"not null;default:1;index" json:"workspace_id"`
 	Protocol             string         `gorm:"size:10;default:'https';not null" json:"protocol"` // 协议头 http或https
 	Domain               string         `gorm:"uniqueIndex;size:100;not null" json:"domain"`      // 域名  例如 n3.ink
 	SiteName             string         `gorm:"size:100;default:''" json:"site_name"`             // 网站名称

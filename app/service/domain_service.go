@@ -27,6 +27,10 @@ func NewDomainService(helper interfaces.HelperInterface) *DomainService {
 
 // CreateDomain 创建域名配置
 func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainResponse, error) {
+	return s.CreateDomainInWorkspace(req, 1)
+}
+
+func (s *DomainService) CreateDomainInWorkspace(req *dto.DomainRequest, workspaceID uint64) (*dto.DomainResponse, error) {
 	// 验证域名格式
 	if err := domain_validate.ValidateDomain(req.Domain); err != nil {
 		return nil, err
@@ -73,6 +77,7 @@ func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainRespons
 	// 注意：直接使用请求中的值，不做默认值回退
 	// 默认值由数据库迁移时设置，确保老数据兼容
 	domain := &model.Domain{
+		WorkspaceID:          workspaceID,
 		Domain:               req.Domain,
 		Protocol:             req.Protocol,
 		SiteName:             req.SiteName,
@@ -99,7 +104,11 @@ func (s *DomainService) CreateDomain(req *dto.DomainRequest) (*dto.DomainRespons
 
 // GetDomainList 获取域名列表
 func (s *DomainService) GetDomainList() (*dto.DomainListResponse, error) {
-	domains, err := s.domainDao.List()
+	return s.GetDomainListInWorkspace(1)
+}
+
+func (s *DomainService) GetDomainListInWorkspace(workspaceID uint64) (*dto.DomainListResponse, error) {
+	domains, err := s.domainDao.ListByWorkspace(workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,11 +124,15 @@ func (s *DomainService) GetDomainList() (*dto.DomainListResponse, error) {
 }
 
 func (s *DomainService) UpdateStatusDomain(id uint64, req *dto.UpdateStatusDomainRequest) (bool, error) {
+	return s.UpdateStatusDomainInWorkspace(id, req, 1)
+}
+
+func (s *DomainService) UpdateStatusDomainInWorkspace(id uint64, req *dto.UpdateStatusDomainRequest, workspaceID uint64) (bool, error) {
 	where := map[string]any{
 		"is_active": req.IsActive,
 	}
 
-	if err := s.domainDao.IdToUpdate(id, where); err != nil {
+	if err := s.domainDao.IdToUpdateInWorkspace(id, workspaceID, where); err != nil {
 		return false, err
 	}
 
@@ -129,12 +142,16 @@ func (s *DomainService) UpdateStatusDomain(id uint64, req *dto.UpdateStatusDomai
 
 // UpdateDomain 更新域名
 func (s *DomainService) UpdateDomain(id uint64, req *dto.DomainRequest) (*dto.DomainResponse, error) {
+	return s.UpdateDomainInWorkspace(id, req, 1)
+}
+
+func (s *DomainService) UpdateDomainInWorkspace(id uint64, req *dto.DomainRequest, workspaceID uint64) (*dto.DomainResponse, error) {
 
 	if err := domain_validate.ValidateDomain(req.Domain); err != nil {
 		return nil, err
 	}
 
-	domain, err := s.domainDao.FindByDomain(req.Domain)
+	domain, err := s.domainDao.FindByIDInWorkspace(id, workspaceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("域名不存在")
@@ -174,8 +191,12 @@ func (s *DomainService) UpdateDomain(id uint64, req *dto.DomainRequest) (*dto.Do
 
 // DeleteDomain 删除域名
 func (s *DomainService) DeleteDomain(id uint64) error {
+	return s.DeleteDomainInWorkspace(id, 1)
+}
+
+func (s *DomainService) DeleteDomainInWorkspace(id, workspaceID uint64) error {
 	// 先查找域名
-	domain, err := s.domainDao.FindByID(id)
+	domain, err := s.domainDao.FindByIDInWorkspace(id, workspaceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("域名不存在")
@@ -193,7 +214,11 @@ func (s *DomainService) DeleteDomain(id uint64) error {
 
 // GetActiveDomains 获取活跃域名列表
 func (s *DomainService) GetActiveDomains() ([]dto.DomainResponse, error) {
-	domains, err := s.domainDao.GetActiveDomains()
+	return s.GetActiveDomainsInWorkspace(1)
+}
+
+func (s *DomainService) GetActiveDomainsInWorkspace(workspaceID uint64) ([]dto.DomainResponse, error) {
+	domains, err := s.domainDao.GetActiveDomainsByWorkspace(workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -229,6 +254,17 @@ func (s *DomainService) GetDomainByID(id uint64) (*model.Domain, error) {
 		return nil, err
 	}
 
+	return domain, nil
+}
+
+func (s *DomainService) GetDomainByIDInWorkspace(id, workspaceID uint64) (*model.Domain, error) {
+	domain, err := s.domainDao.FindByIDInWorkspace(id, workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("域名不存在")
+		}
+		return nil, err
+	}
 	return domain, nil
 }
 
@@ -268,6 +304,7 @@ func (s *DomainService) modelToResponse(domain *model.Domain) *dto.DomainRespons
 
 	return &dto.DomainResponse{
 		ID:                   domain.ID,
+		WorkspaceID:          domain.WorkspaceID,
 		Domain:               domain.Domain,
 		Protocol:             domain.Protocol,
 		SiteName:             domain.SiteName,

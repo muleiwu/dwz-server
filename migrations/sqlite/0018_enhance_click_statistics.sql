@@ -1,0 +1,61 @@
+-- +goose Up
+ALTER TABLE click_statistics ADD COLUMN campaign_id INTEGER;
+ALTER TABLE click_statistics ADD COLUMN utm_source TEXT;
+ALTER TABLE click_statistics ADD COLUMN utm_medium TEXT;
+ALTER TABLE click_statistics ADD COLUMN utm_campaign TEXT;
+ALTER TABLE click_statistics ADD COLUMN utm_term TEXT;
+ALTER TABLE click_statistics ADD COLUMN utm_content TEXT;
+ALTER TABLE click_statistics ADD COLUMN device_type TEXT;
+ALTER TABLE click_statistics ADD COLUMN browser TEXT;
+ALTER TABLE click_statistics ADD COLUMN os TEXT;
+ALTER TABLE click_statistics ADD COLUMN is_bot INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE click_statistics ADD COLUMN bot_name TEXT;
+
+ALTER TABLE ab_test_click_statistics ADD COLUMN campaign_id INTEGER;
+ALTER TABLE ab_test_click_statistics ADD COLUMN utm_source TEXT;
+ALTER TABLE ab_test_click_statistics ADD COLUMN utm_medium TEXT;
+ALTER TABLE ab_test_click_statistics ADD COLUMN utm_campaign TEXT;
+ALTER TABLE ab_test_click_statistics ADD COLUMN utm_term TEXT;
+ALTER TABLE ab_test_click_statistics ADD COLUMN utm_content TEXT;
+ALTER TABLE ab_test_click_statistics ADD COLUMN device_type TEXT;
+ALTER TABLE ab_test_click_statistics ADD COLUMN browser TEXT;
+ALTER TABLE ab_test_click_statistics ADD COLUMN os TEXT;
+ALTER TABLE ab_test_click_statistics ADD COLUMN is_bot INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE ab_test_click_statistics ADD COLUMN bot_name TEXT;
+
+CREATE INDEX idx_click_statistics_campaign_id ON click_statistics(campaign_id);
+CREATE INDEX idx_click_statistics_device_type ON click_statistics(device_type);
+CREATE INDEX idx_click_statistics_is_bot ON click_statistics(is_bot);
+CREATE INDEX idx_ab_test_click_statistics_campaign_id ON ab_test_click_statistics(campaign_id);
+CREATE INDEX idx_ab_test_click_statistics_device_type ON ab_test_click_statistics(device_type);
+CREATE INDEX idx_ab_test_click_statistics_is_bot ON ab_test_click_statistics(is_bot);
+
+-- +goose Down
+DROP INDEX IF EXISTS idx_ab_test_click_statistics_is_bot;
+DROP INDEX IF EXISTS idx_ab_test_click_statistics_device_type;
+DROP INDEX IF EXISTS idx_ab_test_click_statistics_campaign_id;
+DROP INDEX IF EXISTS idx_click_statistics_is_bot;
+DROP INDEX IF EXISTS idx_click_statistics_device_type;
+DROP INDEX IF EXISTS idx_click_statistics_campaign_id;
+ALTER TABLE ab_test_click_statistics DROP COLUMN bot_name;
+ALTER TABLE ab_test_click_statistics DROP COLUMN is_bot;
+ALTER TABLE ab_test_click_statistics DROP COLUMN os;
+ALTER TABLE ab_test_click_statistics DROP COLUMN browser;
+ALTER TABLE ab_test_click_statistics DROP COLUMN device_type;
+ALTER TABLE ab_test_click_statistics DROP COLUMN utm_content;
+ALTER TABLE ab_test_click_statistics DROP COLUMN utm_term;
+ALTER TABLE ab_test_click_statistics DROP COLUMN utm_campaign;
+ALTER TABLE ab_test_click_statistics DROP COLUMN utm_medium;
+ALTER TABLE ab_test_click_statistics DROP COLUMN utm_source;
+ALTER TABLE ab_test_click_statistics DROP COLUMN campaign_id;
+ALTER TABLE click_statistics DROP COLUMN bot_name;
+ALTER TABLE click_statistics DROP COLUMN is_bot;
+ALTER TABLE click_statistics DROP COLUMN os;
+ALTER TABLE click_statistics DROP COLUMN browser;
+ALTER TABLE click_statistics DROP COLUMN device_type;
+ALTER TABLE click_statistics DROP COLUMN utm_content;
+ALTER TABLE click_statistics DROP COLUMN utm_term;
+ALTER TABLE click_statistics DROP COLUMN utm_campaign;
+ALTER TABLE click_statistics DROP COLUMN utm_medium;
+ALTER TABLE click_statistics DROP COLUMN utm_source;
+ALTER TABLE click_statistics DROP COLUMN campaign_id;

@@ -80,27 +80,29 @@ type CreateUserTokenRequest struct {
 
 // CreateUserTokenResponse 创建用户Token响应
 type CreateUserTokenResponse struct {
-	ID        uint64     `json:"id"`
-	TokenName string     `json:"token_name"`
-	TokenType string     `json:"token_type"`
-	Token     string     `json:"token,omitempty"`      // Bearer Token（仅 bearer 类型）
-	AppID     string     `json:"app_id,omitempty"`     // 签名认证 App ID（仅 signature 类型）
-	AppSecret string     `json:"app_secret,omitempty"` // 签名认证 App Secret（仅创建时返回）
-	ExpireAt  *time.Time `json:"expire_at"`
-	CreatedAt time.Time  `json:"created_at"`
+	ID          uint64     `json:"id"`
+	WorkspaceID uint64     `json:"workspace_id"`
+	TokenName   string     `json:"token_name"`
+	TokenType   string     `json:"token_type"`
+	Token       string     `json:"token,omitempty"`      // Bearer Token（仅 bearer 类型）
+	AppID       string     `json:"app_id,omitempty"`     // 签名认证 App ID（仅 signature 类型）
+	AppSecret   string     `json:"app_secret,omitempty"` // 签名认证 App Secret（仅创建时返回）
+	ExpireAt    *time.Time `json:"expire_at"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 // UserTokenInfo Token信息
 type UserTokenInfo struct {
-	ID         uint64     `json:"id"`
-	TokenName  string     `json:"token_name"`
-	TokenType  string     `json:"token_type"`
-	Token      string     `json:"token,omitempty"`  // 仅 bearer 类型，显示前8位
-	AppID      string     `json:"app_id,omitempty"` // 仅 signature 类型
-	LastUsedAt *time.Time `json:"last_used_at"`
-	ExpireAt   *time.Time `json:"expire_at"`
-	Status     int8       `json:"status"`
-	CreatedAt  time.Time  `json:"created_at"`
+	ID          uint64     `json:"id"`
+	WorkspaceID uint64     `json:"workspace_id"`
+	TokenName   string     `json:"token_name"`
+	TokenType   string     `json:"token_type"`
+	Token       string     `json:"token,omitempty"`  // 仅 bearer 类型，显示前8位
+	AppID       string     `json:"app_id,omitempty"` // 仅 signature 类型
+	LastUsedAt  *time.Time `json:"last_used_at"`
+	ExpireAt    *time.Time `json:"expire_at"`
+	Status      int8       `json:"status"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 // UserTokenListRequest Token列表请求

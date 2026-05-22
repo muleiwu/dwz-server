@@ -60,6 +60,15 @@ func Consume() error {
 	if err := dao.NewUserDAO(helper.GetHelper()).Create(user); err != nil {
 		return err
 	}
+	workspaceDAO := dao.NewWorkspaceDao(helper.GetHelper())
+	if err := workspaceDAO.CreateMember(&model.WorkspaceMember{
+		WorkspaceID: 1,
+		UserID:      user.ID,
+		Role:        model.WorkspaceRoleOwner,
+		Status:      1,
+	}); err != nil {
+		return err
+	}
 	helper.GetHelper().GetLogger().Info("[install_bootstrap] 管理员账户已创建: " + admin.Username)
 	return os.Remove(AdminFile)
 }

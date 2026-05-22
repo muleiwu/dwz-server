@@ -6,9 +6,10 @@ import (
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/middleware"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
-	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
 type DomainController struct {
@@ -17,6 +18,10 @@ type DomainController struct {
 
 // CreateDomain 创建域名
 func (ctrl DomainController) CreateDomain(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理域名")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	var req dto.DomainRequest
@@ -26,7 +31,7 @@ func (ctrl DomainController) CreateDomain(c httpInterfaces.RouterContextInterfac
 	}
 
 	domainService := service.NewDomainService(helper)
-	response, err := domainService.CreateDomain(&req)
+	response, err := domainService.CreateDomainInWorkspace(&req, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "已存在") {
 			ctrl.Error(c, constants.ErrCodeConflict, err.Error())
@@ -43,7 +48,7 @@ func (ctrl DomainController) CreateDomain(c httpInterfaces.RouterContextInterfac
 func (ctrl DomainController) GetDomainList(c httpInterfaces.RouterContextInterface) {
 	helper := helperPkg.GetHelper()
 	_ = helper
-	response, err := service.NewDomainService(helper).GetDomainList()
+	response, err := service.NewDomainService(helper).GetDomainListInWorkspace(middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -54,6 +59,10 @@ func (ctrl DomainController) GetDomainList(c httpInterfaces.RouterContextInterfa
 
 // UpdateDomain 更新域名
 func (ctrl DomainController) UpdateDomain(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理域名")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -71,7 +80,7 @@ func (ctrl DomainController) UpdateDomain(c httpInterfaces.RouterContextInterfac
 
 	// 获取原始域名记录，保护 random_suffix_length 和 enable_checksum 字段
 	domainService := service.NewDomainService(helper)
-	originalDomain, err := domainService.GetDomainByID(id)
+	originalDomain, err := domainService.GetDomainByIDInWorkspace(id, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeNotFound, "域名不存在")
 		return
@@ -99,7 +108,7 @@ func (ctrl DomainController) UpdateDomain(c httpInterfaces.RouterContextInterfac
 		req.DefaultStartNumber = 0
 	}
 
-	response, err := domainService.UpdateDomain(id, &req)
+	response, err := domainService.UpdateDomainInWorkspace(id, &req, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -116,6 +125,10 @@ func (ctrl DomainController) UpdateDomain(c httpInterfaces.RouterContextInterfac
 
 // UpdateStatusDomain UpdateDomain 更新域名
 func (ctrl DomainController) UpdateStatusDomain(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理域名")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -131,7 +144,7 @@ func (ctrl DomainController) UpdateStatusDomain(c httpInterfaces.RouterContextIn
 		return
 	}
 
-	response, err := service.NewDomainService(helper).UpdateStatusDomain(id, &req)
+	response, err := service.NewDomainService(helper).UpdateStatusDomainInWorkspace(id, &req, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -148,6 +161,10 @@ func (ctrl DomainController) UpdateStatusDomain(c httpInterfaces.RouterContextIn
 
 // DeleteDomain 删除域名
 func (ctrl DomainController) DeleteDomain(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理域名")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -157,7 +174,7 @@ func (ctrl DomainController) DeleteDomain(c httpInterfaces.RouterContextInterfac
 		return
 	}
 
-	err = service.NewDomainService(helper).DeleteDomain(id)
+	err = service.NewDomainService(helper).DeleteDomainInWorkspace(id, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -176,7 +193,7 @@ func (ctrl DomainController) DeleteDomain(c httpInterfaces.RouterContextInterfac
 func (ctrl DomainController) GetActiveDomains(c httpInterfaces.RouterContextInterface) {
 	helper := helperPkg.GetHelper()
 	_ = helper
-	response, err := service.NewDomainService(helper).GetActiveDomains()
+	response, err := service.NewDomainService(helper).GetActiveDomainsInWorkspace(middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return

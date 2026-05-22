@@ -94,6 +94,24 @@ func (dao *UserTokenDAO) GetListByUserID(userID uint64, offset, limit int, token
 	return tokens, total, err
 }
 
+func (dao *UserTokenDAO) GetListByUserIDInWorkspace(userID, workspaceID uint64, offset, limit int, tokenName string, status *int8) ([]model.UserToken, int64, error) {
+	var tokens []model.UserToken
+	var total int64
+
+	query := dao.helper.GetDatabase().Model(&model.UserToken{}).Where("user_id = ? AND workspace_id = ?", userID, workspaceID)
+	if tokenName != "" {
+		query = query.Where("token_name LIKE ?", "%"+tokenName+"%")
+	}
+	if status != nil {
+		query = query.Where("status = ?", *status)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&tokens).Error
+	return tokens, total, err
+}
+
 // UpdateLastUsed 更新最后使用时间
 func (dao *UserTokenDAO) UpdateLastUsed(id uint64) error {
 	return dao.helper.GetDatabase().Model(&model.UserToken{}).Where("id = ?", id).Update("last_used_at", gorm.Expr(dao.getCurrentTimeSQL())).Error

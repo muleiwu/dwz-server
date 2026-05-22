@@ -56,6 +56,13 @@ func (dao *ABTestDao) FindABTestByID(id uint64) (*model.ABTest, error) {
 	return &abTest, err
 }
 
+func (dao *ABTestDao) FindABTestByIDInWorkspace(id, workspaceID uint64) (*model.ABTest, error) {
+	db := dao.helper.GetDatabase()
+	var abTest model.ABTest
+	err := db.Preload("Variants").Where("id = ? AND workspace_id = ?", id, workspaceID).First(&abTest).Error
+	return &abTest, err
+}
+
 // FindABTestByShortLinkID 根据短链接ID查找正在运行的AB测试
 func (dao *ABTestDao) FindActiveABTestByShortLinkID(shortLinkID uint64) (*model.ABTest, error) {
 	db := dao.helper.GetDatabase()
@@ -127,6 +134,25 @@ func (dao *ABTestDao) ListABTests(offset, limit int, shortLinkID uint64, status 
 	}
 
 	// 获取列表
+	err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&abTests).Error
+	return abTests, total, err
+}
+
+func (dao *ABTestDao) ListABTestsInWorkspace(workspaceID uint64, offset, limit int, shortLinkID uint64, status string) ([]model.ABTest, int64, error) {
+	db := dao.helper.GetDatabase()
+	var abTests []model.ABTest
+	var total int64
+
+	query := db.Model(&model.ABTest{}).Preload("Variants").Where("workspace_id = ?", workspaceID)
+	if shortLinkID > 0 {
+		query = query.Where("short_link_id = ?", shortLinkID)
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&abTests).Error
 	return abTests, total, err
 }

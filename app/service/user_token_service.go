@@ -30,6 +30,10 @@ func NewUserTokenService(helperInterface interfaces.HelperInterface) *UserTokenS
 // - signature 类型：生成 AppID 和 AppSecret，用于 HMAC-SHA256 签名认证
 // - bearer 类型：生成传统 Token，用于 Bearer Token 认证
 func (s *UserTokenService) CreateToken(userID uint64, req *dto.CreateUserTokenRequest) (*dto.CreateUserTokenResponse, error) {
+	return s.CreateTokenInWorkspace(userID, 1, req)
+}
+
+func (s *UserTokenService) CreateTokenInWorkspace(userID, workspaceID uint64, req *dto.CreateUserTokenRequest) (*dto.CreateUserTokenResponse, error) {
 	// 检查用户是否存在
 	_, err := s.userDAO.GetByID(userID)
 	if err != nil {
@@ -47,11 +51,12 @@ func (s *UserTokenService) CreateToken(userID uint64, req *dto.CreateUserTokenRe
 
 	// 创建Token
 	token := &model.UserToken{
-		UserID:    userID,
-		TokenName: req.TokenName,
-		TokenType: tokenType,
-		ExpireAt:  req.ExpireAt,
-		Status:    1, // 默认启用
+		WorkspaceID: workspaceID,
+		UserID:      userID,
+		TokenName:   req.TokenName,
+		TokenType:   tokenType,
+		ExpireAt:    req.ExpireAt,
+		Status:      1, // 默认启用
 	}
 
 	// 用于返回给用户的明文 AppSecret（仅创建时返回一次）
@@ -89,11 +94,12 @@ func (s *UserTokenService) CreateToken(userID uint64, req *dto.CreateUserTokenRe
 
 	// 构建响应
 	response := &dto.CreateUserTokenResponse{
-		ID:        token.ID,
-		TokenName: token.TokenName,
-		TokenType: token.TokenType,
-		ExpireAt:  token.ExpireAt,
-		CreatedAt: token.CreatedAt,
+		ID:          token.ID,
+		WorkspaceID: token.WorkspaceID,
+		TokenName:   token.TokenName,
+		TokenType:   token.TokenType,
+		ExpireAt:    token.ExpireAt,
+		CreatedAt:   token.CreatedAt,
 	}
 
 	// 根据类型设置不同的返回字段
@@ -130,8 +136,28 @@ func (s *UserTokenService) GetTokenList(userID uint64, req *dto.UserTokenListReq
 	}, nil
 }
 
+func (s *UserTokenService) GetTokenListInWorkspace(userID, workspaceID uint64, req *dto.UserTokenListRequest) (*dto.UserTokenListResponse, error) {
+	offset := (req.Page - 1) * req.PageSize
+	tokens, total, err := s.tokenDAO.GetListByUserIDInWorkspace(userID, workspaceID, offset, req.PageSize, req.TokenName, req.Status)
+	if err != nil {
+		return nil, err
+	}
+	tokenInfos := make([]dto.UserTokenInfo, 0, len(tokens))
+	for _, token := range tokens {
+		tokenInfos = append(tokenInfos, s.convertToTokenInfo(&token))
+	}
+	return &dto.UserTokenListResponse{
+		List:       tokenInfos,
+		Pagination: dto.NewPagination(total, req.Page, req.PageSize),
+	}, nil
+}
+
 // DeleteToken 删除Token
 func (s *UserTokenService) DeleteToken(userID, tokenID uint64) error {
+	return s.DeleteTokenInWorkspace(userID, 1, tokenID)
+}
+
+func (s *UserTokenService) DeleteTokenInWorkspace(userID, workspaceID, tokenID uint64) error {
 	// 获取Token
 	token, err := s.tokenDAO.GetByID(tokenID)
 	if err != nil {
@@ -142,7 +168,7 @@ func (s *UserTokenService) DeleteToken(userID, tokenID uint64) error {
 	}
 
 	// 检查Token是否属于该用户
-	if token.UserID != userID {
+	if token.UserID != userID || token.WorkspaceID != workspaceID {
 		return errors.New("无权限删除该Token")
 	}
 
@@ -182,13 +208,14 @@ func (s *UserTokenService) ValidateToken(tokenStr string) (*model.User, error) {
 // convertToTokenInfo 转换为TokenInfo
 func (s *UserTokenService) convertToTokenInfo(token *model.UserToken) dto.UserTokenInfo {
 	info := dto.UserTokenInfo{
-		ID:         token.ID,
-		TokenName:  token.TokenName,
-		TokenType:  token.TokenType,
-		LastUsedAt: token.LastUsedAt,
-		ExpireAt:   token.ExpireAt,
-		Status:     token.Status,
-		CreatedAt:  token.CreatedAt,
+		ID:          token.ID,
+		WorkspaceID: token.WorkspaceID,
+		TokenName:   token.TokenName,
+		TokenType:   token.TokenType,
+		LastUsedAt:  token.LastUsedAt,
+		ExpireAt:    token.ExpireAt,
+		Status:      token.Status,
+		CreatedAt:   token.CreatedAt,
 	}
 
 	// 根据类型设置不同的字段

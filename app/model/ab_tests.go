@@ -9,6 +9,7 @@ import (
 // ABTest AB测试实验模型
 type ABTest struct {
 	ID           uint64         `gorm:"primaryKey" json:"id"`
+	WorkspaceID  uint64         `gorm:"not null;default:1;index" json:"workspace_id"`
 	ShortLinkID  uint64         `gorm:"not null;index" json:"short_link_id"`          // 关联的短链接ID
 	Name         string         `gorm:"size:255;not null" json:"name"`                // 实验名称
 	Description  string         `gorm:"size:500" json:"description"`                  // 实验描述

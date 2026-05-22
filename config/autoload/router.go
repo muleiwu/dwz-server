@@ -55,6 +55,7 @@ func (Router) InitConfig() map[string]any {
 			v1 := router.Group("/api/v1")
 			v1.Use(middleware.OperationLogMiddleware())
 			v1.Use(middleware.AuthMiddleware())
+			v1.Use(middleware.WorkspaceMiddleware())
 			{
 				auth := v1.Group("/auth")
 				{
@@ -81,6 +82,40 @@ func (Router) InitConfig() map[string]any {
 					short.DELETE("/:id", controller.ShortLinkController{}.DeleteShortLink)
 					short.GET("/:id/statistics", controller.ShortLinkController{}.GetShortLinkStatistics)
 					short.POST("/batch", controller.ShortLinkController{}.BatchCreateShortLinks)
+				}
+
+				workspaces := v1.Group("/workspaces")
+				{
+					workspaces.GET("", controller.WorkspaceController{}.ListWorkspaces)
+					workspaces.POST("", controller.WorkspaceController{}.CreateWorkspace)
+					workspaces.PUT("/current", controller.WorkspaceController{}.UpdateWorkspace)
+					workspaces.GET("/current/members", controller.WorkspaceController{}.ListMembers)
+					workspaces.POST("/current/members", controller.WorkspaceController{}.AddMember)
+					workspaces.PUT("/current/members/:user_id", controller.WorkspaceController{}.UpdateMember)
+					workspaces.DELETE("/current/members/:user_id", controller.WorkspaceController{}.RemoveMember)
+				}
+
+				campaigns := v1.Group("/campaigns")
+				{
+					campaigns.POST("", controller.CampaignController{}.Create)
+					campaigns.GET("", controller.CampaignController{}.List)
+					campaigns.GET("/:id", controller.CampaignController{}.Get)
+					campaigns.PUT("/:id", controller.CampaignController{}.Update)
+					campaigns.DELETE("/:id", controller.CampaignController{}.Delete)
+				}
+
+				tags := v1.Group("/tags")
+				{
+					tags.POST("", controller.TagController{}.Create)
+					tags.GET("", controller.TagController{}.List)
+					tags.GET("/:id", controller.TagController{}.Get)
+					tags.PUT("/:id", controller.TagController{}.Update)
+					tags.DELETE("/:id", controller.TagController{}.Delete)
+				}
+
+				reports := v1.Group("/reports")
+				{
+					reports.GET("/campaigns", controller.CampaignController{}.Reports)
 				}
 
 				domains := v1.Group("/domains")
@@ -137,6 +172,7 @@ func (Router) InitConfig() map[string]any {
 				{
 					clickStats.GET("", controller.ClickStatisticController{}.GetClickStatisticList)
 					clickStats.GET("/analysis", controller.ClickStatisticController{}.GetClickStatisticAnalysis)
+					clickStats.GET("/export", controller.ClickStatisticController{}.ExportCSV)
 				}
 
 				stats := v1.Group("/statistics")

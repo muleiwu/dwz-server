@@ -488,6 +488,14 @@ func (s *OIDCService) createUserFromClaims(provider, sub, email, preferredName, 
 	if err := s.userDAO.Create(user); err != nil {
 		return nil, fmt.Errorf("创建用户失败: %w", err)
 	}
+	if err := dao.NewWorkspaceDao(s.helper).CreateMember(&model.WorkspaceMember{
+		WorkspaceID: 1,
+		UserID:      user.ID,
+		Role:        model.WorkspaceRoleMember,
+		Status:      1,
+	}); err != nil {
+		return nil, fmt.Errorf("加入默认工作区失败: %w", err)
+	}
 	return user, nil
 }
 
@@ -745,4 +753,3 @@ func sanitizeUsername(raw string) string {
 	}
 	return out
 }
-

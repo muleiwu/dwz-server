@@ -5,11 +5,19 @@ import "time"
 // CreateShortLinkRequest 创建短网址请求
 type CreateShortLinkRequest struct {
 	OriginalURL string     `json:"original_url" binding:"required,url" example:"https://www.example.com"`
-	Domain      string     `json:"domain" example:"https://short.ly"`
+	Domain      string     `json:"domain" example:"dwz.do"`
 	CustomCode  string     `json:"custom_code" example:"abc123"`
 	Title       string     `json:"title" example:"示例网站"`
 	Description string     `json:"description" example:"这是一个示例网站"`
 	ExpireAt    *time.Time `json:"expire_at" example:"2024-12-31T23:59:59Z"`
+	CampaignID  *uint64    `json:"campaign_id"`
+	TagIDs      []uint64   `json:"tag_ids"`
+	UTMSource   string     `json:"utm_source"`
+	UTMMedium   string     `json:"utm_medium"`
+	UTMCampaign string     `json:"utm_campaign"`
+	UTMTerm     string     `json:"utm_term"`
+	UTMContent  string     `json:"utm_content"`
+	Notes       string     `json:"notes"`
 }
 
 // UpdateShortLinkRequest 更新短网址请求
@@ -19,6 +27,14 @@ type UpdateShortLinkRequest struct {
 	Description string     `json:"description"`
 	ExpireAt    *time.Time `json:"expire_at"`
 	IsActive    *bool      `json:"is_active"`
+	CampaignID  *uint64    `json:"campaign_id"`
+	TagIDs      []uint64   `json:"tag_ids"`
+	UTMSource   string     `json:"utm_source"`
+	UTMMedium   string     `json:"utm_medium"`
+	UTMCampaign string     `json:"utm_campaign"`
+	UTMTerm     string     `json:"utm_term"`
+	UTMContent  string     `json:"utm_content"`
+	Notes       string     `json:"notes"`
 }
 
 // UpdateShortLinkStatusRequest 更新短网址状态请求
@@ -28,26 +44,41 @@ type UpdateShortLinkStatusRequest struct {
 
 // ShortLinkResponse 短网址响应
 type ShortLinkResponse struct {
-	ID          uint64     `json:"id"`
-	ShortCode   string     `json:"short_code"`
-	Domain      string     `json:"domain"`
-	ShortURL    string     `json:"short_url"`
-	OriginalURL string     `json:"original_url"`
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
-	ExpireAt    *time.Time `json:"expire_at"`
-	IsActive    bool       `json:"is_active"`
-	ClickCount  int64      `json:"click_count"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID           uint64        `json:"id"`
+	WorkspaceID  uint64        `json:"workspace_id"`
+	CampaignID   *uint64       `json:"campaign_id"`
+	CampaignName string        `json:"campaign_name,omitempty"`
+	Tags         []TagResponse `json:"tags,omitempty"`
+	ShortCode    string        `json:"short_code"`
+	Domain       string        `json:"domain"`
+	ShortURL     string        `json:"short_url"`
+	OriginalURL  string        `json:"original_url"`
+	Title        string        `json:"title"`
+	Description  string        `json:"description"`
+	UTMSource    string        `json:"utm_source"`
+	UTMMedium    string        `json:"utm_medium"`
+	UTMCampaign  string        `json:"utm_campaign"`
+	UTMTerm      string        `json:"utm_term"`
+	UTMContent   string        `json:"utm_content"`
+	Notes        string        `json:"notes"`
+	ExpireAt     *time.Time    `json:"expire_at"`
+	IsActive     bool          `json:"is_active"`
+	ClickCount   int64         `json:"click_count"`
+	CreatedBy    *uint64       `json:"created_by"`
+	UpdatedBy    *uint64       `json:"updated_by"`
+	CreatedAt    time.Time     `json:"created_at"`
+	UpdatedAt    time.Time     `json:"updated_at"`
 }
 
 // ShortLinkListRequest 短网址列表请求
 type ShortLinkListRequest struct {
-	Page     int    `form:"page" binding:"min=1" example:"1"`
-	PageSize int    `form:"page_size" binding:"min=1,max=100" example:"10"`
-	Domain   string `form:"domain" example:"https://short.ly"`
-	Keyword  string `form:"keyword" example:"example"`
+	Page       int    `form:"page" binding:"min=1" example:"1"`
+	PageSize   int    `form:"page_size" binding:"min=1,max=100" example:"10"`
+	Domain     string `form:"domain" example:"dwz.do"`
+	Keyword    string `form:"keyword" example:"example"`
+	CampaignID uint64 `form:"campaign_id"`
+	TagID      uint64 `form:"tag_id"`
+	CreatedBy  uint64 `form:"created_by"`
 }
 
 // ShortLinkListResponse 短网址列表响应
@@ -94,6 +125,7 @@ type BatchFailedItem struct {
 // DomainResponse 域名响应
 type DomainResponse struct {
 	ID                   uint64    `json:"id"`
+	WorkspaceID          uint64    `json:"workspace_id"`
 	Domain               string    `json:"domain"`
 	Protocol             string    `json:"protocol" example:"https"`
 	SiteName             string    `json:"site_name"`     // 网站名称
@@ -134,14 +166,14 @@ type DomainRequest struct {
 
 // CreateDomainRequest 创建域名请求
 type CreateDomainRequest struct {
-	Domain          string `json:"domain" binding:"required,url" example:"https://short.ly"`
+	Domain          string `json:"domain" binding:"required" example:"dwz.do"`
 	PassQueryParams bool   `json:"pass_query_params" example:"false"`
 	Description     string `json:"description" example:"主要短链域名"`
 }
 
 // UpdateDomainRequest 更新域名请求
 type UpdateDomainRequest struct {
-	Domain          string `json:"domain" binding:"required" example:"https://short.ly"`
+	Domain          string `json:"domain" binding:"required" example:"dwz.do"`
 	IsActive        bool   `json:"is_active" example:"true"`
 	PassQueryParams bool   `json:"pass_query_params" example:"false"`
 	Description     string `json:"description"`

@@ -5,6 +5,7 @@ import "time"
 // OperationLogInfo 操作日志信息
 type OperationLogInfo struct {
 	ID           uint64    `json:"id"`
+	WorkspaceID  uint64    `json:"workspace_id"`
 	UserID       *uint64   `json:"user_id"`
 	Username     string    `json:"username"`
 	Operation    string    `json:"operation"`

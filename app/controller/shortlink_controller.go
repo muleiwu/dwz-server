@@ -3,6 +3,7 @@ package controller
 import (
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/middleware"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
 
@@ -10,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
 type ShortLinkController struct {
@@ -20,6 +21,10 @@ type ShortLinkController struct {
 
 // CreateShortLink 创建短网址
 func (ctrl ShortLinkController) CreateShortLink(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限创建短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	var req dto.CreateShortLinkRequest
@@ -31,7 +36,7 @@ func (ctrl ShortLinkController) CreateShortLink(c httpInterfaces.RouterContextIn
 	clientIP := c.ClientIP()
 
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.CreateShortLink(&req, clientIP)
+	response, err := shortLinkService.CreateShortLinkInWorkspace(&req, clientIP, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -52,7 +57,7 @@ func (ctrl ShortLinkController) GetShortLink(c httpInterfaces.RouterContextInter
 	}
 
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.GetShortLink(id)
+	response, err := shortLinkService.GetShortLinkInWorkspace(id, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -67,6 +72,10 @@ func (ctrl ShortLinkController) GetShortLink(c httpInterfaces.RouterContextInter
 
 // UpdateShortLink 更新短网址
 func (ctrl ShortLinkController) UpdateShortLink(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限更新短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -82,7 +91,7 @@ func (ctrl ShortLinkController) UpdateShortLink(c httpInterfaces.RouterContextIn
 		return
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.UpdateShortLink(id, &req)
+	response, err := shortLinkService.UpdateShortLinkInWorkspace(id, &req, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -97,6 +106,10 @@ func (ctrl ShortLinkController) UpdateShortLink(c httpInterfaces.RouterContextIn
 
 // UpdateShortLinkStatus 更新短网址状态
 func (ctrl ShortLinkController) UpdateShortLinkStatus(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限更新短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -113,7 +126,7 @@ func (ctrl ShortLinkController) UpdateShortLinkStatus(c httpInterfaces.RouterCon
 	}
 
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.UpdateShortLinkStatus(id, req.IsActive)
+	response, err := shortLinkService.UpdateShortLinkStatusInWorkspace(id, req.IsActive, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -128,6 +141,10 @@ func (ctrl ShortLinkController) UpdateShortLinkStatus(c httpInterfaces.RouterCon
 
 // DeleteShortLink 删除短网址
 func (ctrl ShortLinkController) DeleteShortLink(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限删除短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -137,7 +154,7 @@ func (ctrl ShortLinkController) DeleteShortLink(c httpInterfaces.RouterContextIn
 		return
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	err = shortLinkService.DeleteShortLink(id)
+	err = shortLinkService.DeleteShortLinkInWorkspace(id, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -162,7 +179,7 @@ func (ctrl ShortLinkController) GetShortLinkList(c httpInterfaces.RouterContextI
 		return
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.GetShortLinkList(&req)
+	response, err := shortLinkService.GetShortLinkListInWorkspace(&req, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -188,7 +205,7 @@ func (ctrl ShortLinkController) GetShortLinkStatistics(c httpInterfaces.RouterCo
 		days = 7
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.GetShortLinkStatistics(id, days)
+	response, err := shortLinkService.GetShortLinkStatisticsInWorkspace(id, days, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -203,6 +220,10 @@ func (ctrl ShortLinkController) GetShortLinkStatistics(c httpInterfaces.RouterCo
 
 // BatchCreateShortLinks 批量创建短网址
 func (ctrl ShortLinkController) BatchCreateShortLinks(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限创建短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	var req dto.BatchCreateShortLinkRequest
@@ -214,7 +235,7 @@ func (ctrl ShortLinkController) BatchCreateShortLinks(c httpInterfaces.RouterCon
 	// 获取客户端IP
 	clientIP := c.ClientIP()
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.BatchCreateShortLinks(&req, clientIP, helper)
+	response, err := shortLinkService.BatchCreateShortLinksInWorkspace(&req, clientIP, helper, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -265,7 +286,7 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 	shortCode := paramOrCtx(c, "code")
 	if shortCode == "" {
 		// 当shortCode为空时，渲染404页面
-		ctrl.render404Page(c,c.Host())
+		ctrl.render404Page(c, c.Host())
 		return
 	}
 
@@ -285,10 +306,10 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			// 渲染404页面而不是返回JSON错误
-			ctrl.render404Page(c,domain)
+			ctrl.render404Page(c, domain)
 		} else if strings.Contains(err.Error(), "无效") {
 			// 渲染过期页面而不是返回JSON错误
-			ctrl.render404Page(c,domain)
+			ctrl.render404Page(c, domain)
 		} else if strings.Contains(err.Error(), "过期") {
 			// 渲染过期页面而不是返回JSON错误
 			ctrl.renderExpiredPage(c, domain)

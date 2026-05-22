@@ -137,6 +137,7 @@ cors:
     - "Origin"
     - "Content-Type"
     - "Authorization"
+    - "X-Workspace-Id"
 
 # 缓存配置
 cache:

@@ -46,6 +46,7 @@ type UpdateABTestVariantRequest struct {
 // ABTestResponse AB测试响应
 type ABTestResponse struct {
 	ID           uint64                  `json:"id"`
+	WorkspaceID  uint64                  `json:"workspace_id"`
 	ShortLinkID  uint64                  `json:"short_link_id"`
 	Name         string                  `json:"name"`
 	Description  string                  `json:"description"`

@@ -3,6 +3,7 @@ package dao
 import (
 	"time"
 
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	"gorm.io/gorm"
@@ -34,7 +35,19 @@ func (d *ShortLinkDao) FindByShortCode(domain, shortCode string) (*model.ShortLi
 // FindByID 根据ID查找短网址
 func (d *ShortLinkDao) FindByID(id uint64) (*model.ShortLink, error) {
 	var shortLink model.ShortLink
-	err := d.helper.GetDatabase().Where("id = ? AND deleted_at IS NULL", id).First(&shortLink).Error
+	err := d.helper.GetDatabase().Preload("Campaign").Where("id = ? AND deleted_at IS NULL", id).First(&shortLink).Error
+	if err != nil {
+		return nil, err
+	}
+	return &shortLink, nil
+}
+
+func (d *ShortLinkDao) FindByIDInWorkspace(id, workspaceID uint64) (*model.ShortLink, error) {
+	var shortLink model.ShortLink
+	err := d.helper.GetDatabase().
+		Preload("Campaign").
+		Where("id = ? AND workspace_id = ? AND deleted_at IS NULL", id, workspaceID).
+		First(&shortLink).Error
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +87,38 @@ func (d *ShortLinkDao) List(offset, limit int, domain, keyword string) ([]model.
 
 	// 获取列表
 	err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&shortLinks).Error
+	return shortLinks, total, err
+}
+
+func (d *ShortLinkDao) ListInWorkspace(workspaceID uint64, offset, limit int, req *dto.ShortLinkListRequest) ([]model.ShortLink, int64, error) {
+	var shortLinks []model.ShortLink
+	var total int64
+
+	query := d.helper.GetDatabase().Model(&model.ShortLink{}).
+		Where("short_links.workspace_id = ? AND short_links.deleted_at IS NULL", workspaceID)
+
+	if req.Domain != "" {
+		query = query.Where("short_links.domain = ?", req.Domain)
+	}
+	if req.Keyword != "" {
+		keyword := "%" + req.Keyword + "%"
+		query = query.Where("short_links.original_url LIKE ? OR short_links.title LIKE ? OR short_links.description LIKE ?",
+			keyword, keyword, keyword)
+	}
+	if req.CampaignID > 0 {
+		query = query.Where("short_links.campaign_id = ?", req.CampaignID)
+	}
+	if req.CreatedBy > 0 {
+		query = query.Where("short_links.created_by = ?", req.CreatedBy)
+	}
+	if req.TagID > 0 {
+		query = query.Joins("JOIN short_link_tags slt ON slt.short_link_id = short_links.id AND slt.tag_id = ?", req.TagID)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := query.Preload("Campaign").Order("short_links.created_at DESC").Offset(offset).Limit(limit).Find(&shortLinks).Error
 	return shortLinks, total, err
 }
 

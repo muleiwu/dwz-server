@@ -70,6 +70,14 @@ func (s *InitInstallService) CreateAdminUser(username, realName, email, phone, p
 	if err := userDAO.Create(user); err != nil {
 		return err
 	}
+	if err := dao.NewWorkspaceDao(s.helper).CreateMember(&model.WorkspaceMember{
+		WorkspaceID: 1,
+		UserID:      user.ID,
+		Role:        model.WorkspaceRoleOwner,
+		Status:      1,
+	}); err != nil {
+		return err
+	}
 	s.helper.GetLogger().Info(fmt.Sprintf("管理员账户创建完成: %s\n", username))
 	return nil
 }
@@ -350,5 +358,16 @@ func seedInstallAdmin(db *gorm.DB, admin install_bootstrap.AdminPayload) error {
 	if err := user.SetPassword(admin.Password); err != nil {
 		return err
 	}
-	return db.Create(user).Error
+	if err := db.Create(user).Error; err != nil {
+		return err
+	}
+	if err := db.Model(&model.Workspace{}).Where("id = ?", 1).Update("owner_user_id", user.ID).Error; err != nil {
+		return err
+	}
+	return db.Create(&model.WorkspaceMember{
+		WorkspaceID: 1,
+		UserID:      user.ID,
+		Role:        model.WorkspaceRoleOwner,
+		Status:      1,
+	}).Error
 }

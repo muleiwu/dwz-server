@@ -17,19 +17,20 @@ const (
 
 // UserToken 用户Token模型
 type UserToken struct {
-	ID         uint64         `gorm:"primaryKey" json:"id"`
-	UserID     uint64         `gorm:"not null;index" json:"user_id"`                       // 关联用户ID
-	TokenName  string         `gorm:"size:100;not null" json:"token_name"`                 // Token名称
-	TokenType  string         `gorm:"size:20;not null;default:'bearer'" json:"token_type"` // Token类型：bearer 或 signature
-	Token      *string        `gorm:"size:190;uniqueIndex" json:"token"`                   // Bearer Token值，唯一（signature类型为null）
-	AppID      *string        `gorm:"size:64;uniqueIndex" json:"app_id"`                   // 签名认证的 App ID（bearer类型为null）
-	AppSecret  string         `gorm:"size:256" json:"-"`                                   // 加密存储的 App Secret（不在JSON中返回）
-	LastUsedAt *time.Time     `json:"last_used_at"`                                        // 最后使用时间
-	ExpireAt   *time.Time     `json:"expire_at"`                                           // 过期时间，null表示永不过期
-	Status     int8           `gorm:"default:1" json:"status"`                             // 状态：1-正常，0-禁用
-	CreatedAt  time.Time      `json:"created_at"`
-	UpdatedAt  time.Time      `json:"updated_at"`
-	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
+	ID          uint64         `gorm:"primaryKey" json:"id"`
+	WorkspaceID uint64         `gorm:"not null;default:1;index" json:"workspace_id"`
+	UserID      uint64         `gorm:"not null;index" json:"user_id"`                       // 关联用户ID
+	TokenName   string         `gorm:"size:100;not null" json:"token_name"`                 // Token名称
+	TokenType   string         `gorm:"size:20;not null;default:'bearer'" json:"token_type"` // Token类型：bearer 或 signature
+	Token       *string        `gorm:"size:190;uniqueIndex" json:"token"`                   // Bearer Token值，唯一（signature类型为null）
+	AppID       *string        `gorm:"size:64;uniqueIndex" json:"app_id"`                   // 签名认证的 App ID（bearer类型为null）
+	AppSecret   string         `gorm:"size:256" json:"-"`                                   // 加密存储的 App Secret（不在JSON中返回）
+	LastUsedAt  *time.Time     `json:"last_used_at"`                                        // 最后使用时间
+	ExpireAt    *time.Time     `json:"expire_at"`                                           // 过期时间，null表示永不过期
+	Status      int8           `gorm:"default:1" json:"status"`                             // 状态：1-正常，0-禁用
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// 关联查询
 	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`

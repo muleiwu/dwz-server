@@ -60,7 +60,7 @@
 - **点击统计**: 实时记录点击数据，包括IP、地理位置、设备信息
 - **数据分析**: 提供多维度统计分析，包括地理分布、时间分布等
 - **AB测试分析**: 专门的AB测试数据分析和转化率统计
-- **导出功能**: 支持数据导出，便于进一步分析
+- **导出功能**: 支持点击明细 CSV 导出，便于进一步分析
 
 ### 🛡️ 安全与监控
 - **操作日志**: 自动记录所有操作，支持敏感信息脱敏
@@ -368,7 +368,7 @@ docker run -d \
 POST /api/v1/short_links
 {
   "original_url": "https://example.com",
-  "domain": "short.ly",
+  "domain": "dwz.do",
   "custom_code": "abc123"
 }
 
@@ -453,7 +453,7 @@ id_generator:
 
 # 短链接配置
 shortlink:
-  domain: "http://localhost:8080"
+  domain: "dwz.do"
   length: 6
   custom_length: true
 
@@ -497,7 +497,7 @@ id_generator:
 
 # 短链接配置
 shortlink:
-  domain: "http://localhost:8080"
+  domain: "dwz.do"
   length: 6
   custom_length: true
 

@@ -15,6 +15,14 @@
 1. **签名认证（推荐）**：基于 HMAC-SHA256 的安全认证，详见 [签名认证文档](./API_SIGNATURE_AUTH.md)
 2. **Bearer Token 认证**：传统 Token 认证，详见 [Bearer Token 文档](./API_BEARER_AUTH.md)
 
+所有受保护接口支持工作区上下文请求头：
+
+```http
+X-Workspace-Id: 1
+```
+
+未传 `X-Workspace-Id` 时，服务端会自动选择当前用户第一个可用工作区，以兼容旧客户端。
+
 ## 通用响应格式
 
 ### 成功响应
@@ -264,10 +272,16 @@ POST /api/v1/short_links
 ```json
 {
     "original_url": "https://www.example.com/very/long/url",
-    "domain": "https://short.ly",
+    "domain": "dwz.do",
     "custom_code": "mylink",
     "title": "示例网站",
     "description": "这是一个示例网站",
+    "campaign_id": 1,
+    "tag_ids": [1, 2],
+    "utm_source": "newsletter",
+    "utm_medium": "email",
+    "utm_campaign": "spring",
+    "notes": "投放备注",
     "expire_at": "2025-12-31T23:59:59Z"
 }
 ```
@@ -279,6 +293,10 @@ POST /api/v1/short_links
 | custom_code | string | 否 | 自定义短码 |
 | title | string | 否 | 标题 |
 | description | string | 否 | 描述 |
+| campaign_id | number | 否 | 活动 Campaign ID |
+| tag_ids | array | 否 | 标签 Tag ID 列表 |
+| utm_source/utm_medium/utm_campaign/utm_term/utm_content | string | 否 | UTM 参数；服务端会合并到原始 URL query，同名参数以请求字段为准 |
+| notes | string | 否 | 内部备注 |
 | expire_at | string | 否 | 过期时间 |
 
 **响应**
@@ -290,11 +308,19 @@ POST /api/v1/short_links
     "data": {
         "id": 1,
         "short_code": "abc123",
-        "domain": "https://short.ly",
-        "short_url": "https://short.ly/abc123",
-        "original_url": "https://www.example.com/very/long/url",
+        "workspace_id": 1,
+        "campaign_id": 1,
+        "campaign_name": "spring",
+        "tags": [{"id": 1, "name": "推广", "color": "#1677ff"}],
+        "domain": "dwz.do",
+        "short_url": "https://dwz.do/abc123",
+        "original_url": "https://www.example.com/very/long/url?utm_campaign=spring&utm_medium=email&utm_source=newsletter",
         "title": "示例网站",
         "description": "这是一个示例网站",
+        "utm_source": "newsletter",
+        "utm_medium": "email",
+        "utm_campaign": "spring",
+        "notes": "投放备注",
         "expire_at": "2025-12-31T23:59:59Z",
         "is_active": true,
         "click_count": 0,
@@ -321,7 +347,7 @@ POST /api/v1/short_links/batch
         "https://www.example2.com",
         "https://www.example3.com"
     ],
-    "domain": "https://short.ly"
+    "domain": "dwz.do"
 }
 ```
 
@@ -341,7 +367,7 @@ POST /api/v1/short_links/batch
             {
                 "id": 1,
                 "short_code": "abc123",
-                "short_url": "https://short.ly/abc123",
+                "short_url": "https://dwz.do/abc123",
                 "original_url": "https://www.example1.com"
             }
         ],
@@ -404,8 +430,8 @@ GET /api/v1/short_links/:id
     "data": {
         "id": 1,
         "short_code": "abc123",
-        "domain": "https://short.ly",
-        "short_url": "https://short.ly/abc123",
+        "domain": "dwz.do",
+        "short_url": "https://dwz.do/abc123",
         "original_url": "https://www.example.com",
         "title": "示例网站",
         "description": "这是一个示例网站",
@@ -491,6 +517,41 @@ GET /api/v1/short_links/:id/statistics
 
 ---
 
+## 工作区、活动 Campaign 与标签 Tag
+
+### 工作区
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/v1/workspaces` | 当前用户可用工作区 |
+| POST | `/api/v1/workspaces` | 创建工作区并成为所有者 owner |
+| PUT | `/api/v1/workspaces/current` | 更新当前工作区 |
+| GET | `/api/v1/workspaces/current/members` | 当前工作区成员 |
+| POST | `/api/v1/workspaces/current/members` | 添加已有用户到当前工作区 |
+| PUT | `/api/v1/workspaces/current/members/:user_id` | 更新成员角色 |
+| DELETE | `/api/v1/workspaces/current/members/:user_id` | 移除成员 |
+
+### 活动 Campaign
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/v1/campaigns` | 活动列表 |
+| POST | `/api/v1/campaigns` | 创建活动 |
+| GET | `/api/v1/campaigns/:id` | 活动详情 |
+| PUT | `/api/v1/campaigns/:id` | 更新活动 |
+| DELETE | `/api/v1/campaigns/:id` | 删除活动 |
+| GET | `/api/v1/reports/campaigns` | 活动报表 |
+
+### 标签 Tag
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/v1/tags` | 标签列表 |
+| POST | `/api/v1/tags` | 创建标签 |
+| GET | `/api/v1/tags/:id` | 标签详情 |
+| PUT | `/api/v1/tags/:id` | 更新标签 |
+| DELETE | `/api/v1/tags/:id` | 删除标签，短链不会被删除 |
+
 ## 域名管理接口
 
 ### 创建域名
@@ -505,7 +566,7 @@ POST /api/v1/domains
 
 ```json
 {
-    "domain": "short.ly",
+    "domain": "dwz.do",
     "protocol": "https",
     "site_name": "短链接服务",
     "icp_number": "京ICP备12345678号",
@@ -737,6 +798,18 @@ GET /api/v1/click_statistics
 ```
 GET /api/v1/click_statistics/analysis
 ```
+
+响应增加设备、浏览器、操作系统、机器人 Bot 和 UTM 维度字段：`top_devices`、`top_browsers`、`top_os`、`bot_stats`、`top_utm_sources`、`top_utm_campaigns`。支持 `short_link_id`、`campaign_id`、`tag_id`、`device_type`、`is_bot`、`start_date`、`end_date` 过滤。
+
+### 导出点击明细
+
+**请求**
+
+```
+GET /api/v1/click_statistics/export
+```
+
+返回同步 CSV 文件，支持 `short_link_id`、`campaign_id`、`tag_id`、`start_date`、`end_date`、`device_type`、`is_bot`。单次最多 50,000 行，超过时返回 400，需缩小筛选范围。
 
 ---
 

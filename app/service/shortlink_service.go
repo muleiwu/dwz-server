@@ -22,6 +22,8 @@ type ShortLinkService struct {
 	shortLinkDao      *dao.ShortLinkDao
 	clickStatisticDao *dao.ClickStatisticDao
 	domainDao         *dao.DomainDao
+	campaignDao       *dao.CampaignDao
+	tagDao            *dao.TagDao
 	idGenerator       interfaces.IDGenerator // 新的分布式发号器
 	abTestService     *ABTestService         // AB测试服务
 }
@@ -36,6 +38,8 @@ func NewShortLinkService(helper interfaces.HelperInterface, context context.Cont
 		shortLinkDao:      dao.NewShortLinkDao(helper),
 		clickStatisticDao: dao.NewClickStatisticDao(helper),
 		domainDao:         dao.NewDomainDao(helper),
+		campaignDao:       dao.NewCampaignDao(helper),
+		tagDao:            dao.NewTagDao(helper),
 		idGenerator:       helper2.GetIdGenerator(),
 		abTestService:     NewABTestService(helper),
 	}
@@ -43,8 +47,16 @@ func NewShortLinkService(helper interfaces.HelperInterface, context context.Cont
 
 // CreateShortLink 创建短网址
 func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, creatorIP string) (*dto.ShortLinkResponse, error) {
+	return s.CreateShortLinkInWorkspace(req, creatorIP, 1, 0)
+}
+
+func (s *ShortLinkService) CreateShortLinkInWorkspace(req *dto.CreateShortLinkRequest, creatorIP string, workspaceID, userID uint64) (*dto.ShortLinkResponse, error) {
 	// 验证原始URL
 	if _, err := url.ParseRequestURI(req.OriginalURL); err != nil {
+		return nil, errors.New("无效的URL格式")
+	}
+	finalURL, err := mergeUTMToURL(req.OriginalURL, req.UTMSource, req.UTMMedium, req.UTMCampaign, req.UTMTerm, req.UTMContent)
+	if err != nil {
 		return nil, errors.New("无效的URL格式")
 	}
 
@@ -70,18 +82,40 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 	if !domainInfo.IsActive {
 		return nil, errors.New("域名未激活")
 	}
+	if domainInfo.WorkspaceID != workspaceID {
+		return nil, errors.New("域名不存在")
+	}
+
+	if err := s.validateCampaignAndTags(workspaceID, req.CampaignID, req.TagIDs); err != nil {
+		return nil, err
+	}
+
+	var actor *uint64
+	if userID > 0 {
+		actor = &userID
+	}
 
 	// 创建短网址记录
 	shortLink := &model.ShortLink{
+		WorkspaceID: workspaceID,
+		CampaignID:  req.CampaignID,
 		Domain:      domain,
 		DomainID:    domainInfo.ID,
 		Protocol:    domainInfo.Protocol,
-		OriginalURL: req.OriginalURL,
+		OriginalURL: finalURL,
 		Title:       req.Title,
 		Description: req.Description,
+		UTMSource:   req.UTMSource,
+		UTMMedium:   req.UTMMedium,
+		UTMCampaign: req.UTMCampaign,
+		UTMTerm:     req.UTMTerm,
+		UTMContent:  req.UTMContent,
+		Notes:       req.Notes,
 		ExpireAt:    req.ExpireAt,
 		IsActive:    true,
 		CreatorIP:   creatorIP,
+		CreatedBy:   actor,
+		UpdatedBy:   actor,
 	}
 
 	// 处理自定义短代码
@@ -146,6 +180,11 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 	if err := s.shortLinkDao.Create(shortLink); err != nil {
 		return nil, err
 	}
+	if len(req.TagIDs) > 0 {
+		if err := s.tagDao.ReplaceShortLinkTags(shortLink.ID, req.TagIDs); err != nil {
+			return nil, err
+		}
+	}
 
 	// 缓存到Redis
 	s.cacheShortLink(shortLink)
@@ -155,7 +194,14 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 
 // GetShortLink 根据ID获取短网址
 func (s *ShortLinkService) GetShortLink(id uint64) (*dto.ShortLinkResponse, error) {
+	return s.GetShortLinkInWorkspace(id, 1)
+}
+
+func (s *ShortLinkService) GetShortLinkInWorkspace(id, workspaceID uint64) (*dto.ShortLinkResponse, error) {
 	shortLink, err := s.shortLinkDao.FindByID(id)
+	if workspaceID > 0 {
+		shortLink, err = s.shortLinkDao.FindByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("短网址不存在")
@@ -168,7 +214,14 @@ func (s *ShortLinkService) GetShortLink(id uint64) (*dto.ShortLinkResponse, erro
 
 // UpdateShortLink 更新短网址
 func (s *ShortLinkService) UpdateShortLink(id uint64, req *dto.UpdateShortLinkRequest) (*dto.ShortLinkResponse, error) {
+	return s.UpdateShortLinkInWorkspace(id, req, 1, 0)
+}
+
+func (s *ShortLinkService) UpdateShortLinkInWorkspace(id uint64, req *dto.UpdateShortLinkRequest, workspaceID, userID uint64) (*dto.ShortLinkResponse, error) {
 	shortLink, err := s.shortLinkDao.FindByID(id)
+	if workspaceID > 0 {
+		shortLink, err = s.shortLinkDao.FindByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("短网址不存在")
@@ -183,6 +236,12 @@ func (s *ShortLinkService) UpdateShortLink(id uint64, req *dto.UpdateShortLinkRe
 		}
 		shortLink.OriginalURL = req.OriginalURL
 	}
+	if err := s.validateCampaignAndTags(workspaceID, req.CampaignID, req.TagIDs); err != nil {
+		return nil, err
+	}
+	if req.CampaignID != nil {
+		shortLink.CampaignID = req.CampaignID
+	}
 
 	if req.Title != "" {
 		shortLink.Title = req.Title
@@ -191,15 +250,46 @@ func (s *ShortLinkService) UpdateShortLink(id uint64, req *dto.UpdateShortLinkRe
 	if req.Description != "" {
 		shortLink.Description = req.Description
 	}
+	if req.UTMSource != "" {
+		shortLink.UTMSource = req.UTMSource
+	}
+	if req.UTMMedium != "" {
+		shortLink.UTMMedium = req.UTMMedium
+	}
+	if req.UTMCampaign != "" {
+		shortLink.UTMCampaign = req.UTMCampaign
+	}
+	if req.UTMTerm != "" {
+		shortLink.UTMTerm = req.UTMTerm
+	}
+	if req.UTMContent != "" {
+		shortLink.UTMContent = req.UTMContent
+	}
+	if req.Notes != "" {
+		shortLink.Notes = req.Notes
+	}
+	finalURL, err := mergeUTMToURL(shortLink.OriginalURL, shortLink.UTMSource, shortLink.UTMMedium, shortLink.UTMCampaign, shortLink.UTMTerm, shortLink.UTMContent)
+	if err != nil {
+		return nil, errors.New("无效的URL格式")
+	}
+	shortLink.OriginalURL = finalURL
 
 	shortLink.ExpireAt = req.ExpireAt
 
 	if req.IsActive != nil {
 		shortLink.IsActive = *req.IsActive
 	}
+	if userID > 0 {
+		shortLink.UpdatedBy = &userID
+	}
 
 	if err := s.shortLinkDao.Update(shortLink); err != nil {
 		return nil, err
+	}
+	if req.TagIDs != nil {
+		if err := s.tagDao.ReplaceShortLinkTags(shortLink.ID, req.TagIDs); err != nil {
+			return nil, err
+		}
 	}
 
 	// 更新缓存
@@ -210,7 +300,14 @@ func (s *ShortLinkService) UpdateShortLink(id uint64, req *dto.UpdateShortLinkRe
 
 // UpdateShortLinkStatus 更新短网址状态
 func (s *ShortLinkService) UpdateShortLinkStatus(id uint64, isActive bool) (*dto.ShortLinkResponse, error) {
+	return s.UpdateShortLinkStatusInWorkspace(id, isActive, 1, 0)
+}
+
+func (s *ShortLinkService) UpdateShortLinkStatusInWorkspace(id uint64, isActive bool, workspaceID, userID uint64) (*dto.ShortLinkResponse, error) {
 	shortLink, err := s.shortLinkDao.FindByID(id)
+	if workspaceID > 0 {
+		shortLink, err = s.shortLinkDao.FindByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("短网址不存在")
@@ -220,6 +317,9 @@ func (s *ShortLinkService) UpdateShortLinkStatus(id uint64, isActive bool) (*dto
 
 	// 更新状态
 	shortLink.IsActive = isActive
+	if userID > 0 {
+		shortLink.UpdatedBy = &userID
+	}
 
 	if err := s.shortLinkDao.Update(shortLink); err != nil {
 		return nil, err
@@ -233,7 +333,14 @@ func (s *ShortLinkService) UpdateShortLinkStatus(id uint64, isActive bool) (*dto
 
 // DeleteShortLink 删除短网址
 func (s *ShortLinkService) DeleteShortLink(id uint64) error {
+	return s.DeleteShortLinkInWorkspace(id, 1)
+}
+
+func (s *ShortLinkService) DeleteShortLinkInWorkspace(id, workspaceID uint64) error {
 	shortLink, err := s.shortLinkDao.FindByID(id)
+	if workspaceID > 0 {
+		shortLink, err = s.shortLinkDao.FindByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("短网址不存在")
@@ -258,6 +365,10 @@ func (s *ShortLinkService) DeleteShortLink(id uint64) error {
 
 // GetShortLinkList 获取短网址列表
 func (s *ShortLinkService) GetShortLinkList(req *dto.ShortLinkListRequest) (*dto.ShortLinkListResponse, error) {
+	return s.GetShortLinkListInWorkspace(req, 1)
+}
+
+func (s *ShortLinkService) GetShortLinkListInWorkspace(req *dto.ShortLinkListRequest, workspaceID uint64) (*dto.ShortLinkListResponse, error) {
 	// 设置默认值
 	if req.Page < 1 {
 		req.Page = 1
@@ -267,7 +378,7 @@ func (s *ShortLinkService) GetShortLinkList(req *dto.ShortLinkListRequest) (*dto
 	}
 
 	offset := (req.Page - 1) * req.PageSize
-	shortLinks, total, err := s.shortLinkDao.List(offset, req.PageSize, req.Domain, req.Keyword)
+	shortLinks, total, err := s.shortLinkDao.ListInWorkspace(workspaceID, offset, req.PageSize, req)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +428,7 @@ func (s *ShortLinkService) RedirectShortLink(domain, shortCode, clientIP, userAg
 
 	// 异步记录点击统计
 	if clientIP != "" { // 只有非预览请求才记录统计
-		go s.recordClickStatistic(shortLink.ID, clientIP, userAgent, referer, queryParams)
+		go s.recordClickStatistic(shortLink, clientIP, userAgent, referer, queryParams)
 		go s.incrementClickCount(shortLink.ID)
 	}
 
@@ -361,13 +472,13 @@ func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientI
 		if abTestInfo, err := s.abTestService.GetABTestRedirectInfo(shortLink.ID, clientIP, userAgent); err == nil && abTestInfo != nil {
 			// 有AB测试，使用AB测试的目标URL
 			targetURL = abTestInfo.TargetURL
-			go s.recordClickStatistic(shortLink.ID, clientIP, userAgent, referer, queryString)
+			go s.recordClickStatistic(shortLink, clientIP, userAgent, referer, queryString)
 			go s.incrementClickCount(shortLink.ID)
 			go s.abTestService.RecordABTestClick(abTestInfo, clientIP, userAgent, referer, queryString)
 		} else {
 			// 没有AB测试，使用原始URL
 			targetURL = shortLink.OriginalURL
-			go s.recordClickStatistic(shortLink.ID, clientIP, userAgent, referer, queryString)
+			go s.recordClickStatistic(shortLink, clientIP, userAgent, referer, queryString)
 			go s.incrementClickCount(shortLink.ID)
 		}
 	} else {
@@ -430,7 +541,14 @@ func (s *ShortLinkService) findShortLinkByCode(domain, shortCode string) (*model
 
 // GetShortLinkStatistics 获取短网址统计信息
 func (s *ShortLinkService) GetShortLinkStatistics(id uint64, days int) (*dto.ShortLinkStatisticResponse, error) {
+	return s.GetShortLinkStatisticsInWorkspace(id, days, 1)
+}
+
+func (s *ShortLinkService) GetShortLinkStatisticsInWorkspace(id uint64, days int, workspaceID uint64) (*dto.ShortLinkStatisticResponse, error) {
 	shortLink, err := s.shortLinkDao.FindByID(id)
+	if workspaceID > 0 {
+		shortLink, err = s.shortLinkDao.FindByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("短网址不存在")
@@ -473,6 +591,10 @@ func (s *ShortLinkService) GetShortLinkStatistics(id uint64, days int) (*dto.Sho
 
 // BatchCreateShortLinks 批量创建短网址
 func (s *ShortLinkService) BatchCreateShortLinks(req *dto.BatchCreateShortLinkRequest, creatorIP string, helper interfaces.HelperInterface) (*dto.BatchCreateShortLinkResponse, error) {
+	return s.BatchCreateShortLinksInWorkspace(req, creatorIP, helper, 1, 0)
+}
+
+func (s *ShortLinkService) BatchCreateShortLinksInWorkspace(req *dto.BatchCreateShortLinkRequest, creatorIP string, helper interfaces.HelperInterface, workspaceID, userID uint64) (*dto.BatchCreateShortLinkResponse, error) {
 	success := make([]dto.ShortLinkResponse, 0)
 	failed := make([]dto.BatchFailedItem, 0)
 
@@ -487,7 +609,7 @@ func (s *ShortLinkService) BatchCreateShortLinks(req *dto.BatchCreateShortLinkRe
 			Domain:      domain,
 		}
 
-		response, err := s.CreateShortLink(createReq, creatorIP)
+		response, err := s.CreateShortLinkInWorkspace(createReq, creatorIP, workspaceID, userID)
 		if err != nil {
 			failed = append(failed, dto.BatchFailedItem{
 				URL:   originalURL,
@@ -542,14 +664,27 @@ func (s *ShortLinkService) removeCacheShortLink(domain, shortCode string) {
 }
 
 // recordClickStatistic 记录点击统计
-func (s *ShortLinkService) recordClickStatistic(shortLinkID uint64, clientIP, userAgent, referer string, queryParams string) {
+func (s *ShortLinkService) recordClickStatistic(shortLink *model.ShortLink, clientIP, userAgent, referer string, queryParams string) {
 	region := s.helper.GetIPRegion().Lookup(clientIP)
+	metadata := parseTrafficMetadata(userAgent)
 	statistic := &model.ClickStatistic{
-		ShortLinkID: shortLinkID,
+		WorkspaceID: shortLink.WorkspaceID,
+		CampaignID:  shortLink.CampaignID,
+		ShortLinkID: shortLink.ID,
 		IP:          domain_validate.TruncateString(clientIP, 45),
 		UserAgent:   domain_validate.TruncateString(userAgent, 1024),
 		Referer:     domain_validate.TruncateString(referer, 2048),
 		QueryParams: domain_validate.TruncateString(queryParams, 2048), // 截断过长的参数
+		UTMSource:   domain_validate.TruncateString(shortLink.UTMSource, 255),
+		UTMMedium:   domain_validate.TruncateString(shortLink.UTMMedium, 255),
+		UTMCampaign: domain_validate.TruncateString(shortLink.UTMCampaign, 255),
+		UTMTerm:     domain_validate.TruncateString(shortLink.UTMTerm, 255),
+		UTMContent:  domain_validate.TruncateString(shortLink.UTMContent, 255),
+		DeviceType:  domain_validate.TruncateString(metadata.DeviceType, 50),
+		Browser:     domain_validate.TruncateString(metadata.Browser, 100),
+		OS:          domain_validate.TruncateString(metadata.OS, 100),
+		IsBot:       metadata.IsBot,
+		BotName:     domain_validate.TruncateString(metadata.BotName, 100),
 		Country:     domain_validate.TruncateString(region.Country, 100),
 		Province:    domain_validate.TruncateString(region.Province, 100),
 		City:        domain_validate.TruncateString(region.City, 100),
@@ -567,18 +702,92 @@ func (s *ShortLinkService) incrementClickCount(shortLinkID uint64) {
 
 // modelToResponse 将模型转换为响应格式
 func (s *ShortLinkService) modelToResponse(shortLink *model.ShortLink) *dto.ShortLinkResponse {
-	return &dto.ShortLinkResponse{
-		ID:          shortLink.ID,
-		ShortCode:   shortLink.GetShortCode(),
-		Domain:      shortLink.Domain,
-		ShortURL:    shortLink.GetFullURL(),
-		OriginalURL: shortLink.OriginalURL,
-		Title:       shortLink.Title,
-		Description: shortLink.Description,
-		ExpireAt:    shortLink.ExpireAt,
-		IsActive:    shortLink.IsActive,
-		ClickCount:  shortLink.ClickCount,
-		CreatedAt:   shortLink.CreatedAt,
-		UpdatedAt:   shortLink.UpdatedAt,
+	tags, _ := s.tagDao.GetTagsByShortLinkID(shortLink.ID)
+	tagResponses := make([]dto.TagResponse, 0, len(tags))
+	for _, tag := range tags {
+		tagResponses = append(tagResponses, dto.TagResponse{
+			ID:          tag.ID,
+			WorkspaceID: tag.WorkspaceID,
+			Name:        tag.Name,
+			Color:       tag.Color,
+			CreatedAt:   tag.CreatedAt,
+			UpdatedAt:   tag.UpdatedAt,
+		})
 	}
+	campaignName := ""
+	if shortLink.Campaign != nil {
+		campaignName = shortLink.Campaign.Name
+	}
+	return &dto.ShortLinkResponse{
+		ID:           shortLink.ID,
+		WorkspaceID:  shortLink.WorkspaceID,
+		CampaignID:   shortLink.CampaignID,
+		CampaignName: campaignName,
+		Tags:         tagResponses,
+		ShortCode:    shortLink.GetShortCode(),
+		Domain:       shortLink.Domain,
+		ShortURL:     shortLink.GetFullURL(),
+		OriginalURL:  shortLink.OriginalURL,
+		Title:        shortLink.Title,
+		Description:  shortLink.Description,
+		UTMSource:    shortLink.UTMSource,
+		UTMMedium:    shortLink.UTMMedium,
+		UTMCampaign:  shortLink.UTMCampaign,
+		UTMTerm:      shortLink.UTMTerm,
+		UTMContent:   shortLink.UTMContent,
+		Notes:        shortLink.Notes,
+		ExpireAt:     shortLink.ExpireAt,
+		IsActive:     shortLink.IsActive,
+		ClickCount:   shortLink.ClickCount,
+		CreatedBy:    shortLink.CreatedBy,
+		UpdatedBy:    shortLink.UpdatedBy,
+		CreatedAt:    shortLink.CreatedAt,
+		UpdatedAt:    shortLink.UpdatedAt,
+	}
+}
+
+func (s *ShortLinkService) validateCampaignAndTags(workspaceID uint64, campaignID *uint64, tagIDs []uint64) error {
+	if campaignID != nil && *campaignID > 0 {
+		if _, err := s.campaignDao.FindByID(*campaignID, workspaceID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("活动不存在")
+			}
+			return err
+		}
+	}
+	if len(tagIDs) > 0 {
+		tags, err := s.tagDao.FindMany(tagIDs, workspaceID)
+		if err != nil {
+			return err
+		}
+		if len(tags) != len(tagIDs) {
+			return errors.New("标签不存在")
+		}
+	}
+	return nil
+}
+
+func mergeUTMToURL(rawURL, source, medium, campaign, term, content string) (string, error) {
+	parsedURL, err := url.ParseRequestURI(rawURL)
+	if err != nil {
+		return "", err
+	}
+	query := parsedURL.Query()
+	if source != "" {
+		query.Set("utm_source", source)
+	}
+	if medium != "" {
+		query.Set("utm_medium", medium)
+	}
+	if campaign != "" {
+		query.Set("utm_campaign", campaign)
+	}
+	if term != "" {
+		query.Set("utm_term", term)
+	}
+	if content != "" {
+		query.Set("utm_content", content)
+	}
+	parsedURL.RawQuery = query.Encode()
+	return parsedURL.String(), nil
 }
