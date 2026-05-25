@@ -23,7 +23,7 @@
    - Gitee [https://gitee.com/muleiwu/dwz-admin-webui](https://gitee.com/muleiwu/dwz-admin-webui)
    - GitHub[https://github.com/muleiwu/dwz-admin-webui](https://github.com/muleiwu/dwz-admin-webui)
 3. 文档地址
-   - https://www.mliev.com/docs/dwz
+   - https://mdoc.cc/mliev/dwz
 
 ###  📞 加群获取帮助
 

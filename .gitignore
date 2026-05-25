@@ -7,3 +7,5 @@ AGENTS.md
 WARP.md
 go.work
 go.work.sum
+/.claude/
+/config/install.lock

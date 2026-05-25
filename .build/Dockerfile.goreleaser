@@ -1,0 +1,28 @@
+FROM alpine:latest
+
+# 安装ca证书和时区数据
+RUN apk --no-cache add ca-certificates tzdata
+
+# 设置时区
+RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone
+
+# 设置工作目录
+WORKDIR /app
+
+# 从 GoReleaser 构建上下文复制预编译二进制
+COPY dwz-server /app/dwz
+
+# 创建日志和配置目录
+RUN mkdir -p logs && \
+    mkdir -p config
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health/simple || exit 1
+
+# 启动应用
+CMD ["./dwz"]
