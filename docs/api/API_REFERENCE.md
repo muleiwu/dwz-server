@@ -840,6 +840,16 @@ GET /api/v1/click_statistics/analysis
 
 响应增加设备、浏览器、操作系统、机器人 Bot 和 UTM 维度字段：`top_devices`、`top_browsers`、`top_os`、`bot_stats`、`top_utm_sources`、`top_utm_campaigns`。支持 `short_link_id`、`campaign_id`、`tag_id`、`device_type`、`is_bot`、`start_date`、`end_date` 过滤。
 
+### 获取地图地理聚合
+
+**请求**
+
+```
+GET /api/v1/click_statistics/geo-analysis
+```
+
+地图专用地理聚合，不做 Top N 截断。支持 `level=country|province|city`，默认 `country`；支持 `short_link_id`、`campaign_id`、`route_id`、`tag_id`、`country`、`province`、`device_type`、`is_bot`、`start_date`、`end_date` 过滤。响应包含 `total_clicks`、`unique_ips`、`level`、`country`、`province` 与 `regions`。
+
 ### 导出点击明细
 
 **请求**

@@ -133,7 +133,7 @@ func (d *ClickStatisticDao) applyFilters(query *gorm.DB, workspaceID uint64, req
 		query = query.Where("click_statistics.click_date >= ?", req.StartDate)
 	}
 	if !req.EndDate.IsZero() {
-		query = query.Where("click_statistics.click_date <= ?", req.EndDate)
+		query = query.Where("click_statistics.click_date < ?", req.EndDate)
 	}
 	return query
 }
@@ -323,6 +323,46 @@ func (d *ClickStatisticDao) GetAnalysisInWorkspace(workspaceID uint64, req *dto.
 		Group(dateSQL).
 		Order("date").
 		Find(&analysis.DailyStats)
+
+	return analysis, nil
+}
+
+func (d *ClickStatisticDao) GetGeoAnalysisInWorkspace(workspaceID uint64, req *dto.ClickStatisticListRequest, level string) (*dto.ClickStatisticGeoAnalysisResponse, error) {
+	analysis := &dto.ClickStatisticGeoAnalysisResponse{
+		Level:    level,
+		Country:  req.Country,
+		Province: req.Province,
+		Regions:  []dto.GeoRegionStatistic{},
+	}
+
+	if err := d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Count(&analysis.TotalClicks).Error; err != nil {
+		return nil, err
+	}
+	if err := d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Distinct("ip").
+		Count(&analysis.UniqueIPs).Error; err != nil {
+		return nil, err
+	}
+
+	column := "country"
+	switch level {
+	case "province":
+		column = "province"
+	case "city":
+		column = "city"
+	}
+	columnSQL := "click_statistics." + column
+
+	err := d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Select(columnSQL + " AS name, COUNT(*) as count").
+		Where(columnSQL + " != ''").
+		Group(columnSQL).
+		Order("count DESC").
+		Find(&analysis.Regions).Error
+	if err != nil {
+		return nil, err
+	}
 
 	return analysis, nil
 }

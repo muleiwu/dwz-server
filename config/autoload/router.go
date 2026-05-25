@@ -202,6 +202,7 @@ func (Router) InitConfig() map[string]any {
 				{
 					clickStats.GET("", controller.ClickStatisticController{}.GetClickStatisticList)
 					clickStats.GET("/analysis", controller.ClickStatisticController{}.GetClickStatisticAnalysis)
+					clickStats.GET("/geo-analysis", controller.ClickStatisticController{}.GetClickStatisticGeoAnalysis)
 					clickStats.GET("/export", controller.ClickStatisticController{}.ExportCSV)
 				}
 

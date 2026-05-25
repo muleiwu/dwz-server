@@ -2,9 +2,14 @@ package service
 
 import (
 	"bytes"
+	"context"
+	"crypto/sha1"
 	"encoding/csv"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
@@ -14,16 +19,24 @@ import (
 )
 
 type ClickStatisticService struct {
+	helper            interfaces.HelperInterface
 	clickStatisticDao *dao.ClickStatisticDao
 	shortLinkDao      *dao.ShortLinkDao
 }
 
 func NewClickStatisticService(helper interfaces.HelperInterface) *ClickStatisticService {
 	return &ClickStatisticService{
+		helper:            helper,
 		clickStatisticDao: dao.NewClickStatisticDao(helper),
 		shortLinkDao:      dao.NewShortLinkDao(helper),
 	}
 }
+
+const (
+	clickStatisticAnalysisCachePrefix  = "click_statistics:analysis"
+	clickStatisticAnalysisCacheVersion = "v1"
+	clickStatisticAnalysisCacheTTL     = 5 * time.Minute
+)
 
 // GetClickStatisticList 获取点击统计列表
 func (s *ClickStatisticService) GetClickStatisticList(req *dto.ClickStatisticListRequest) (*dto.ClickStatisticListResponse, error) {
@@ -70,10 +83,112 @@ func (s *ClickStatisticService) GetClickStatisticAnalysis(shortLinkID uint64, da
 
 func (s *ClickStatisticService) GetClickStatisticAnalysisInWorkspace(workspaceID uint64, req *dto.ClickStatisticListRequest, days int) (*dto.ClickStatisticAnalysisResponse, error) {
 	if req.StartDate.IsZero() && req.EndDate.IsZero() {
-		req.EndDate = time.Now()
-		req.StartDate = req.EndDate.AddDate(0, 0, -days)
+		req.StartDate, req.EndDate = defaultClickStatisticDateRange(days)
 	}
-	return s.clickStatisticDao.GetAnalysisInWorkspace(workspaceID, req)
+
+	var cached dto.ClickStatisticAnalysisResponse
+	cacheKey := s.analysisCacheKey("summary", workspaceID, req, "")
+	if s.getCache(cacheKey, &cached) == nil {
+		return &cached, nil
+	}
+
+	analysis, err := s.clickStatisticDao.GetAnalysisInWorkspace(workspaceID, req)
+	if err != nil {
+		return nil, err
+	}
+	s.setCache(cacheKey, analysis)
+	return analysis, nil
+}
+
+func (s *ClickStatisticService) GetClickStatisticGeoAnalysisInWorkspace(workspaceID uint64, req *dto.ClickStatisticListRequest, level string, days int) (*dto.ClickStatisticGeoAnalysisResponse, error) {
+	level, err := normalizeGeoAnalysisLevel(level)
+	if err != nil {
+		return nil, err
+	}
+	if req.StartDate.IsZero() && req.EndDate.IsZero() {
+		req.StartDate, req.EndDate = defaultClickStatisticDateRange(days)
+	}
+
+	var cached dto.ClickStatisticGeoAnalysisResponse
+	cacheKey := s.analysisCacheKey("geo", workspaceID, req, level)
+	if s.getCache(cacheKey, &cached) == nil {
+		return &cached, nil
+	}
+
+	analysis, err := s.clickStatisticDao.GetGeoAnalysisInWorkspace(workspaceID, req, level)
+	if err != nil {
+		return nil, err
+	}
+	s.setCache(cacheKey, analysis)
+	return analysis, nil
+}
+
+func defaultClickStatisticDateRange(days int) (time.Time, time.Time) {
+	if days < 1 || days > 365 {
+		days = 7
+	}
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	return today.AddDate(0, 0, -(days - 1)), today.AddDate(0, 0, 1)
+}
+
+func normalizeGeoAnalysisLevel(level string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(level)) {
+	case "", "country":
+		return "country", nil
+	case "province":
+		return "province", nil
+	case "city":
+		return "city", nil
+	default:
+		return "", errors.New("地理统计级别必须为 country、province 或 city")
+	}
+}
+
+func (s *ClickStatisticService) analysisCacheKey(kind string, workspaceID uint64, req *dto.ClickStatisticListRequest, level string) string {
+	isBot := ""
+	if req.IsBot != nil {
+		isBot = strconv.FormatBool(*req.IsBot)
+	}
+	raw := strings.Join([]string{
+		clickStatisticAnalysisCacheVersion,
+		kind,
+		"workspace_id=" + strconv.FormatUint(workspaceID, 10),
+		"level=" + level,
+		"short_link_id=" + strconv.FormatUint(req.ShortLinkID, 10),
+		"campaign_id=" + strconv.FormatUint(req.CampaignID, 10),
+		"route_id=" + strconv.FormatUint(req.RouteID, 10),
+		"tag_id=" + strconv.FormatUint(req.TagID, 10),
+		"device_type=" + req.DeviceType,
+		"is_bot=" + isBot,
+		"ip=" + req.IP,
+		"country=" + req.Country,
+		"province=" + req.Province,
+		"city=" + req.City,
+		"isp=" + req.ISP,
+		"start_date=" + req.StartDate.Format(time.RFC3339Nano),
+		"end_date=" + req.EndDate.Format(time.RFC3339Nano),
+	}, "|")
+	sum := sha1.Sum([]byte(raw))
+	return fmt.Sprintf("%s:%s:%s", clickStatisticAnalysisCachePrefix, kind, hex.EncodeToString(sum[:]))
+}
+
+func (s *ClickStatisticService) getCache(key string, dest any) error {
+	cache := s.helper.GetCache()
+	if cache == nil {
+		return errors.New("cache unavailable")
+	}
+	return cache.Get(context.Background(), key, dest)
+}
+
+func (s *ClickStatisticService) setCache(key string, value any) {
+	cache := s.helper.GetCache()
+	if cache == nil {
+		return
+	}
+	if err := cache.Set(context.Background(), key, value, clickStatisticAnalysisCacheTTL); err != nil && s.helper.GetLogger() != nil {
+		s.helper.GetLogger().Warn("写入点击统计分析缓存失败: " + err.Error())
+	}
 }
 
 // GetClickStatisticAnalysisByDateRange 按日期范围获取点击统计分析

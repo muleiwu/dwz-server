@@ -82,6 +82,22 @@ type ClickStatisticAnalysisResponse struct {
 	DailyStats      []DailyStatistic    `json:"daily_stats"`  // 日统计
 }
 
+// ClickStatisticGeoAnalysisResponse 地理访问聚合响应
+type ClickStatisticGeoAnalysisResponse struct {
+	TotalClicks int64                `json:"total_clicks"`
+	UniqueIPs   int64                `json:"unique_ips"`
+	Level       string               `json:"level"`
+	Country     string               `json:"country,omitempty"`
+	Province    string               `json:"province,omitempty"`
+	Regions     []GeoRegionStatistic `json:"regions"`
+}
+
+// GeoRegionStatistic 地理区域访问统计
+type GeoRegionStatistic struct {
+	Name  string `json:"name"`
+	Count int64  `json:"count"`
+}
+
 // CountryStatistic 国家统计
 type CountryStatistic struct {
 	Country string `json:"country"`
