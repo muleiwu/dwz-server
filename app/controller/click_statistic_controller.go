@@ -64,6 +64,9 @@ func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c httpInterfaces.
 		CampaignID:  parseUintQuery(c.Query("campaign_id")),
 		RouteID:     parseUintQuery(c.Query("route_id")),
 		TagID:       parseUintQuery(c.Query("tag_id")),
+		Country:     c.Query("country"),
+		Province:    c.Query("province"),
+		City:        c.Query("city"),
 		DeviceType:  c.Query("device_type"),
 	}
 	if isBotStr := c.Query("is_bot"); isBotStr != "" {
