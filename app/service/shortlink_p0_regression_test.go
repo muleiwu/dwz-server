@@ -178,6 +178,93 @@ func TestParseTrafficMetadataUnknownAndBot(t *testing.T) {
 	}
 }
 
+func TestLinkSecurityURLRulesAndPasswordChallenge(t *testing.T) {
+	helper := newShortLinkRegressionHelper(t)
+	db := helper.GetDatabase()
+	if err := db.Create(&model.Domain{
+		WorkspaceID: 1,
+		Protocol:    "https",
+		Domain:      "dwz.do",
+		IsActive:    true,
+	}).Error; err != nil {
+		t.Fatalf("seed domain: %v", err)
+	}
+
+	securitySvc := NewLinkSecurityService(helper)
+	if _, err := securitySvc.CreateURLRule(1, 1, &dto.SecurityURLRuleRequest{
+		RuleType: model.SecurityRuleTypeDomain,
+		Action:   model.SecurityRuleActionBlock,
+		Pattern:  "example.com",
+	}); err != nil {
+		t.Fatalf("create block rule: %v", err)
+	}
+	if _, err := securitySvc.CreateURLRule(1, 1, &dto.SecurityURLRuleRequest{
+		RuleType: model.SecurityRuleTypeDomain,
+		Action:   model.SecurityRuleActionAllow,
+		Pattern:  "good.example.com",
+	}); err != nil {
+		t.Fatalf("create allow rule: %v", err)
+	}
+
+	shortLinkSvc := NewShortLinkService(helper, context.Background())
+	if _, err := shortLinkSvc.CreateShortLinkInWorkspace(&dto.CreateShortLinkRequest{
+		OriginalURL: "https://bad.example.com/path",
+		Domain:      "dwz.do",
+		CustomCode:  "blocked",
+	}, "203.0.113.10", 1, 7); err == nil || !strings.Contains(err.Error(), "安全规则") {
+		t.Fatalf("expected URL rule rejection, got %v", err)
+	}
+
+	password := "secret-pass"
+	createResp, err := shortLinkSvc.CreateShortLinkInWorkspace(&dto.CreateShortLinkRequest{
+		OriginalURL: "https://good.example.com/landing",
+		Domain:      "dwz.do",
+		CustomCode:  "safe",
+		Security: &dto.LinkSecurityRequest{
+			Password:      &password,
+			ReportEnabled: boolPtr(true),
+			BotPolicy:     model.LinkBotPolicyRecordOnly,
+			IPPolicy:      model.LinkIPPolicyOff,
+		},
+	}, "203.0.113.10", 1, 7)
+	if err != nil {
+		t.Fatalf("create password link: %v", err)
+	}
+	if !createResp.SecurityEnabled || createResp.SecuritySummary == "未启用" || !createResp.ReportEnabled {
+		t.Fatalf("security response not populated: %+v", createResp)
+	}
+
+	_, err = shortLinkSvc.ResolveRedirectWithSecurity(
+		"dwz.do", "safe", "8.8.8.8", "Mozilla/5.0", "", "", "",
+	)
+	if !errors.Is(err, ErrSecurityPasswordRequired) {
+		t.Fatalf("expected password challenge, got %v", err)
+	}
+	var clickCount int64
+	if err := db.Model(&model.ClickStatistic{}).Where("short_link_id = ?", createResp.ID).Count(&clickCount).Error; err != nil {
+		t.Fatalf("count clicks: %v", err)
+	}
+	if clickCount != 0 {
+		t.Fatalf("password challenge should not count as click, got %d", clickCount)
+	}
+	waitForModelCount(t, db, &model.LinkSecurityEvent{}, "short_link_id = ?", createResp.ID, 1)
+
+	_, token, _, err := securitySvc.VerifyPassword("dwz.do", "safe", password, "8.8.8.8", "Mozilla/5.0")
+	if err != nil {
+		t.Fatalf("verify password: %v", err)
+	}
+	decision, err := shortLinkSvc.ResolveRedirectWithSecurity(
+		"dwz.do", "safe", "8.8.8.8", "Mozilla/5.0", "", "", token,
+	)
+	if err != nil {
+		t.Fatalf("redirect after password: %v", err)
+	}
+	if decision.TargetURL != "https://good.example.com/landing" {
+		t.Fatalf("unexpected target after password: %s", decision.TargetURL)
+	}
+	waitForModelCount(t, db, &model.ClickStatistic{}, "short_link_id = ?", createResp.ID, 1)
+}
+
 func waitForModelCount(t *testing.T, db *gorm.DB, modelValue any, query string, id uint64, want int64) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
@@ -196,9 +283,14 @@ func waitForModelCount(t *testing.T, db *gorm.DB, modelValue any, query string, 
 	}
 }
 
+func boolPtr(value bool) *bool {
+	return &value
+}
+
 func newShortLinkRegressionHelper(t *testing.T) *shortLinkRegressionHelper {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open("file:shortlink_p0_regression?mode=memory&cache=shared"), &gorm.Config{})
+	dbName := strings.NewReplacer("/", "_", " ", "_").Replace(t.Name())
+	db, err := gorm.Open(sqlite.Open("file:"+dbName+"?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
@@ -215,6 +307,11 @@ func newShortLinkRegressionHelper(t *testing.T) *shortLinkRegressionHelper {
 		&model.Tag{},
 		&model.ShortLinkTag{},
 		&model.ShortLink{},
+		&model.LinkSecuritySetting{},
+		&model.LinkSecurityIPRule{},
+		&model.SecurityURLRule{},
+		&model.AbuseReport{},
+		&model.LinkSecurityEvent{},
 		&model.ClickStatistic{},
 		&model.ABTest{},
 		&model.ABTestVariant{},

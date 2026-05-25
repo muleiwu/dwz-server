@@ -114,6 +114,28 @@ func (d *ShortLinkDao) ListInWorkspace(workspaceID uint64, offset, limit int, re
 	if req.TagID > 0 {
 		query = query.Joins("JOIN short_link_tags slt ON slt.short_link_id = short_links.id AND slt.tag_id = ?", req.TagID)
 	}
+	switch req.SecurityStatus {
+	case "none":
+		query = query.Joins("LEFT JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.id IS NULL OR (lss.password_enabled = ? AND lss.access_window_start IS NULL AND lss.access_window_end IS NULL AND lss.max_clicks IS NULL AND lss.ip_policy = ? AND lss.bot_policy <> ? AND lss.report_enabled = ? AND lss.url_blocked = ?)",
+				false, model.LinkIPPolicyOff, model.LinkBotPolicyBlockKnownBots, false, false)
+	case "enabled":
+		query = query.Joins("JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.password_enabled = ? OR lss.access_window_start IS NOT NULL OR lss.access_window_end IS NOT NULL OR lss.max_clicks IS NOT NULL OR lss.ip_policy <> ? OR lss.bot_policy = ? OR lss.report_enabled = ? OR lss.url_blocked = ?",
+				true, model.LinkIPPolicyOff, model.LinkBotPolicyBlockKnownBots, true, true)
+	case "password":
+		query = query.Joins("JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.password_enabled = ?", true)
+	case "restricted":
+		query = query.Joins("JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.access_window_start IS NOT NULL OR lss.access_window_end IS NOT NULL OR lss.max_clicks IS NOT NULL OR lss.ip_policy <> ? OR lss.bot_policy = ?",
+				model.LinkIPPolicyOff, model.LinkBotPolicyBlockKnownBots)
+	case "url_blocked":
+		query = query.Joins("JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.url_blocked = ?", true)
+	case "reported":
+		query = query.Where("EXISTS (SELECT 1 FROM abuse_reports ar WHERE ar.short_link_id = short_links.id AND ar.workspace_id = short_links.workspace_id)")
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err

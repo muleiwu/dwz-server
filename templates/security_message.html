@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.SiteName}}</title>
+    {{template "styles" .}}
+</head>
+<body>
+    {{template "header" .}}
+
+    <main class="error-section">
+        <div class="container">
+            <div class="error-content">
+                <div class="error-icon">✓</div>
+                <h1 class="error-title">{{.Title}}</h1>
+                <p class="error-message">{{.Message}}</p>
+                <div class="action-buttons">
+                    <a href="/" class="btn btn-primary">返回首页</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {{template "footer" .}}
+</body>
+</html>

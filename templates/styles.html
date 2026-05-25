@@ -379,6 +379,26 @@
         margin-bottom: 2rem;
     }
 
+    .password-form {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        align-items: stretch;
+        margin-top: 1.5rem;
+    }
+
+    .password-input {
+        min-width: 0;
+        width: min(280px, 100%);
+        padding: 0.7rem 0.9rem;
+        border-radius: 0.75rem;
+        border: 1px solid var(--glass-border);
+        background: var(--surface);
+        color: var(--text-main);
+        font-size: 0.95rem;
+        box-shadow: var(--shadow-sm);
+    }
+
     /* Shared Button Styles */
     .btn {
         display: inline-block;
@@ -542,6 +562,15 @@
 
         .features {
             grid-template-columns: 1fr;
+        }
+
+        .password-form {
+            flex-direction: column;
+        }
+
+        .password-input,
+        .password-form .btn {
+            width: 100%;
         }
     }
 </style>

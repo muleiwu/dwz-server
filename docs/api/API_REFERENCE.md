@@ -552,6 +552,45 @@ GET /api/v1/short_links/:id/statistics
 | PUT | `/api/v1/tags/:id` | 更新标签 |
 | DELETE | `/api/v1/tags/:id` | 删除标签，短链不会被删除 |
 
+## 链接安全 Link Security
+
+受保护接口继续使用 `X-Workspace-Id` 工作区上下文；公开接口不需要登录。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/v1/short_links/:id/security` | 获取短链安全配置 |
+| PUT | `/api/v1/short_links/:id/security` | 更新访问密码、时间窗、最大访问次数、IP/Bot 策略和举报入口 |
+| POST | `/api/v1/short_links/:id/security/rescan` | 使用当前 URL 安全规则重扫短链 |
+| GET | `/api/v1/security/url_rules` | URL 安全规则列表 |
+| POST | `/api/v1/security/url_rules` | 创建域名/关键词 allow/block 规则 |
+| PUT | `/api/v1/security/url_rules/:id` | 更新 URL 安全规则 |
+| DELETE | `/api/v1/security/url_rules/:id` | 删除 URL 安全规则 |
+| GET | `/api/v1/security/events` | 安全事件列表 |
+| GET | `/api/v1/abuse_reports` | 滥用举报列表 |
+| PUT | `/api/v1/abuse_reports/:id` | 处理举报，可选择禁用短链 |
+| POST | `/api/v1/public/link_access/password` | 公开访问密码验证 |
+| POST | `/api/v1/public/abuse_reports` | 公开滥用举报提交 |
+
+短链创建/更新可附带 `security` 对象：
+
+```json
+{
+  "security": {
+    "password": "secret",
+    "password_enabled": true,
+    "access_window_start": "2026-06-01T00:00:00+08:00",
+    "access_window_end": "2026-06-30T23:59:59+08:00",
+    "max_clicks": 1000,
+    "ip_policy": "off",
+    "ip_rules": [{"cidr": "203.0.113.0/24"}],
+    "bot_policy": "record_only",
+    "report_enabled": true
+  }
+}
+```
+
+短链响应增加 `security_enabled`、`security_summary`、`report_enabled`。短链列表支持 `security_status=none|enabled|password|restricted|url_blocked|reported`。
+
 ## 域名管理接口
 
 ### 创建域名

@@ -51,6 +51,12 @@ func (Router) InitConfig() map[string]any {
 				compatLogin.POST("/login", controller.AuthController{}.Login)
 			}
 
+			public := router.Group("/api/v1/public")
+			{
+				public.POST("/link_access/password", controller.LinkSecurityController{}.SubmitPassword)
+				public.POST("/abuse_reports", controller.LinkSecurityController{}.CreatePublicAbuseReport)
+			}
+
 			// 受保护的 API：操作日志 + 鉴权
 			v1 := router.Group("/api/v1")
 			v1.Use(middleware.OperationLogMiddleware())
@@ -81,6 +87,9 @@ func (Router) InitConfig() map[string]any {
 					short.PUT("/:id/status", controller.ShortLinkController{}.UpdateShortLinkStatus)
 					short.DELETE("/:id", controller.ShortLinkController{}.DeleteShortLink)
 					short.GET("/:id/statistics", controller.ShortLinkController{}.GetShortLinkStatistics)
+					short.GET("/:id/security", controller.LinkSecurityController{}.GetShortLinkSecurity)
+					short.PUT("/:id/security", controller.LinkSecurityController{}.UpdateShortLinkSecurity)
+					short.POST("/:id/security/rescan", controller.LinkSecurityController{}.RescanShortLink)
 					short.POST("/batch", controller.ShortLinkController{}.BatchCreateShortLinks)
 				}
 
@@ -116,6 +125,21 @@ func (Router) InitConfig() map[string]any {
 				reports := v1.Group("/reports")
 				{
 					reports.GET("/campaigns", controller.CampaignController{}.Reports)
+				}
+
+				security := v1.Group("/security")
+				{
+					security.GET("/url_rules", controller.LinkSecurityController{}.ListURLRules)
+					security.POST("/url_rules", controller.LinkSecurityController{}.CreateURLRule)
+					security.PUT("/url_rules/:id", controller.LinkSecurityController{}.UpdateURLRule)
+					security.DELETE("/url_rules/:id", controller.LinkSecurityController{}.DeleteURLRule)
+					security.GET("/events", controller.LinkSecurityController{}.ListEvents)
+				}
+
+				abuseReports := v1.Group("/abuse_reports")
+				{
+					abuseReports.GET("", controller.LinkSecurityController{}.ListAbuseReports)
+					abuseReports.PUT("/:id", controller.LinkSecurityController{}.UpdateAbuseReport)
 				}
 
 				domains := v1.Group("/domains")

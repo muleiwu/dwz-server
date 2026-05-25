@@ -17,15 +17,16 @@ import (
 )
 
 type ShortLinkService struct {
-	helper            interfaces.HelperInterface
-	context           context.Context
-	shortLinkDao      *dao.ShortLinkDao
-	clickStatisticDao *dao.ClickStatisticDao
-	domainDao         *dao.DomainDao
-	campaignDao       *dao.CampaignDao
-	tagDao            *dao.TagDao
-	idGenerator       interfaces.IDGenerator // 新的分布式发号器
-	abTestService     *ABTestService         // AB测试服务
+	helper              interfaces.HelperInterface
+	context             context.Context
+	shortLinkDao        *dao.ShortLinkDao
+	clickStatisticDao   *dao.ClickStatisticDao
+	domainDao           *dao.DomainDao
+	campaignDao         *dao.CampaignDao
+	tagDao              *dao.TagDao
+	idGenerator         interfaces.IDGenerator // 新的分布式发号器
+	abTestService       *ABTestService         // AB测试服务
+	linkSecurityService *LinkSecurityService
 }
 
 // LoggerAdapter 适配器，让zap日志符合util.Logger接口
@@ -33,15 +34,16 @@ type LoggerAdapter struct{}
 
 func NewShortLinkService(helper interfaces.HelperInterface, context context.Context) *ShortLinkService {
 	return &ShortLinkService{
-		helper:            helper,
-		context:           context,
-		shortLinkDao:      dao.NewShortLinkDao(helper),
-		clickStatisticDao: dao.NewClickStatisticDao(helper),
-		domainDao:         dao.NewDomainDao(helper),
-		campaignDao:       dao.NewCampaignDao(helper),
-		tagDao:            dao.NewTagDao(helper),
-		idGenerator:       helper2.GetIdGenerator(),
-		abTestService:     NewABTestService(helper),
+		helper:              helper,
+		context:             context,
+		shortLinkDao:        dao.NewShortLinkDao(helper),
+		clickStatisticDao:   dao.NewClickStatisticDao(helper),
+		domainDao:           dao.NewDomainDao(helper),
+		campaignDao:         dao.NewCampaignDao(helper),
+		tagDao:              dao.NewTagDao(helper),
+		idGenerator:         helper2.GetIdGenerator(),
+		abTestService:       NewABTestService(helper),
+		linkSecurityService: NewLinkSecurityService(helper),
 	}
 }
 
@@ -88,6 +90,9 @@ func (s *ShortLinkService) CreateShortLinkInWorkspace(req *dto.CreateShortLinkRe
 
 	if err := s.validateCampaignAndTags(workspaceID, req.CampaignID, req.TagIDs); err != nil {
 		return nil, err
+	}
+	if result := s.linkSecurityService.ScanURL(workspaceID, finalURL); !result.Safe {
+		return nil, errors.New("目标 URL 命中安全规则: " + result.Reason)
 	}
 
 	var actor *uint64
@@ -185,6 +190,9 @@ func (s *ShortLinkService) CreateShortLinkInWorkspace(req *dto.CreateShortLinkRe
 			return nil, err
 		}
 	}
+	if err := s.linkSecurityService.ApplyCreateSecurity(shortLink, userID, req.Security); err != nil {
+		return nil, err
+	}
 
 	// 缓存到Redis
 	s.cacheShortLink(shortLink)
@@ -272,6 +280,9 @@ func (s *ShortLinkService) UpdateShortLinkInWorkspace(id uint64, req *dto.Update
 	if err != nil {
 		return nil, errors.New("无效的URL格式")
 	}
+	if result := s.linkSecurityService.ScanURL(workspaceID, finalURL); !result.Safe {
+		return nil, errors.New("目标 URL 命中安全规则: " + result.Reason)
+	}
 	shortLink.OriginalURL = finalURL
 
 	shortLink.ExpireAt = req.ExpireAt
@@ -288,6 +299,11 @@ func (s *ShortLinkService) UpdateShortLinkInWorkspace(id uint64, req *dto.Update
 	}
 	if req.TagIDs != nil {
 		if err := s.tagDao.ReplaceShortLinkTags(shortLink.ID, req.TagIDs); err != nil {
+			return nil, err
+		}
+	}
+	if req.Security != nil {
+		if _, err := s.linkSecurityService.UpsertSecurity(shortLink.ID, shortLink.WorkspaceID, userID, req.Security); err != nil {
 			return nil, err
 		}
 	}
@@ -437,6 +453,14 @@ func (s *ShortLinkService) RedirectShortLink(domain, shortCode, clientIP, userAg
 
 // RedirectShortLinkWithQuery 短网址跳转并记录统计（支持GET参数透传）
 func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientIP, userAgent, referer, queryString string) (string, error) {
+	decision, err := s.ResolveRedirectWithSecurity(domain, shortCode, clientIP, userAgent, referer, queryString, "")
+	if err != nil {
+		return "", err
+	}
+	return decision.TargetURL, nil
+}
+
+func (s *ShortLinkService) ResolveRedirectWithSecurity(domain, shortCode, clientIP, userAgent, referer, queryString, accessToken string) (*RedirectDecision, error) {
 
 	// 先从缓存查找
 	shortLink, err := s.getShortLinkFromCache(domain, shortCode)
@@ -446,9 +470,9 @@ func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientI
 		shortLink, err = s.findShortLinkByCode(domain, shortCode)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return "", errors.New("短网址不存在")
+				return nil, errors.New("短网址不存在")
 			}
-			return "", err
+			return nil, err
 		}
 
 		// 缓存到Redis
@@ -457,12 +481,23 @@ func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientI
 
 	// 检查是否激活
 	if !shortLink.IsActive {
-		return "", errors.New("短网址已被禁用")
+		return nil, errors.New("短网址已被禁用")
 	}
 
 	// 检查是否过期
 	if shortLink.IsExpired() {
-		return "", errors.New("短网址已过期")
+		return nil, errors.New("短网址已过期")
+	}
+
+	setting, err := s.linkSecurityService.EvaluateRedirect(shortLink, domain, shortCode, clientIP, userAgent, referer, accessToken)
+	if err != nil {
+		return &RedirectDecision{
+			ShortLink:     shortLink,
+			Security:      setting,
+			Reason:        err.Error(),
+			PasswordURL:   "/" + shortCode,
+			ReportEnabled: setting != nil && setting.ReportEnabled,
+		}, err
 	}
 
 	// 检查是否有AB测试
@@ -490,7 +525,7 @@ func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientI
 	domainInfo, err := s.domainDao.FindByDomain(domain)
 	if err != nil {
 		// 如果查找域名配置失败，默认不透传参数，直接返回目标URL
-		return targetURL, nil
+		return &RedirectDecision{TargetURL: targetURL, ShortLink: shortLink, Security: setting, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
 	}
 
 	// 构建最终的跳转URL
@@ -502,7 +537,7 @@ func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientI
 		origURL, err := url.Parse(targetURL)
 		if err != nil {
 			// 如果解析失败，返回目标URL
-			return targetURL, nil
+			return &RedirectDecision{TargetURL: targetURL, ShortLink: shortLink, Security: setting, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
 		}
 
 		// 解析查询参数
@@ -523,7 +558,7 @@ func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientI
 		finalURL = origURL.String()
 	}
 
-	return finalURL, nil
+	return &RedirectDecision{TargetURL: finalURL, ShortLink: shortLink, Security: setting, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
 }
 
 // findShortLinkByCode 通过短代码查找短链
@@ -718,31 +753,42 @@ func (s *ShortLinkService) modelToResponse(shortLink *model.ShortLink) *dto.Shor
 	if shortLink.Campaign != nil {
 		campaignName = shortLink.Campaign.Name
 	}
+	securityEnabled := false
+	securitySummary := "未启用"
+	reportEnabled := false
+	if security, err := s.linkSecurityService.GetSecurity(shortLink.ID, shortLink.WorkspaceID); err == nil && security != nil {
+		securityEnabled = security.SecurityEnabled
+		securitySummary = security.SecuritySummary
+		reportEnabled = security.ReportEnabled
+	}
 	return &dto.ShortLinkResponse{
-		ID:           shortLink.ID,
-		WorkspaceID:  shortLink.WorkspaceID,
-		CampaignID:   shortLink.CampaignID,
-		CampaignName: campaignName,
-		Tags:         tagResponses,
-		ShortCode:    shortLink.GetShortCode(),
-		Domain:       shortLink.Domain,
-		ShortURL:     shortLink.GetFullURL(),
-		OriginalURL:  shortLink.OriginalURL,
-		Title:        shortLink.Title,
-		Description:  shortLink.Description,
-		UTMSource:    shortLink.UTMSource,
-		UTMMedium:    shortLink.UTMMedium,
-		UTMCampaign:  shortLink.UTMCampaign,
-		UTMTerm:      shortLink.UTMTerm,
-		UTMContent:   shortLink.UTMContent,
-		Notes:        shortLink.Notes,
-		ExpireAt:     shortLink.ExpireAt,
-		IsActive:     shortLink.IsActive,
-		ClickCount:   shortLink.ClickCount,
-		CreatedBy:    shortLink.CreatedBy,
-		UpdatedBy:    shortLink.UpdatedBy,
-		CreatedAt:    shortLink.CreatedAt,
-		UpdatedAt:    shortLink.UpdatedAt,
+		ID:              shortLink.ID,
+		WorkspaceID:     shortLink.WorkspaceID,
+		CampaignID:      shortLink.CampaignID,
+		CampaignName:    campaignName,
+		Tags:            tagResponses,
+		ShortCode:       shortLink.GetShortCode(),
+		Domain:          shortLink.Domain,
+		ShortURL:        shortLink.GetFullURL(),
+		OriginalURL:     shortLink.OriginalURL,
+		Title:           shortLink.Title,
+		Description:     shortLink.Description,
+		UTMSource:       shortLink.UTMSource,
+		UTMMedium:       shortLink.UTMMedium,
+		UTMCampaign:     shortLink.UTMCampaign,
+		UTMTerm:         shortLink.UTMTerm,
+		UTMContent:      shortLink.UTMContent,
+		Notes:           shortLink.Notes,
+		ExpireAt:        shortLink.ExpireAt,
+		IsActive:        shortLink.IsActive,
+		ClickCount:      shortLink.ClickCount,
+		CreatedBy:       shortLink.CreatedBy,
+		UpdatedBy:       shortLink.UpdatedBy,
+		SecurityEnabled: securityEnabled,
+		SecuritySummary: securitySummary,
+		ReportEnabled:   reportEnabled,
+		CreatedAt:       shortLink.CreatedAt,
+		UpdatedAt:       shortLink.UpdatedAt,
 	}
 }
 

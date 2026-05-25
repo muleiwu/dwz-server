@@ -11,6 +11,7 @@
 | 统计分析 | 点击记录、地域/IP/来源/时间分布、设备/浏览器/OS/机器人 Bot/UTM 分布、CSV 导出 |
 | 工作区 | 默认工作区、多工作区切换、成员管理、所有者 owner/管理员 admin/成员 member/只读 viewer 权限 |
 | 营销归因 | 活动 Campaign、标签 Tag、短链 UTM Builder、活动报表 |
+| 链接安全 | 访问密码 Password、时间窗/最大访问次数、IP allowlist/blocklist、Bot 策略、URL 本地规则扫描、滥用举报 Abuse report、安全事件 |
 | 部署 | MySQL、PostgreSQL、SQLite，Redis/本地缓存，安装向导 |
 
 ## P0 已落地
@@ -26,5 +27,5 @@
 
 | 优先级 | 功能 |
 | --- | --- |
-| P1 | 二维码产品化、高级路由、访问密码、Webhook、Link-in-bio |
-| P2 | DNS/SSL 运维、风控举报、异步导出任务、数据保留和隐私治理 |
+| P1 | 二维码产品化、高级路由、Webhook、Link-in-bio |
+| P2 | DNS/SSL 运维、异步导出任务、数据保留和隐私治理 |
