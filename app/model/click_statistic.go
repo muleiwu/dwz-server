@@ -7,6 +7,8 @@ type ClickStatistic struct {
 	ID          uint64    `gorm:"primaryKey" json:"id"`
 	WorkspaceID uint64    `gorm:"not null;default:1;index" json:"workspace_id"`
 	CampaignID  *uint64   `gorm:"index" json:"campaign_id"`
+	RouteID     *uint64   `gorm:"index" json:"route_id"`
+	RouteName   string    `gorm:"size:100" json:"route_name"`
 	ShortLinkID uint64    `gorm:"index:idx_short_link_date;not null" json:"short_link_id"`
 	IP          string    `gorm:"size:45" json:"ip"`
 	UserAgent   string    `gorm:"size:1024" json:"user_agent"`

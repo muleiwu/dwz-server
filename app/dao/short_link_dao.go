@@ -136,6 +136,16 @@ func (d *ShortLinkDao) ListInWorkspace(workspaceID uint64, offset, limit int, re
 	case "reported":
 		query = query.Where("EXISTS (SELECT 1 FROM abuse_reports ar WHERE ar.short_link_id = short_links.id AND ar.workspace_id = short_links.workspace_id)")
 	}
+	switch req.RoutingStatus {
+	case "none":
+		query = query.Where("NOT EXISTS (SELECT 1 FROM link_routes lr WHERE lr.short_link_id = short_links.id AND lr.workspace_id = short_links.workspace_id AND lr.deleted_at IS NULL)")
+	case "enabled":
+		query = query.Where("EXISTS (SELECT 1 FROM link_routes lr WHERE lr.short_link_id = short_links.id AND lr.workspace_id = short_links.workspace_id AND lr.is_active = ? AND lr.deleted_at IS NULL)", true)
+	case "fallback":
+		query = query.Where("short_links.fallback_url <> '' AND EXISTS (SELECT 1 FROM link_routes lr WHERE lr.short_link_id = short_links.id AND lr.workspace_id = short_links.workspace_id AND lr.is_active = ? AND lr.deleted_at IS NULL)", true)
+	case "disabled":
+		query = query.Where("EXISTS (SELECT 1 FROM link_routes lr WHERE lr.short_link_id = short_links.id AND lr.workspace_id = short_links.workspace_id AND lr.deleted_at IS NULL) AND NOT EXISTS (SELECT 1 FROM link_routes lr2 WHERE lr2.short_link_id = short_links.id AND lr2.workspace_id = short_links.workspace_id AND lr2.is_active = ? AND lr2.deleted_at IS NULL)", true)
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err

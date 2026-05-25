@@ -265,6 +265,122 @@ func TestLinkSecurityURLRulesAndPasswordChallenge(t *testing.T) {
 	waitForModelCount(t, db, &model.ClickStatistic{}, "short_link_id = ?", createResp.ID, 1)
 }
 
+func TestAdvancedRoutingPriorityFallbackAndABPrecedence(t *testing.T) {
+	helper := newShortLinkRegressionHelper(t)
+	db := helper.GetDatabase()
+	if err := db.Create(&model.Domain{
+		WorkspaceID:     1,
+		Protocol:        "https",
+		Domain:          "dwz.do",
+		PassQueryParams: true,
+		IsActive:        true,
+	}).Error; err != nil {
+		t.Fatalf("seed domain: %v", err)
+	}
+
+	shortLinkSvc := NewShortLinkService(helper, context.Background())
+	createResp, err := shortLinkSvc.CreateShortLinkInWorkspace(&dto.CreateShortLinkRequest{
+		OriginalURL:  "https://example.com/default",
+		FallbackURL:  "https://example.com/fallback",
+		RedirectCode: 307,
+		Domain:       "dwz.do",
+		CustomCode:   "route",
+	}, "203.0.113.10", 1, 7)
+	if err != nil {
+		t.Fatalf("create routed short link: %v", err)
+	}
+	if createResp.RedirectCode != 307 || createResp.FallbackURL == "" {
+		t.Fatalf("routing fields missing in response: %+v", createResp)
+	}
+
+	routeSvc := NewLinkRouteService(helper)
+	routeResp, err := routeSvc.CreateRoute(createResp.ID, 1, 7, &dto.LinkRouteRequest{
+		Name:      "移动端广告",
+		Priority:  10,
+		TargetURL: "https://example.com/mobile",
+		ConditionGroups: []dto.LinkRouteConditionGroupRequest{
+			{
+				Conditions: []dto.LinkRouteConditionRequest{
+					{ConditionType: model.RouteConditionDeviceType, Operator: model.RouteOperatorEq, ConditionValue: "mobile"},
+					{ConditionType: model.RouteConditionQueryParam, Operator: model.RouteOperatorEq, ConditionKey: "utm", ConditionValue: "ad"},
+				},
+			},
+			{
+				Conditions: []dto.LinkRouteConditionRequest{
+					{ConditionType: model.RouteConditionLanguage, Operator: model.RouteOperatorPrefix, ConditionValue: "zh"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("create route: %v", err)
+	}
+
+	abSvc := NewABTestService(helper)
+	abResp, err := abSvc.CreateABTestInWorkspace(&dto.CreateABTestRequest{
+		ShortLinkID:  createResp.ID,
+		Name:         "fallback split",
+		TrafficSplit: "weighted",
+		Variants: []dto.CreateABTestVariantRequest{
+			{Name: "A", TargetURL: "https://example.com/ab-a", Weight: 99, IsControl: true},
+			{Name: "B", TargetURL: "https://example.com/ab-b", Weight: 1, IsControl: false},
+		},
+	}, 1)
+	if err != nil {
+		t.Fatalf("create ab test: %v", err)
+	}
+	if _, err := abSvc.StartABTestInWorkspace(abResp.ID, &dto.StartABTestRequest{}, 1); err != nil {
+		t.Fatalf("start ab test: %v", err)
+	}
+
+	decision, err := shortLinkSvc.ResolveRedirectWithSecurityAndLanguage(
+		"dwz.do",
+		"route",
+		"8.8.8.8",
+		"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+		"https://ref.example",
+		"utm=ad&click_id=1",
+		"",
+		"en-US,en;q=0.9",
+	)
+	if err != nil {
+		t.Fatalf("resolve route: %v", err)
+	}
+	if decision.TargetURL != "https://example.com/mobile?click_id=1&utm=ad" || decision.StatusCode != 307 || decision.Route == nil || decision.Route.ID != routeResp.ID {
+		t.Fatalf("route decision mismatch: %+v", decision)
+	}
+	waitForModelCount(t, db, &model.ClickStatistic{}, "short_link_id = ?", createResp.ID, 1)
+	var stat model.ClickStatistic
+	if err := db.Where("short_link_id = ?", createResp.ID).First(&stat).Error; err != nil {
+		t.Fatalf("load route statistic: %v", err)
+	}
+	if stat.RouteID == nil || *stat.RouteID != routeResp.ID || stat.RouteName != "移动端广告" {
+		t.Fatalf("route statistic not recorded: %+v", stat)
+	}
+	var abClicks int64
+	if err := db.Model(&model.ABTestClickStatistic{}).Where("ab_test_id = ?", abResp.ID).Count(&abClicks).Error; err != nil {
+		t.Fatalf("count ab clicks: %v", err)
+	}
+	if abClicks != 0 {
+		t.Fatalf("route hit should skip A/B statistics, got %d", abClicks)
+	}
+
+	fallbackURL, err := shortLinkSvc.RedirectShortLinkWithQuery(
+		"dwz.do",
+		"route",
+		"8.8.4.4",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36",
+		"https://ref.example",
+		"click_id=2",
+	)
+	if err != nil {
+		t.Fatalf("resolve fallback route: %v", err)
+	}
+	if fallbackURL != "https://example.com/fallback?click_id=2" {
+		t.Fatalf("fallback should be used when active routes miss, got %s", fallbackURL)
+	}
+}
+
 func waitForModelCount(t *testing.T, db *gorm.DB, modelValue any, query string, id uint64, want int64) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
@@ -307,6 +423,9 @@ func newShortLinkRegressionHelper(t *testing.T) *shortLinkRegressionHelper {
 		&model.Tag{},
 		&model.ShortLinkTag{},
 		&model.ShortLink{},
+		&model.LinkRoute{},
+		&model.LinkRouteConditionGroup{},
+		&model.LinkRouteCondition{},
 		&model.LinkSecuritySetting{},
 		&model.LinkSecurityIPRule{},
 		&model.SecurityURLRule{},

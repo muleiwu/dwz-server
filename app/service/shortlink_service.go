@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
@@ -27,7 +28,10 @@ type ShortLinkService struct {
 	idGenerator         interfaces.IDGenerator // 新的分布式发号器
 	abTestService       *ABTestService         // AB测试服务
 	linkSecurityService *LinkSecurityService
+	linkRouteService    *LinkRouteService
 }
+
+const httpStatusFound = 302
 
 // LoggerAdapter 适配器，让zap日志符合util.Logger接口
 type LoggerAdapter struct{}
@@ -44,6 +48,7 @@ func NewShortLinkService(helper interfaces.HelperInterface, context context.Cont
 		idGenerator:         helper2.GetIdGenerator(),
 		abTestService:       NewABTestService(helper),
 		linkSecurityService: NewLinkSecurityService(helper),
+		linkRouteService:    NewLinkRouteService(helper),
 	}
 }
 
@@ -94,6 +99,21 @@ func (s *ShortLinkService) CreateShortLinkInWorkspace(req *dto.CreateShortLinkRe
 	if result := s.linkSecurityService.ScanURL(workspaceID, finalURL); !result.Safe {
 		return nil, errors.New("目标 URL 命中安全规则: " + result.Reason)
 	}
+	if req.FallbackURL != "" {
+		if _, err := url.ParseRequestURI(req.FallbackURL); err != nil {
+			return nil, errors.New("兜底地址 URL 格式无效")
+		}
+		if result := s.linkSecurityService.ScanURL(workspaceID, req.FallbackURL); !result.Safe {
+			return nil, errors.New("兜底地址命中安全规则: " + result.Reason)
+		}
+	}
+	redirectCode := req.RedirectCode
+	if redirectCode == 0 {
+		redirectCode = httpStatusFound
+	}
+	if !isAllowedRedirectCode(redirectCode) {
+		return nil, errors.New("跳转状态码仅支持 301、302、307、308")
+	}
 
 	var actor *uint64
 	if userID > 0 {
@@ -102,25 +122,27 @@ func (s *ShortLinkService) CreateShortLinkInWorkspace(req *dto.CreateShortLinkRe
 
 	// 创建短网址记录
 	shortLink := &model.ShortLink{
-		WorkspaceID: workspaceID,
-		CampaignID:  req.CampaignID,
-		Domain:      domain,
-		DomainID:    domainInfo.ID,
-		Protocol:    domainInfo.Protocol,
-		OriginalURL: finalURL,
-		Title:       req.Title,
-		Description: req.Description,
-		UTMSource:   req.UTMSource,
-		UTMMedium:   req.UTMMedium,
-		UTMCampaign: req.UTMCampaign,
-		UTMTerm:     req.UTMTerm,
-		UTMContent:  req.UTMContent,
-		Notes:       req.Notes,
-		ExpireAt:    req.ExpireAt,
-		IsActive:    true,
-		CreatorIP:   creatorIP,
-		CreatedBy:   actor,
-		UpdatedBy:   actor,
+		WorkspaceID:  workspaceID,
+		CampaignID:   req.CampaignID,
+		Domain:       domain,
+		DomainID:     domainInfo.ID,
+		Protocol:     domainInfo.Protocol,
+		OriginalURL:  finalURL,
+		FallbackURL:  req.FallbackURL,
+		RedirectCode: redirectCode,
+		Title:        req.Title,
+		Description:  req.Description,
+		UTMSource:    req.UTMSource,
+		UTMMedium:    req.UTMMedium,
+		UTMCampaign:  req.UTMCampaign,
+		UTMTerm:      req.UTMTerm,
+		UTMContent:   req.UTMContent,
+		Notes:        req.Notes,
+		ExpireAt:     req.ExpireAt,
+		IsActive:     true,
+		CreatorIP:    creatorIP,
+		CreatedBy:    actor,
+		UpdatedBy:    actor,
 	}
 
 	// 处理自定义短代码
@@ -243,6 +265,24 @@ func (s *ShortLinkService) UpdateShortLinkInWorkspace(id uint64, req *dto.Update
 			return nil, errors.New("无效的URL格式")
 		}
 		shortLink.OriginalURL = req.OriginalURL
+	}
+	if req.FallbackURL != nil {
+		fallbackURL := strings.TrimSpace(*req.FallbackURL)
+		if fallbackURL != "" {
+			if _, err := url.ParseRequestURI(fallbackURL); err != nil {
+				return nil, errors.New("兜底地址 URL 格式无效")
+			}
+			if result := s.linkSecurityService.ScanURL(workspaceID, fallbackURL); !result.Safe {
+				return nil, errors.New("兜底地址命中安全规则: " + result.Reason)
+			}
+		}
+		shortLink.FallbackURL = fallbackURL
+	}
+	if req.RedirectCode != nil {
+		if !isAllowedRedirectCode(*req.RedirectCode) {
+			return nil, errors.New("跳转状态码仅支持 301、302、307、308")
+		}
+		shortLink.RedirectCode = *req.RedirectCode
 	}
 	if err := s.validateCampaignAndTags(workspaceID, req.CampaignID, req.TagIDs); err != nil {
 		return nil, err
@@ -461,6 +501,10 @@ func (s *ShortLinkService) RedirectShortLinkWithQuery(domain, shortCode, clientI
 }
 
 func (s *ShortLinkService) ResolveRedirectWithSecurity(domain, shortCode, clientIP, userAgent, referer, queryString, accessToken string) (*RedirectDecision, error) {
+	return s.ResolveRedirectWithSecurityAndLanguage(domain, shortCode, clientIP, userAgent, referer, queryString, accessToken, "")
+}
+
+func (s *ShortLinkService) ResolveRedirectWithSecurityAndLanguage(domain, shortCode, clientIP, userAgent, referer, queryString, accessToken, acceptLanguage string) (*RedirectDecision, error) {
 
 	// 先从缓存查找
 	shortLink, err := s.getShortLinkFromCache(domain, shortCode)
@@ -500,11 +544,32 @@ func (s *ShortLinkService) ResolveRedirectWithSecurity(domain, shortCode, client
 		}, err
 	}
 
-	// 检查是否有AB测试
+	redirectCode := shortLink.RedirectCode
+	if redirectCode == 0 {
+		redirectCode = httpStatusFound
+	}
+
+	routeResult, err := s.linkRouteService.Resolve(shortLink, RouteResolveInput{
+		ClientIP:       clientIP,
+		UserAgent:      userAgent,
+		AcceptLanguage: acceptLanguage,
+		Referer:        referer,
+		QueryString:    queryString,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 检查是否有高级路由或 A/B 测试
 	var targetURL string
+	var matchedRoute *model.LinkRoute
 	if clientIP != "" { // 只有非预览请求才记录统计和检查AB测试
-		// 检查AB测试
-		if abTestInfo, err := s.abTestService.GetABTestRedirectInfo(shortLink.ID, clientIP, userAgent); err == nil && abTestInfo != nil {
+		if routeResult.RoutingEnabled {
+			targetURL = routeResult.TargetURL
+			matchedRoute = routeResult.Route
+			go s.recordClickStatisticWithRoute(shortLink, matchedRoute, clientIP, userAgent, referer, queryString)
+			go s.incrementClickCount(shortLink.ID)
+		} else if abTestInfo, err := s.abTestService.GetABTestRedirectInfo(shortLink.ID, clientIP, userAgent); err == nil && abTestInfo != nil {
 			// 有AB测试，使用AB测试的目标URL
 			targetURL = abTestInfo.TargetURL
 			go s.recordClickStatistic(shortLink, clientIP, userAgent, referer, queryString)
@@ -517,15 +582,20 @@ func (s *ShortLinkService) ResolveRedirectWithSecurity(domain, shortCode, client
 			go s.incrementClickCount(shortLink.ID)
 		}
 	} else {
-		// 预览请求，直接使用原始URL
-		targetURL = shortLink.OriginalURL
+		if routeResult.RoutingEnabled {
+			targetURL = routeResult.TargetURL
+			matchedRoute = routeResult.Route
+		} else {
+			// 预览请求，直接使用原始URL
+			targetURL = shortLink.OriginalURL
+		}
 	}
 
 	// 获取域名配置以确定是否透传GET参数
 	domainInfo, err := s.domainDao.FindByDomain(domain)
 	if err != nil {
 		// 如果查找域名配置失败，默认不透传参数，直接返回目标URL
-		return &RedirectDecision{TargetURL: targetURL, ShortLink: shortLink, Security: setting, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
+		return &RedirectDecision{TargetURL: targetURL, StatusCode: redirectCode, ShortLink: shortLink, Security: setting, Route: matchedRoute, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
 	}
 
 	// 构建最终的跳转URL
@@ -537,7 +607,7 @@ func (s *ShortLinkService) ResolveRedirectWithSecurity(domain, shortCode, client
 		origURL, err := url.Parse(targetURL)
 		if err != nil {
 			// 如果解析失败，返回目标URL
-			return &RedirectDecision{TargetURL: targetURL, ShortLink: shortLink, Security: setting, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
+			return &RedirectDecision{TargetURL: targetURL, StatusCode: redirectCode, ShortLink: shortLink, Security: setting, Route: matchedRoute, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
 		}
 
 		// 解析查询参数
@@ -558,7 +628,7 @@ func (s *ShortLinkService) ResolveRedirectWithSecurity(domain, shortCode, client
 		finalURL = origURL.String()
 	}
 
-	return &RedirectDecision{TargetURL: finalURL, ShortLink: shortLink, Security: setting, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
+	return &RedirectDecision{TargetURL: finalURL, StatusCode: redirectCode, ShortLink: shortLink, Security: setting, Route: matchedRoute, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
 }
 
 // findShortLinkByCode 通过短代码查找短链
@@ -700,11 +770,23 @@ func (s *ShortLinkService) removeCacheShortLink(domain, shortCode string) {
 
 // recordClickStatistic 记录点击统计
 func (s *ShortLinkService) recordClickStatistic(shortLink *model.ShortLink, clientIP, userAgent, referer string, queryParams string) {
+	s.recordClickStatisticWithRoute(shortLink, nil, clientIP, userAgent, referer, queryParams)
+}
+
+func (s *ShortLinkService) recordClickStatisticWithRoute(shortLink *model.ShortLink, route *model.LinkRoute, clientIP, userAgent, referer string, queryParams string) {
 	region := s.helper.GetIPRegion().Lookup(clientIP)
 	metadata := parseTrafficMetadata(userAgent)
+	var routeID *uint64
+	routeName := ""
+	if route != nil {
+		routeID = &route.ID
+		routeName = route.Name
+	}
 	statistic := &model.ClickStatistic{
 		WorkspaceID: shortLink.WorkspaceID,
 		CampaignID:  shortLink.CampaignID,
+		RouteID:     routeID,
+		RouteName:   domain_validate.TruncateString(routeName, 100),
 		ShortLinkID: shortLink.ID,
 		IP:          domain_validate.TruncateString(clientIP, 45),
 		UserAgent:   domain_validate.TruncateString(userAgent, 1024),
@@ -761,6 +843,11 @@ func (s *ShortLinkService) modelToResponse(shortLink *model.ShortLink) *dto.Shor
 		securitySummary = security.SecuritySummary
 		reportEnabled = security.ReportEnabled
 	}
+	routingEnabled, routingSummary := s.linkRouteService.RoutingSummary(shortLink.ID, shortLink.WorkspaceID, shortLink.FallbackURL)
+	redirectCode := shortLink.RedirectCode
+	if redirectCode == 0 {
+		redirectCode = httpStatusFound
+	}
 	return &dto.ShortLinkResponse{
 		ID:              shortLink.ID,
 		WorkspaceID:     shortLink.WorkspaceID,
@@ -771,6 +858,8 @@ func (s *ShortLinkService) modelToResponse(shortLink *model.ShortLink) *dto.Shor
 		Domain:          shortLink.Domain,
 		ShortURL:        shortLink.GetFullURL(),
 		OriginalURL:     shortLink.OriginalURL,
+		FallbackURL:     shortLink.FallbackURL,
+		RedirectCode:    redirectCode,
 		Title:           shortLink.Title,
 		Description:     shortLink.Description,
 		UTMSource:       shortLink.UTMSource,
@@ -787,6 +876,8 @@ func (s *ShortLinkService) modelToResponse(shortLink *model.ShortLink) *dto.Shor
 		SecurityEnabled: securityEnabled,
 		SecuritySummary: securitySummary,
 		ReportEnabled:   reportEnabled,
+		RoutingEnabled:  routingEnabled,
+		RoutingSummary:  routingSummary,
 		CreatedAt:       shortLink.CreatedAt,
 		UpdatedAt:       shortLink.UpdatedAt,
 	}
@@ -836,4 +927,8 @@ func mergeUTMToURL(rawURL, source, medium, campaign, term, content string) (stri
 	}
 	parsedURL.RawQuery = query.Encode()
 	return parsedURL.String(), nil
+}
+
+func isAllowedRedirectCode(code int) bool {
+	return code == 301 || code == 302 || code == 307 || code == 308
 }

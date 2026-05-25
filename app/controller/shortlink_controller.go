@@ -312,6 +312,7 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 	clientIP := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 	referer := c.GetHeader("Referer")
+	acceptLanguage := c.GetHeader("Accept-Language")
 
 	// 获取查询参数字符串
 	queryString := c.Request().URL.RawQuery
@@ -321,7 +322,7 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 		accessToken = cookie
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	decision, err := shortLinkService.ResolveRedirectWithSecurity(domain, shortCode, clientIP, userAgent, referer, queryString, accessToken)
+	decision, err := shortLinkService.ResolveRedirectWithSecurityAndLanguage(domain, shortCode, clientIP, userAgent, referer, queryString, accessToken, acceptLanguage)
 	if err != nil {
 		if errors.Is(err, service.ErrSecurityPasswordRequired) {
 			ctrl.renderPasswordPage(c, domain, shortCode, "")
@@ -359,8 +360,11 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 		}
 	}
 
-	// 302重定向到原始URL
-	c.Redirect(http.StatusFound, originalURL)
+	statusCode := decision.StatusCode
+	if statusCode == 0 {
+		statusCode = http.StatusFound
+	}
+	c.Redirect(statusCode, originalURL)
 }
 
 // renderAntiRedPage 渲染防红引导页面

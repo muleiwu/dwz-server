@@ -4,39 +4,43 @@ import "time"
 
 // CreateShortLinkRequest 创建短网址请求
 type CreateShortLinkRequest struct {
-	OriginalURL string               `json:"original_url" binding:"required,url" example:"https://www.example.com"`
-	Domain      string               `json:"domain" example:"dwz.do"`
-	CustomCode  string               `json:"custom_code" example:"abc123"`
-	Title       string               `json:"title" example:"示例网站"`
-	Description string               `json:"description" example:"这是一个示例网站"`
-	ExpireAt    *time.Time           `json:"expire_at" example:"2024-12-31T23:59:59Z"`
-	CampaignID  *uint64              `json:"campaign_id"`
-	TagIDs      []uint64             `json:"tag_ids"`
-	UTMSource   string               `json:"utm_source"`
-	UTMMedium   string               `json:"utm_medium"`
-	UTMCampaign string               `json:"utm_campaign"`
-	UTMTerm     string               `json:"utm_term"`
-	UTMContent  string               `json:"utm_content"`
-	Notes       string               `json:"notes"`
-	Security    *LinkSecurityRequest `json:"security"`
+	OriginalURL  string               `json:"original_url" binding:"required,url" example:"https://www.example.com"`
+	Domain       string               `json:"domain" example:"dwz.do"`
+	CustomCode   string               `json:"custom_code" example:"abc123"`
+	Title        string               `json:"title" example:"示例网站"`
+	Description  string               `json:"description" example:"这是一个示例网站"`
+	FallbackURL  string               `json:"fallback_url" binding:"omitempty,url"`
+	RedirectCode int                  `json:"redirect_code" binding:"omitempty,oneof=301 302 307 308"`
+	ExpireAt     *time.Time           `json:"expire_at" example:"2024-12-31T23:59:59Z"`
+	CampaignID   *uint64              `json:"campaign_id"`
+	TagIDs       []uint64             `json:"tag_ids"`
+	UTMSource    string               `json:"utm_source"`
+	UTMMedium    string               `json:"utm_medium"`
+	UTMCampaign  string               `json:"utm_campaign"`
+	UTMTerm      string               `json:"utm_term"`
+	UTMContent   string               `json:"utm_content"`
+	Notes        string               `json:"notes"`
+	Security     *LinkSecurityRequest `json:"security"`
 }
 
 // UpdateShortLinkRequest 更新短网址请求
 type UpdateShortLinkRequest struct {
-	OriginalURL string               `json:"original_url" binding:"omitempty,url"`
-	Title       string               `json:"title"`
-	Description string               `json:"description"`
-	ExpireAt    *time.Time           `json:"expire_at"`
-	IsActive    *bool                `json:"is_active"`
-	CampaignID  *uint64              `json:"campaign_id"`
-	TagIDs      []uint64             `json:"tag_ids"`
-	UTMSource   string               `json:"utm_source"`
-	UTMMedium   string               `json:"utm_medium"`
-	UTMCampaign string               `json:"utm_campaign"`
-	UTMTerm     string               `json:"utm_term"`
-	UTMContent  string               `json:"utm_content"`
-	Notes       string               `json:"notes"`
-	Security    *LinkSecurityRequest `json:"security"`
+	OriginalURL  string               `json:"original_url" binding:"omitempty,url"`
+	Title        string               `json:"title"`
+	Description  string               `json:"description"`
+	FallbackURL  *string              `json:"fallback_url" binding:"omitempty,url"`
+	RedirectCode *int                 `json:"redirect_code" binding:"omitempty,oneof=301 302 307 308"`
+	ExpireAt     *time.Time           `json:"expire_at"`
+	IsActive     *bool                `json:"is_active"`
+	CampaignID   *uint64              `json:"campaign_id"`
+	TagIDs       []uint64             `json:"tag_ids"`
+	UTMSource    string               `json:"utm_source"`
+	UTMMedium    string               `json:"utm_medium"`
+	UTMCampaign  string               `json:"utm_campaign"`
+	UTMTerm      string               `json:"utm_term"`
+	UTMContent   string               `json:"utm_content"`
+	Notes        string               `json:"notes"`
+	Security     *LinkSecurityRequest `json:"security"`
 }
 
 // UpdateShortLinkStatusRequest 更新短网址状态请求
@@ -55,6 +59,8 @@ type ShortLinkResponse struct {
 	Domain          string        `json:"domain"`
 	ShortURL        string        `json:"short_url"`
 	OriginalURL     string        `json:"original_url"`
+	FallbackURL     string        `json:"fallback_url"`
+	RedirectCode    int           `json:"redirect_code"`
 	Title           string        `json:"title"`
 	Description     string        `json:"description"`
 	UTMSource       string        `json:"utm_source"`
@@ -71,6 +77,8 @@ type ShortLinkResponse struct {
 	SecurityEnabled bool          `json:"security_enabled"`
 	SecuritySummary string        `json:"security_summary"`
 	ReportEnabled   bool          `json:"report_enabled"`
+	RoutingEnabled  bool          `json:"routing_enabled"`
+	RoutingSummary  string        `json:"routing_summary"`
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
 }
@@ -85,6 +93,7 @@ type ShortLinkListRequest struct {
 	TagID          uint64 `form:"tag_id"`
 	CreatedBy      uint64 `form:"created_by"`
 	SecurityStatus string `form:"security_status" binding:"omitempty,oneof=none enabled password restricted url_blocked reported"`
+	RoutingStatus  string `form:"routing_status" binding:"omitempty,oneof=none enabled fallback disabled"`
 }
 
 // ShortLinkListResponse 短网址列表响应

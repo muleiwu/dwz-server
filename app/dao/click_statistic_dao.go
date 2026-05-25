@@ -102,6 +102,9 @@ func (d *ClickStatisticDao) applyFilters(query *gorm.DB, workspaceID uint64, req
 	if req.CampaignID > 0 {
 		query = query.Where("click_statistics.campaign_id = ?", req.CampaignID)
 	}
+	if req.RouteID > 0 {
+		query = query.Where("click_statistics.route_id = ?", req.RouteID)
+	}
 	if req.TagID > 0 {
 		query = query.Joins("JOIN short_link_tags slt ON slt.short_link_id = click_statistics.short_link_id AND slt.tag_id = ?", req.TagID)
 	}
@@ -289,6 +292,7 @@ func (d *ClickStatisticDao) GetAnalysisInWorkspace(workspaceID uint64, req *dto.
 	group("os, COUNT(*) as count", "os != ''", "os", "count DESC", &analysis.TopOS)
 	group("utm_source AS value, COUNT(*) as count", "utm_source != ''", "utm_source", "count DESC", &analysis.TopUTMSources)
 	group("utm_campaign AS value, COUNT(*) as count", "utm_campaign != ''", "utm_campaign", "count DESC", &analysis.TopUTMCampaigns)
+	group("route_id, route_name, COUNT(*) as count", "route_id IS NOT NULL", "route_id, route_name", "count DESC", &analysis.TopRoutes)
 
 	type botRow struct {
 		IsBot bool

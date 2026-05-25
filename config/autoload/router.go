@@ -90,6 +90,12 @@ func (Router) InitConfig() map[string]any {
 					short.GET("/:id/security", controller.LinkSecurityController{}.GetShortLinkSecurity)
 					short.PUT("/:id/security", controller.LinkSecurityController{}.UpdateShortLinkSecurity)
 					short.POST("/:id/security/rescan", controller.LinkSecurityController{}.RescanShortLink)
+					short.GET("/:id/routes", controller.LinkRouteController{}.ListRoutes)
+					short.POST("/:id/routes", controller.LinkRouteController{}.CreateRoute)
+					short.PUT("/:id/routes/:route_id", controller.LinkRouteController{}.UpdateRoute)
+					short.DELETE("/:id/routes/:route_id", controller.LinkRouteController{}.DeleteRoute)
+					short.POST("/:id/routes/reorder", controller.LinkRouteController{}.ReorderRoutes)
+					short.POST("/:id/routes/test", controller.LinkRouteController{}.TestRoute)
 					short.POST("/batch", controller.ShortLinkController{}.BatchCreateShortLinks)
 				}
 

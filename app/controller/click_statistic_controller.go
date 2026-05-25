@@ -62,6 +62,7 @@ func (ctrl ClickStatisticController) GetClickStatisticAnalysis(c httpInterfaces.
 	filterReq := &dto.ClickStatisticListRequest{
 		ShortLinkID: shortLinkID,
 		CampaignID:  parseUintQuery(c.Query("campaign_id")),
+		RouteID:     parseUintQuery(c.Query("route_id")),
 		TagID:       parseUintQuery(c.Query("tag_id")),
 		DeviceType:  c.Query("device_type"),
 	}

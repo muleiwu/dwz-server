@@ -31,8 +31,10 @@ var (
 
 type RedirectDecision struct {
 	TargetURL     string
+	StatusCode    int
 	ShortLink     *model.ShortLink
 	Security      *model.LinkSecuritySetting
+	Route         *model.LinkRoute
 	Reason        string
 	PasswordURL   string
 	ReportEnabled bool
@@ -264,6 +266,25 @@ func (s *LinkSecurityService) RescanShortLink(shortLinkID, workspaceID uint64) (
 	}
 
 	result := s.ScanURL(workspaceID, shortLink.OriginalURL)
+	if result.Safe && shortLink.FallbackURL != "" {
+		if fallbackResult := s.ScanURL(workspaceID, shortLink.FallbackURL); !fallbackResult.Safe {
+			result = urlSafetyResult{Safe: false, Reason: "兜底地址 " + fallbackResult.Reason}
+		}
+	}
+	if result.Safe {
+		var routes []model.LinkRoute
+		if err := s.helper.GetDatabase().
+			Where("short_link_id = ? AND workspace_id = ? AND is_active = ? AND deleted_at IS NULL", shortLinkID, workspaceID, true).
+			Order("priority ASC, id ASC").
+			Find(&routes).Error; err == nil {
+			for _, route := range routes {
+				if routeResult := s.ScanURL(workspaceID, route.TargetURL); !routeResult.Safe {
+					result = urlSafetyResult{Safe: false, Reason: "路由 " + route.Name + " " + routeResult.Reason}
+					break
+				}
+			}
+		}
+	}
 	setting, err := s.findSetting(shortLinkID, workspaceID)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {

@@ -95,7 +95,7 @@ func (s *ClickStatisticService) ExportCSV(workspaceID uint64, req *dto.ClickStat
 	buffer.Write([]byte{0xEF, 0xBB, 0xBF})
 	writer := csv.NewWriter(buffer)
 	header := []string{
-		"id", "workspace_id", "campaign_id", "short_link_id", "ip", "user_agent", "referer", "query_params",
+		"id", "workspace_id", "campaign_id", "route_id", "route_name", "short_link_id", "ip", "user_agent", "referer", "query_params",
 		"utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
 		"device_type", "browser", "os", "is_bot", "bot_name",
 		"country", "province", "city", "isp", "click_date", "created_at",
@@ -108,10 +108,16 @@ func (s *ClickStatisticService) ExportCSV(workspaceID uint64, req *dto.ClickStat
 		if stat.CampaignID != nil {
 			campaignID = strconv.FormatUint(*stat.CampaignID, 10)
 		}
+		routeID := ""
+		if stat.RouteID != nil {
+			routeID = strconv.FormatUint(*stat.RouteID, 10)
+		}
 		record := []string{
 			strconv.FormatUint(stat.ID, 10),
 			strconv.FormatUint(stat.WorkspaceID, 10),
 			campaignID,
+			routeID,
+			stat.RouteName,
 			strconv.FormatUint(stat.ShortLinkID, 10),
 			stat.IP,
 			stat.UserAgent,
@@ -151,6 +157,8 @@ func (s *ClickStatisticService) modelToResponse(statistic *model.ClickStatistic)
 		ID:          statistic.ID,
 		WorkspaceID: statistic.WorkspaceID,
 		CampaignID:  statistic.CampaignID,
+		RouteID:     statistic.RouteID,
+		RouteName:   statistic.RouteName,
 		ShortLinkID: statistic.ShortLinkID,
 		IP:          statistic.IP,
 		UserAgent:   statistic.UserAgent,

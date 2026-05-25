@@ -8,6 +8,7 @@ type ClickStatisticListRequest struct {
 	PageSize    int       `form:"page_size" binding:"min=1,max=100" example:"10"`
 	ShortLinkID uint64    `form:"short_link_id" example:"1"` // 短链接ID筛选
 	CampaignID  uint64    `form:"campaign_id"`
+	RouteID     uint64    `form:"route_id"`
 	TagID       uint64    `form:"tag_id"`
 	DeviceType  string    `form:"device_type"`
 	IsBot       *bool     `form:"is_bot"`
@@ -25,6 +26,8 @@ type ClickStatisticDetailResponse struct {
 	ID          uint64    `json:"id"`
 	WorkspaceID uint64    `json:"workspace_id"`
 	CampaignID  *uint64   `json:"campaign_id"`
+	RouteID     *uint64   `json:"route_id"`
+	RouteName   string    `json:"route_name"`
 	ShortLinkID uint64    `json:"short_link_id"`
 	ShortCode   string    `json:"short_code,omitempty"`   // 短链代码
 	Domain      string    `json:"domain,omitempty"`       // 域名
@@ -74,6 +77,7 @@ type ClickStatisticAnalysisResponse struct {
 	BotStats        BotStatistic        `json:"bot_stats"`
 	TopUTMSources   []UTMStatistic      `json:"top_utm_sources"`
 	TopUTMCampaigns []UTMStatistic      `json:"top_utm_campaigns"`
+	TopRoutes       []RouteStatistic    `json:"top_routes"`
 	HourlyStats     []HourlyStatistic   `json:"hourly_stats"` // 小时统计
 	DailyStats      []DailyStatistic    `json:"daily_stats"`  // 日统计
 }
@@ -144,4 +148,10 @@ type BotStatistic struct {
 type UTMStatistic struct {
 	Value string `json:"value"`
 	Count int64  `json:"count"`
+}
+
+type RouteStatistic struct {
+	RouteID   uint64 `json:"route_id"`
+	RouteName string `json:"route_name"`
+	Count     int64  `json:"count"`
 }
