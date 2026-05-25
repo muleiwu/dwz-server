@@ -282,3 +282,17 @@ func (d *ShortLinkDao) GetTopClicked(limit int) ([]model.ShortLink, error) {
 		Find(&shortLinks).Error
 	return shortLinks, err
 }
+
+// GetTopClickedByDateRange 获取指定时间范围内点击量最高的短链接
+func (d *ShortLinkDao) GetTopClickedByDateRange(startDate, endDate time.Time, limit int) ([]model.ShortLink, error) {
+	var shortLinks []model.ShortLink
+	err := d.helper.GetDatabase().Model(&model.ShortLink{}).
+		Select("short_links.id, short_links.protocol, short_links.domain, short_links.issuer_number, short_links.short_code, short_links.original_url, short_links.title, COUNT(click_statistics.id) AS click_count").
+		Joins("JOIN click_statistics ON click_statistics.short_link_id = short_links.id").
+		Where("short_links.deleted_at IS NULL AND click_statistics.click_date >= ? AND click_statistics.click_date < ?", startDate, endDate).
+		Group("short_links.id, short_links.protocol, short_links.domain, short_links.issuer_number, short_links.short_code, short_links.original_url, short_links.title").
+		Order("click_count DESC").
+		Limit(limit).
+		Find(&shortLinks).Error
+	return shortLinks, err
+}

@@ -1,14 +1,15 @@
 package controller
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
-	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
 type StatisticsController struct {
@@ -148,10 +149,18 @@ func (s StatisticsController) GetDashboard(c httpInterfaces.RouterContextInterfa
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	tomorrow := today.AddDate(0, 0, 1)
+	rangeStart, rangeEnd, hasRange, err := parseStatisticsDateRange(c, today, tomorrow)
+	if err != nil {
+		s.Error(c, constants.ErrCodeBadRequest, err.Error())
+		return
+	}
 
 	// 获取系统统计数据
 	totalLinks, _ := shortLinkDao.CountAll()
 	totalClicks, _ := clickStatisticDao.CountAll()
+	if hasRange {
+		totalClicks, _ = clickStatisticDao.CountByDateRange(rangeStart, rangeEnd)
+	}
 	todayClicks, _ := clickStatisticDao.CountByDateRange(today, tomorrow)
 	totalUsers, _ := userDao.CountAll()
 	activeUsers, _ := userDao.CountActive()
@@ -173,6 +182,9 @@ func (s StatisticsController) GetDashboard(c httpInterfaces.RouterContextInterfa
 
 	// 获取热门短链
 	topShortLinks, _ := shortLinkDao.GetTopClicked(10)
+	if hasRange {
+		topShortLinks, _ = shortLinkDao.GetTopClickedByDateRange(rangeStart, rangeEnd, 10)
+	}
 	topLinks := make([]TopLink, 0)
 	for _, link := range topShortLinks {
 		topLink := TopLink{
@@ -208,6 +220,38 @@ func (s StatisticsController) GetDashboard(c httpInterfaces.RouterContextInterfa
 
 	// 返回数据
 	s.Success(c, dashboardData)
+}
+
+func parseStatisticsDateRange(c httpInterfaces.RouterContextInterface, today, tomorrow time.Time) (time.Time, time.Time, bool, error) {
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
+	if startDateStr != "" || endDateStr != "" {
+		if startDateStr == "" || endDateStr == "" {
+			return time.Time{}, time.Time{}, false, errors.New("开始日期和结束日期必须同时提供")
+		}
+		startDate, err := time.ParseInLocation("2006-01-02", startDateStr, today.Location())
+		if err != nil {
+			return time.Time{}, time.Time{}, false, errors.New("开始日期格式错误")
+		}
+		endDate, err := time.ParseInLocation("2006-01-02", endDateStr, today.Location())
+		if err != nil {
+			return time.Time{}, time.Time{}, false, errors.New("结束日期格式错误")
+		}
+		if endDate.Before(startDate) {
+			return time.Time{}, time.Time{}, false, errors.New("结束日期不能早于开始日期")
+		}
+		return startDate, endDate.AddDate(0, 0, 1), true, nil
+	}
+
+	daysStr := c.Query("days")
+	if daysStr == "" {
+		return time.Time{}, time.Time{}, false, nil
+	}
+	days, err := strconv.Atoi(daysStr)
+	if err != nil || days < 1 || days > 365 {
+		return time.Time{}, time.Time{}, false, errors.New("统计天数必须在 1 到 365 之间")
+	}
+	return today.AddDate(0, 0, -(days - 1)), tomorrow, true, nil
 }
 
 func (s StatisticsController) GetShortLinks(c httpInterfaces.RouterContextInterface) {
