@@ -563,14 +563,16 @@ func (s *ShortLinkService) ResolveRedirectWithSecurityAndLanguage(domain, shortC
 	// 检查是否有高级路由或 A/B 测试
 	var targetURL string
 	var matchedRoute *model.LinkRoute
+	var abTestInfo *dto.ABTestRedirectInfo
 	if clientIP != "" { // 只有非预览请求才记录统计和检查AB测试
 		if routeResult.RoutingEnabled {
 			targetURL = routeResult.TargetURL
 			matchedRoute = routeResult.Route
 			go s.recordClickStatisticWithRoute(shortLink, matchedRoute, clientIP, userAgent, referer, queryString)
 			go s.incrementClickCount(shortLink.ID)
-		} else if abTestInfo, err := s.abTestService.GetABTestRedirectInfo(shortLink.ID, clientIP, userAgent); err == nil && abTestInfo != nil {
+		} else if info, err := s.abTestService.GetABTestRedirectInfo(shortLink.ID, clientIP, userAgent); err == nil && info != nil {
 			// 有AB测试，使用AB测试的目标URL
+			abTestInfo = info
 			targetURL = abTestInfo.TargetURL
 			go s.recordClickStatistic(shortLink, clientIP, userAgent, referer, queryString)
 			go s.incrementClickCount(shortLink.ID)
@@ -595,7 +597,7 @@ func (s *ShortLinkService) ResolveRedirectWithSecurityAndLanguage(domain, shortC
 	domainInfo, err := s.domainDao.FindByDomain(domain)
 	if err != nil {
 		// 如果查找域名配置失败，默认不透传参数，直接返回目标URL
-		return &RedirectDecision{TargetURL: targetURL, StatusCode: redirectCode, ShortLink: shortLink, Security: setting, Route: matchedRoute, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
+		return &RedirectDecision{TargetURL: s.withABTestFeedbackToken(targetURL, abTestInfo), StatusCode: redirectCode, ShortLink: shortLink, Security: setting, Route: matchedRoute, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
 	}
 
 	// 构建最终的跳转URL
@@ -607,7 +609,7 @@ func (s *ShortLinkService) ResolveRedirectWithSecurityAndLanguage(domain, shortC
 		origURL, err := url.Parse(targetURL)
 		if err != nil {
 			// 如果解析失败，返回目标URL
-			return &RedirectDecision{TargetURL: targetURL, StatusCode: redirectCode, ShortLink: shortLink, Security: setting, Route: matchedRoute, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
+			return &RedirectDecision{TargetURL: s.withABTestFeedbackToken(targetURL, abTestInfo), StatusCode: redirectCode, ShortLink: shortLink, Security: setting, Route: matchedRoute, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
 		}
 
 		// 解析查询参数
@@ -628,7 +630,22 @@ func (s *ShortLinkService) ResolveRedirectWithSecurityAndLanguage(domain, shortC
 		finalURL = origURL.String()
 	}
 
+	finalURL = s.withABTestFeedbackToken(finalURL, abTestInfo)
 	return &RedirectDecision{TargetURL: finalURL, StatusCode: redirectCode, ShortLink: shortLink, Security: setting, Route: matchedRoute, ReportEnabled: setting != nil && setting.ReportEnabled}, nil
+}
+
+func (s *ShortLinkService) withABTestFeedbackToken(targetURL string, abTestInfo *dto.ABTestRedirectInfo) string {
+	if abTestInfo == nil || abTestInfo.FeedbackToken == "" {
+		return targetURL
+	}
+	parsedURL, err := url.Parse(targetURL)
+	if err != nil {
+		return targetURL
+	}
+	query := parsedURL.Query()
+	query.Set(ABTestFeedbackQueryParam, abTestInfo.FeedbackToken)
+	parsedURL.RawQuery = query.Encode()
+	return parsedURL.String()
 }
 
 // findShortLinkByCode 通过短代码查找短链

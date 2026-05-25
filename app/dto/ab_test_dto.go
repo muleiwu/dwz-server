@@ -1,6 +1,9 @@
 package dto
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // CreateABTestRequest 创建AB测试请求
 type CreateABTestRequest struct {
@@ -92,20 +95,25 @@ type ABTestListResponse struct {
 
 // ABTestStatisticResponse AB测试统计响应
 type ABTestStatisticResponse struct {
-	ABTestID       uint64                      `json:"ab_test_id"`
-	TotalClicks    int64                       `json:"total_clicks"`
-	VariantStats   []ABTestVariantStatResponse `json:"variant_stats"`
-	DailyStats     []ABTestDailyStatResponse   `json:"daily_stats"`
-	ConversionRate float64                     `json:"conversion_rate"`
-	WinningVariant *ABTestVariantResponse      `json:"winning_variant,omitempty"`
+	ABTestID         uint64                      `json:"ab_test_id"`
+	TotalClicks      int64                       `json:"total_clicks"`
+	TotalConversions int64                       `json:"total_conversions"`
+	ConversionValue  float64                     `json:"conversion_value"`
+	VariantStats     []ABTestVariantStatResponse `json:"variant_stats"`
+	DailyStats       []ABTestDailyStatResponse   `json:"daily_stats"`
+	ConversionRate   float64                     `json:"conversion_rate"`
+	WinningVariant   *ABTestVariantResponse      `json:"winning_variant,omitempty"`
 }
 
 // ABTestVariantStatResponse AB测试变体统计响应
 type ABTestVariantStatResponse struct {
-	Variant        ABTestVariantResponse `json:"variant"`
-	ClickCount     int64                 `json:"click_count"`
-	ConversionRate float64               `json:"conversion_rate"`
-	Percentage     float64               `json:"percentage"`
+	Variant         ABTestVariantResponse `json:"variant"`
+	ClickCount      int64                 `json:"click_count"`
+	UniqueClicks    int64                 `json:"unique_clicks"`
+	ConversionCount int64                 `json:"conversion_count"`
+	ConversionRate  float64               `json:"conversion_rate"`
+	ConversionValue float64               `json:"conversion_value"`
+	Percentage      float64               `json:"percentage"`
 }
 
 // ABTestDailyStatResponse AB测试每日统计响应
@@ -126,9 +134,34 @@ type StopABTestRequest struct {
 
 // ABTestRedirectInfo AB测试重定向信息（内部使用）
 type ABTestRedirectInfo struct {
+	WorkspaceID   uint64 `json:"workspace_id"`
+	ABTestID      uint64 `json:"ab_test_id"`
+	VariantID     uint64 `json:"variant_id"`
+	ShortLinkID   uint64 `json:"short_link_id"`
+	TargetURL     string `json:"target_url"`
+	VariantName   string `json:"variant_name"`
+	SessionID     string `json:"session_id"`
+	FeedbackToken string `json:"feedback_token"`
+}
+
+// ABTestFeedbackRequest 转化反馈请求
+type ABTestFeedbackRequest struct {
+	FeedbackToken string          `json:"feedback_token" binding:"required"`
+	EventID       string          `json:"event_id" binding:"required"`
+	Value         *float64        `json:"value"`
+	Currency      string          `json:"currency"`
+	Metadata      json.RawMessage `json:"metadata"`
+	OccurredAt    *time.Time      `json:"occurred_at"`
+}
+
+// ABTestFeedbackResponse 转化反馈响应
+type ABTestFeedbackResponse struct {
+	ID          uint64 `json:"id,omitempty"`
+	Duplicate   bool   `json:"duplicate"`
+	WorkspaceID uint64 `json:"workspace_id"`
 	ABTestID    uint64 `json:"ab_test_id"`
 	VariantID   uint64 `json:"variant_id"`
-	TargetURL   string `json:"target_url"`
-	VariantName string `json:"variant_name"`
+	ShortLinkID uint64 `json:"short_link_id"`
 	SessionID   string `json:"session_id"`
+	EventID     string `json:"event_id"`
 }

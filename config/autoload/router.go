@@ -55,6 +55,7 @@ func (Router) InitConfig() map[string]any {
 			{
 				public.POST("/link_access/password", controller.LinkSecurityController{}.SubmitPassword)
 				public.POST("/abuse_reports", controller.LinkSecurityController{}.CreatePublicAbuseReport)
+				public.POST("/ab_test_feedback", controller.ABTestController{}.CreateABTestFeedback)
 			}
 
 			// 受保护的 API：操作日志 + 鉴权

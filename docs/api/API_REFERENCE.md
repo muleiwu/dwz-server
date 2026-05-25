@@ -862,6 +862,202 @@ GET /api/v1/click_statistics/export
 
 ---
 
+## A/B 测试接口
+
+### A/B 测试反馈流程
+
+1. 管理端创建并启动 A/B 测试。
+2. 用户访问短链后，系统按实验配置选择变体并跳转到变体目标 URL。
+3. 跳转目标 URL 会追加 `_dwz_abt` 查询参数，例如：`https://example.com/page-a?_dwz_abt=<token>`。
+4. 落地页或业务系统在注册、下单、购买等结果发生后，调用公开反馈接口回传转化。
+5. 统计接口根据点击与反馈事件计算真实转化数、转化率和转化价值。
+
+`_dwz_abt` 是服务端签名 token，绑定 `workspace_id`、`ab_test_id`、`variant_id`、`short_link_id` 和 `session_id`，默认有效期 30 天。直接访问变体目标 URL 不会生成 token，必须通过短链跳转进入实验。
+
+管理端 A/B 测试统计弹窗中的“分流反馈”表单仅用于手动验证。生产环境应在落地页或业务系统中自动调用反馈接口。
+
+### 获取 A/B 测试统计
+
+**请求**
+
+```
+GET /api/v1/ab_tests/{id}/statistics
+```
+
+**路径参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | A/B 测试 ID |
+
+**查询参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| days | int | 否 | 统计最近天数，默认 7，最大 365 |
+
+**响应示例**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "ab_test_id": 1,
+    "total_clicks": 1000,
+    "total_conversions": 138,
+    "conversion_value": 2999.5,
+    "variant_stats": [
+      {
+        "variant": {
+          "id": 1,
+          "ab_test_id": 1,
+          "name": "版本A",
+          "target_url": "https://example.com/page-a",
+          "weight": 50,
+          "is_control": true
+        },
+        "click_count": 480,
+        "unique_clicks": 460,
+        "conversion_count": 58,
+        "conversion_rate": 12.61,
+        "conversion_value": 1200,
+        "percentage": 48
+      }
+    ],
+    "daily_stats": [
+      {
+        "date": "2024-01-15",
+        "variants": {
+          "1": 45,
+          "2": 55
+        }
+      }
+    ],
+    "conversion_rate": 13.8,
+    "winning_variant": {
+      "id": 1,
+      "name": "版本A"
+    }
+  }
+}
+```
+
+**统计口径**
+
+- `click_count`：变体点击次数。
+- `unique_clicks`：变体唯一会话点击数。
+- `conversion_count`：通过反馈接口写入的业务结果数。
+- 变体 `conversion_rate`：`conversion_count / unique_clicks * 100`，无唯一点击时为 `0`。
+- 顶层 `conversion_rate`：`total_conversions / 所有变体 unique_clicks 之和 * 100`。
+- `conversion_value`：反馈事件 `value` 汇总。
+- `winning_variant`：当前按转化数最高的变体计算。
+
+### 上报转化反馈
+
+**请求**
+
+```
+POST /api/v1/public/ab_test_feedback
+```
+
+公开接口，不需要登录态或 Bearer Token。写入范围由 `_dwz_abt` 签名 token 限制。
+
+**请求体**
+
+```json
+{
+  "feedback_token": "<_dwz_abt 参数值>",
+  "event_id": "order-202401150001",
+  "value": 99.9,
+  "currency": "CNY",
+  "metadata": {
+    "plan": "pro"
+  },
+  "occurred_at": "2024-01-15T10:30:00Z"
+}
+```
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| feedback_token | string | 是 | 短链 A/B 跳转目标 URL 中 `_dwz_abt` 的值 |
+| event_id | string | 是 | 业务事件唯一 ID，同一 A/B 测试内幂等，最长 128 字符 |
+| value | number | 否 | 转化价值，必须大于等于 0 |
+| currency | string | 否 | 币种，服务端会转为大写，最长 16 字符 |
+| metadata | object | 否 | 业务附加信息，序列化后最大 4096 字节 |
+| occurred_at | string | 否 | 业务事件发生时间，ISO 8601 格式；不传则使用服务端当前时间 |
+
+**成功响应**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": 10,
+    "duplicate": false,
+    "workspace_id": 1,
+    "ab_test_id": 1,
+    "variant_id": 2,
+    "short_link_id": 5,
+    "session_id": "ab_1_5_xxx",
+    "event_id": "order-202401150001"
+  }
+}
+```
+
+重复提交相同 `event_id` 会返回成功，但 `duplicate` 为 `true`，不会重复计入转化：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": 10,
+    "duplicate": true,
+    "workspace_id": 1,
+    "ab_test_id": 1,
+    "variant_id": 2,
+    "short_link_id": 5,
+    "session_id": "ab_1_5_xxx",
+    "event_id": "order-202401150001"
+  }
+}
+```
+
+**错误说明**
+
+| HTTP 状态 | code | 场景 |
+|-----------|------|------|
+| 400 | 40001 | 缺少 `feedback_token`、缺少 `event_id`、字段长度非法、`value` 为负数 |
+| 401 | 40101 | token 无效、被篡改、过期，或 token 绑定的实验/变体不存在 |
+| 500 | 50001 | 服务端写入失败 |
+
+**落地页自动回传示例**
+
+```js
+const token = new URLSearchParams(location.search).get('_dwz_abt');
+
+if (token) {
+  await fetch('https://your-domain.com/api/v1/public/ab_test_feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      feedback_token: token,
+      event_id: 'order-202401150001',
+      value: 99.9,
+      currency: 'CNY',
+      metadata: {
+        order_id: '202401150001',
+        plan: 'pro'
+      }
+    })
+  });
+}
+```
+
+---
+
 ## 操作日志接口
 
 ### 获取操作日志

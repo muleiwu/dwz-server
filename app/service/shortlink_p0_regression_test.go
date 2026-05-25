@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -152,6 +153,14 @@ func TestShortLinkP0RegressionCreateRedirectStatisticsAndABSplit(t *testing.T) {
 	if !strings.HasPrefix(abTargetURL, "https://example.com/") || strings.Contains(abTargetURL, "landing") {
 		t.Fatalf("A/B redirect did not use a variant URL: %s", abTargetURL)
 	}
+	parsedABURL, err := url.Parse(abTargetURL)
+	if err != nil {
+		t.Fatalf("parse A/B target URL: %v", err)
+	}
+	feedbackToken := parsedABURL.Query().Get(ABTestFeedbackQueryParam)
+	if feedbackToken == "" {
+		t.Fatalf("A/B redirect did not append feedback token: %s", abTargetURL)
+	}
 
 	waitForModelCount(t, db, &model.ABTestClickStatistic{}, "ab_test_id = ?", abResp.ID, 1)
 	var abStat model.ABTestClickStatistic
@@ -163,6 +172,68 @@ func TestShortLinkP0RegressionCreateRedirectStatisticsAndABSplit(t *testing.T) {
 	}
 	if abStat.UTMSource != "newsletter" || abStat.DeviceType == "" {
 		t.Fatalf("ab statistic did not copy traffic metadata: %+v", abStat)
+	}
+
+	value := 42.5
+	feedback, err := abSvc.RecordABTestFeedback(&dto.ABTestFeedbackRequest{
+		FeedbackToken: feedbackToken,
+		EventID:       "order-abc",
+		Value:         &value,
+		Currency:      "usd",
+		Metadata:      json.RawMessage(`{"plan":"pro"}`),
+	}, "8.8.4.4", "Mozilla/5.0", "https://ref.example")
+	if err != nil {
+		t.Fatalf("record ab feedback: %v", err)
+	}
+	if feedback.Duplicate || feedback.ABTestID != abResp.ID || feedback.ShortLinkID != createResp.ID || feedback.SessionID == "" {
+		t.Fatalf("unexpected feedback response: %+v", feedback)
+	}
+	duplicate, err := abSvc.RecordABTestFeedback(&dto.ABTestFeedbackRequest{
+		FeedbackToken: feedbackToken,
+		EventID:       "order-abc",
+	}, "8.8.4.4", "Mozilla/5.0", "https://ref.example")
+	if err != nil {
+		t.Fatalf("record duplicate ab feedback: %v", err)
+	}
+	if !duplicate.Duplicate || duplicate.ID != feedback.ID {
+		t.Fatalf("expected idempotent duplicate response, got %+v", duplicate)
+	}
+	if _, err := abSvc.RecordABTestFeedback(&dto.ABTestFeedbackRequest{
+		FeedbackToken: feedbackToken + "x",
+		EventID:       "tampered",
+	}, "8.8.4.4", "Mozilla/5.0", ""); !errors.Is(err, ErrABTestFeedbackInvalidToken) {
+		t.Fatalf("expected invalid token error, got %v", err)
+	}
+	expiredToken, err := abSvc.generateABTestFeedbackToken(1, abResp.ID, feedback.VariantID, createResp.ID, feedback.SessionID, time.Now().Add(-time.Minute))
+	if err != nil {
+		t.Fatalf("generate expired token: %v", err)
+	}
+	if _, err := abSvc.RecordABTestFeedback(&dto.ABTestFeedbackRequest{
+		FeedbackToken: expiredToken,
+		EventID:       "expired",
+	}, "8.8.4.4", "Mozilla/5.0", ""); !errors.Is(err, ErrABTestFeedbackExpiredToken) {
+		t.Fatalf("expected expired token error, got %v", err)
+	}
+	stats, err := abSvc.GetABTestStatisticsInWorkspace(abResp.ID, 30, 1)
+	if err != nil {
+		t.Fatalf("get ab statistics: %v", err)
+	}
+	if stats.TotalConversions != 1 || stats.ConversionRate != 100 || stats.ConversionValue != value {
+		t.Fatalf("unexpected conversion statistics: %+v", stats)
+	}
+	var convertedVariantSeen bool
+	for _, stat := range stats.VariantStats {
+		if stat.Variant.ID == feedback.VariantID {
+			convertedVariantSeen = true
+			if stat.UniqueClicks != 1 || stat.ConversionCount != 1 || stat.ConversionRate != 100 || stat.ConversionValue != value {
+				t.Fatalf("unexpected converted variant stats: %+v", stat)
+			}
+		} else if stat.ConversionRate != 0 || stat.ConversionCount != 0 {
+			t.Fatalf("unexpected non-converted variant stats: %+v", stat)
+		}
+	}
+	if !convertedVariantSeen || stats.WinningVariant == nil || stats.WinningVariant.ID != feedback.VariantID {
+		t.Fatalf("winning variant should use conversion feedback, got stats=%+v feedback=%+v", stats, feedback)
 	}
 }
 
@@ -435,6 +506,7 @@ func newShortLinkRegressionHelper(t *testing.T) *shortLinkRegressionHelper {
 		&model.ABTest{},
 		&model.ABTestVariant{},
 		&model.ABTestClickStatistic{},
+		&model.ABTestFeedback{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
@@ -445,7 +517,7 @@ func newShortLinkRegressionHelper(t *testing.T) *shortLinkRegressionHelper {
 	}
 	return &shortLinkRegressionHelper{
 		db:       db,
-		settings: shortLinkRegressionSettings{"database.driver": "sqlite"},
+		settings: shortLinkRegressionSettings{"database.driver": "sqlite", "jwt.secret": "test-secret-for-ab-feedback"},
 		cache:    newShortLinkRegressionCache(),
 	}
 }

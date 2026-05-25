@@ -1,10 +1,24 @@
 package dao
 
 import (
+	"fmt"
+
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	"gorm.io/gorm"
 )
+
+type ABTestClickAggregate struct {
+	VariantID    uint64
+	ClickCount   int64
+	UniqueClicks int64
+}
+
+type ABTestFeedbackAggregate struct {
+	VariantID       uint64
+	ConversionCount int64
+	ConversionValue float64
+}
 
 type ABTestDao struct {
 	helper interfaces.HelperInterface
@@ -20,12 +34,16 @@ func (dao *ABTestDao) getDBDriver() string {
 }
 
 // getDateSubSQL 获取日期减法SQL表达式（兼容MySQL和SQLite）
-func (dao *ABTestDao) getDateSubSQL(days int) string {
+func (dao *ABTestDao) getDateSubSQL(column string) string {
 	driver := dao.getDBDriver()
-	if driver == "sqlite" {
-		return "click_date >= datetime('now', '-' || ? || ' days')"
+	switch driver {
+	case "sqlite", "memory":
+		return fmt.Sprintf("%s >= datetime('now', '-' || ? || ' days')", column)
+	case "postgresql":
+		return fmt.Sprintf("%s >= NOW() - (? * INTERVAL '1 day')", column)
+	default:
+		return fmt.Sprintf("%s >= DATE_SUB(NOW(), INTERVAL ? DAY)", column)
 	}
-	return "click_date >= DATE_SUB(NOW(), INTERVAL ? DAY)"
 }
 
 // getDateSQL 获取日期提取SQL表达式（兼容MySQL和SQLite）
@@ -163,6 +181,85 @@ func (dao *ABTestDao) CreateABTestClickStatistic(stat *model.ABTestClickStatisti
 	return db.Create(stat).Error
 }
 
+// CreateABTestFeedback 创建AB测试转化反馈
+func (dao *ABTestDao) CreateABTestFeedback(feedback *model.ABTestFeedback) error {
+	return dao.helper.GetDatabase().Create(feedback).Error
+}
+
+func (dao *ABTestDao) FindABTestFeedbackByEventID(abTestID uint64, eventID string) (*model.ABTestFeedback, error) {
+	var feedback model.ABTestFeedback
+	err := dao.helper.GetDatabase().
+		Where("ab_test_id = ? AND event_id = ?", abTestID, eventID).
+		First(&feedback).Error
+	return &feedback, err
+}
+
+// GetABTestClickAggregates 获取AB测试点击与去重点击统计
+func (dao *ABTestDao) GetABTestClickAggregates(abTestID uint64, days int) (map[uint64]ABTestClickAggregate, error) {
+	db := dao.helper.GetDatabase()
+	var results []struct {
+		VariantID    uint64 `json:"variant_id"`
+		ClickCount   int64  `json:"click_count"`
+		UniqueClicks int64  `json:"unique_clicks"`
+	}
+
+	query := db.Model(&model.ABTestClickStatistic{}).
+		Select("variant_id, COUNT(*) as click_count, COUNT(DISTINCT session_id) as unique_clicks").
+		Where("ab_test_id = ?", abTestID).
+		Group("variant_id")
+
+	if days > 0 {
+		query = query.Where(dao.getDateSubSQL("click_date"), days)
+	}
+
+	if err := query.Find(&results).Error; err != nil {
+		return nil, err
+	}
+
+	aggregates := make(map[uint64]ABTestClickAggregate)
+	for _, result := range results {
+		aggregates[result.VariantID] = ABTestClickAggregate{
+			VariantID:    result.VariantID,
+			ClickCount:   result.ClickCount,
+			UniqueClicks: result.UniqueClicks,
+		}
+	}
+	return aggregates, nil
+}
+
+// GetABTestFeedbackAggregates 获取AB测试转化反馈统计
+func (dao *ABTestDao) GetABTestFeedbackAggregates(abTestID uint64, days int) (map[uint64]ABTestFeedbackAggregate, error) {
+	db := dao.helper.GetDatabase()
+	var results []struct {
+		VariantID       uint64  `json:"variant_id"`
+		ConversionCount int64   `json:"conversion_count"`
+		ConversionValue float64 `json:"conversion_value"`
+	}
+
+	query := db.Model(&model.ABTestFeedback{}).
+		Select("variant_id, COUNT(*) as conversion_count, COALESCE(SUM(value), 0) as conversion_value").
+		Where("ab_test_id = ?", abTestID).
+		Group("variant_id")
+
+	if days > 0 {
+		query = query.Where(dao.getDateSubSQL("occurred_at"), days)
+	}
+
+	if err := query.Find(&results).Error; err != nil {
+		return nil, err
+	}
+
+	aggregates := make(map[uint64]ABTestFeedbackAggregate)
+	for _, result := range results {
+		aggregates[result.VariantID] = ABTestFeedbackAggregate{
+			VariantID:       result.VariantID,
+			ConversionCount: result.ConversionCount,
+			ConversionValue: result.ConversionValue,
+		}
+	}
+	return aggregates, nil
+}
+
 // GetABTestStatistics 获取AB测试统计数据
 func (dao *ABTestDao) GetABTestStatistics(abTestID uint64, days int) (map[uint64]int64, error) {
 	db := dao.helper.GetDatabase()
@@ -177,7 +274,7 @@ func (dao *ABTestDao) GetABTestStatistics(abTestID uint64, days int) (map[uint64
 		Group("variant_id")
 
 	if days > 0 {
-		query = query.Where(dao.getDateSubSQL(days), days)
+		query = query.Where(dao.getDateSubSQL("click_date"), days)
 	}
 
 	err := query.Find(&results).Error
@@ -210,7 +307,7 @@ func (dao *ABTestDao) GetDailyABTestStatistics(abTestID uint64, days int) ([]map
 		Order("date DESC, variant_id ASC")
 
 	if days > 0 {
-		query = query.Where(dao.getDateSubSQL(days), days)
+		query = query.Where(dao.getDateSubSQL("click_date"), days)
 	}
 
 	err := query.Find(&results).Error

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,36 @@ import (
 
 type ABTestController struct {
 	BaseResponse
+}
+
+// CreateABTestFeedback 公开转化反馈接口
+func (ctrl ABTestController) CreateABTestFeedback(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	var req dto.ABTestFeedbackRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
+		return
+	}
+
+	response, err := service.NewABTestService(helper).RecordABTestFeedback(
+		&req,
+		c.ClientIP(),
+		c.GetHeader("User-Agent"),
+		c.GetHeader("Referer"),
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrABTestFeedbackBadRequest):
+			ctrl.Error(c, constants.ErrCodeBadRequest, err.Error())
+		case errors.Is(err, service.ErrABTestFeedbackInvalidToken), errors.Is(err, service.ErrABTestFeedbackExpiredToken):
+			ctrl.Error(c, constants.ErrCodeUnauthorized, err.Error())
+		default:
+			ctrl.Error(c, constants.ErrCodeInternal, err.Error())
+		}
+		return
+	}
+
+	ctrl.Success(c, response)
 }
 
 // CreateABTest 创建AB测试
