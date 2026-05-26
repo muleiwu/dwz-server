@@ -13,70 +13,104 @@
 
     <main class="hero">
         <div class="container">
-            <div class="hero-content">
-                <div
-                    style="margin-bottom: 1rem; display: inline-block; padding: 0.5rem 1rem; background: rgba(14, 165, 233, 0.06); border-radius: 2rem; border: 1px solid rgba(14, 165, 233, 0.1); color: var(--primary); font-size: 0.88rem; font-weight: 600;">
-                    企业级私有化部署首选
-                </div>
-                <h1>{{.SiteName}}</h1>
-                <p>功能完善、高性能的企业级短链接服务平台。支持多域名、AB测试、用户管理、实时统计，满足企业各种复杂场景需求。</p>
+            <div class="hero-grid">
+                <section>
+                    <div class="eyebrow"><span class="eyebrow-dot"></span>企业级私有化短链网关</div>
+                    <h1>{{.SiteName}}</h1>
+                    <p>面向团队和业务系统的短链接服务。统一管理多域名、访问安全、A/B 测试、路由分流与访问分析，让每一次跳转都可控、可追踪、可治理。</p>
+                    <div class="hero-actions">
+                        <a href="/admin/" class="cta-button">
+                            进入后台管理
+                            {{template "icon_external" .}}
+                        </a>
+                        <a href="https://mdoc.cc/mliev/dwz" target="_blank" rel="noopener noreferrer" class="cta-button secondary">
+                            查看部署文档
+                        </a>
+                    </div>
+                </section>
 
-                <div class="action-buttons">
-                    <a href="/admin/" class="cta-button">
-                        进入后台管理
-                    </a>
-                    <a href="https://mdoc.cc/mliev/dwz" target="_blank" class="cta-button"
-                        style="background: #f1f5f9; color: var(--text-main); border: 1px solid #e2e8f0; box-shadow: none;">
-                        查看文档
-                    </a>
-                </div>
-
-                <div class="features">
-                    <div class="feature">
-                        <div class="feature-icon">📦</div>
-                        <h3>独立部署模式</h3>
-                        <p>零依赖部署，支持 SQLite + 内存缓存。无需安装复杂数据库，单文件下载即用，轻松上手。</p>
+                <aside class="hero-panel" aria-label="平台能力概览">
+                    <div class="hero-panel-header">
+                        <div class="panel-title">短链运行状态</div>
+                        <div class="panel-badge">Private Ready</div>
                     </div>
-                    <div class="feature">
-                        <div class="feature-icon">🧪</div>
-                        <h3>AB 测试系统</h3>
-                        <p>支持多版本测试与智能分流。同一短链可配置多个目标 URL，实时统计各版本转化率。</p>
+                    <div class="url-preview">
+                        <div class="url-preview-label">Managed Short Link</div>
+                        <div class="url-preview-value">{{.Domain}}/go/secure-link</div>
                     </div>
-                    <div class="feature">
-                        <div class="feature-icon">👥</div>
-                        <h3>完善的用户管理</h3>
-                        <p>支持多用户注册登录、Token 双重认证。基于角色的权限控制，详细的操作审计日志。</p>
+                    <div class="trust-list">
+                        <div class="trust-item">
+                            <div class="trust-value">10ms</div>
+                            <div class="trust-label">平均跳转响应</div>
+                        </div>
+                        <div class="trust-item">
+                            <div class="trust-value">QPS+</div>
+                            <div class="trust-label">高并发缓存架构</div>
+                        </div>
+                        <div class="trust-item">
+                            <div class="trust-value">RBAC</div>
+                            <div class="trust-label">团队权限治理</div>
+                        </div>
+                        <div class="trust-item">
+                            <div class="trust-value">Audit</div>
+                            <div class="trust-label">操作留痕追踪</div>
+                        </div>
                     </div>
-                    <div class="feature">
-                        <div class="feature-icon">⚡</div>
-                        <h3>高性能架构</h3>
-                        <p>Go 语言开发，平均响应 <10ms，单实例支持万级 QPS。多级缓存机制，从容应对高并发。</p>
-                    </div>
-                    <div class="feature">
-                        <div class="feature-icon">📊</div>
-                        <h3>多维度统计</h3>
-                        <p>实时记录点击数据，提供地理分布、设备信息、时间分布等详细分析报告。</p>
-                    </div>
-                    <div class="feature">
-                        <div class="feature-icon">🛡️</div>
-                        <h3>企业级安全</h3>
-                        <p>敏感信息自动脱敏，防刷机制，IP 访问频率限制，全方位保障数据安全。</p>
-                    </div>
-                </div>
+                </aside>
             </div>
         </div>
     </main>
 
+    <section class="section">
+        <div class="container">
+            <div class="section-heading">
+                <h2>为企业短链场景设计的完整能力</h2>
+                <p>从创建、分发、访问控制到统计分析，统一放在一个可私有化部署的平台中。</p>
+            </div>
+            <div class="features">
+                <article class="feature">
+                    <div class="feature-icon">{{template "icon_database" .}}</div>
+                    <h3>独立部署模式</h3>
+                    <p>支持 SQLite、MySQL、PostgreSQL 与多种缓存/发号策略，适配从单机到生产集群的不同部署方式。</p>
+                </article>
+                <article class="feature">
+                    <div class="feature-icon">{{template "icon_route" .}}</div>
+                    <h3>高级路由分流</h3>
+                    <p>按设备、语言、来源和 Query 条件命中不同目标地址，用一条短链承载多业务入口。</p>
+                </article>
+                <article class="feature">
+                    <div class="feature-icon">{{template "icon_shield" .}}</div>
+                    <h3>访问安全策略</h3>
+                    <p>密码验证、URL 风险拦截、访问限制与防刷策略，降低公开短链带来的安全风险。</p>
+                </article>
+                <article class="feature">
+                    <div class="feature-icon">{{template "icon_chart" .}}</div>
+                    <h3>多维度统计分析</h3>
+                    <p>记录点击、地域、设备、浏览器、来源和 UTM 数据，支持运营复盘和投放归因。</p>
+                </article>
+                <article class="feature">
+                    <div class="feature-icon">{{template "icon_users" .}}</div>
+                    <h3>团队权限管理</h3>
+                    <p>支持用户、工作区、角色和 Token 管理，满足团队协作和系统集成的权限边界。</p>
+                </article>
+                <article class="feature">
+                    <div class="feature-icon">{{template "icon_speed" .}}</div>
+                    <h3>高性能跳转链路</h3>
+                    <p>Go 服务与缓存机制支撑高频访问，减少数据库压力，让跳转保持稳定低延迟。</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
     <section class="cta-section">
         <div class="container">
-            <h2>立即部署您的私有短链服务</h2>
-            <p style="color: var(--text-muted); margin-bottom: 2rem; margin-top: 1rem;">支持 Docker 一键部署，几分钟内即可拥有完整的企业级短链系统</p>
+            <h2>部署属于自己的短链接基础设施</h2>
+            <p>保留数据控制权，统一治理公开链接入口，并为每一次访问留下可分析的上下文。</p>
             <div class="action-buttons">
-                <a href="https://github.com/muleiwu/dwz-server" target="_blank" class="cta-button">
+                <a href="https://github.com/muleiwu/dwz-server" target="_blank" rel="noopener noreferrer" class="cta-button">
                     GitHub 源码
                 </a>
-                <a href="https://cnb.cool/mliev/dwz/dwz-server" target="_blank" class="cta-button"
-                    style="background: #f1f5f9; color: var(--text-main); border: 1px solid #e2e8f0; box-shadow: none;">
+                <a href="https://cnb.cool/mliev/dwz/dwz-server" target="_blank" rel="noopener noreferrer" class="cta-button secondary">
                     CNB 仓库
                 </a>
             </div>

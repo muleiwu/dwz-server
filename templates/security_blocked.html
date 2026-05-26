@@ -11,16 +11,17 @@
 
     <main class="error-section">
         <div class="container">
-            <div class="error-content">
-                <div class="error-icon">🛡️</div>
-                <h1 class="error-title">{{.Title}}</h1>
+            <section class="error-content" role="alert" aria-labelledby="pageTitle">
+                <div class="status-icon error-icon">{{template "icon_shield" .}}</div>
+                <div class="status-kicker">安全策略已生效</div>
+                <h1 class="error-title" id="pageTitle">{{.Title}}</h1>
                 <p class="error-message">{{.Message}}</p>
                 <div class="error-code">Security Policy</div>
                 <div class="action-buttons">
                     <a href="/" class="btn btn-primary">返回首页</a>
                     <a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 
