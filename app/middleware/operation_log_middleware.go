@@ -234,6 +234,8 @@ type OperationMapping struct {
 var defaultOperationMappings = []OperationMapping{
 	{"POST", "/api/v1/short_links", "创建", "短网址"},
 	{"POST", "/api/v1/short_links/batch", "批量创建", "短网址"},
+	{"POST", "/api/v1/short_links/batch/status", "批量更新状态", "短网址"},
+	{"POST", "/api/v1/short_links/batch/delete", "批量删除", "短网址"},
 	{"GET", "/api/v1/short_links", "查看列表", "短网址"},
 	{"GET", "/api/v1/short_links/[^/]+", "查看详情", "短网址"},
 	{"PUT", "/api/v1/short_links/[^/]+", "更新", "短网址"},

@@ -98,6 +98,8 @@ func (Router) InitConfig() map[string]any {
 					short.POST("/:id/routes/reorder", controller.LinkRouteController{}.ReorderRoutes)
 					short.POST("/:id/routes/test", controller.LinkRouteController{}.TestRoute)
 					short.POST("/batch", controller.ShortLinkController{}.BatchCreateShortLinks)
+					short.POST("/batch/status", controller.ShortLinkController{}.BatchUpdateShortLinkStatus)
+					short.POST("/batch/delete", controller.ShortLinkController{}.BatchDeleteShortLinks)
 				}
 
 				workspaces := v1.Group("/workspaces")

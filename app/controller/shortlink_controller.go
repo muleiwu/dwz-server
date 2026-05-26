@@ -167,6 +167,56 @@ func (ctrl ShortLinkController) DeleteShortLink(c httpInterfaces.RouterContextIn
 	ctrl.SuccessWithMessage(c, "删除成功", nil)
 }
 
+// BatchUpdateShortLinkStatus 批量更新短网址状态
+func (ctrl ShortLinkController) BatchUpdateShortLinkStatus(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限更新短网址")
+		return
+	}
+	helper := helperPkg.GetHelper()
+	_ = helper
+
+	var req dto.BatchUpdateShortLinkStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ctrl.Error(c, constants.ErrCodeBadRequest, bindErrorMessage(err))
+		return
+	}
+
+	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
+	response, err := shortLinkService.BatchUpdateShortLinkStatusInWorkspace(req.IDs, *req.IsActive, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
+	if err != nil {
+		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
+		return
+	}
+
+	ctrl.Success(c, response)
+}
+
+// BatchDeleteShortLinks 批量删除短网址
+func (ctrl ShortLinkController) BatchDeleteShortLinks(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限删除短网址")
+		return
+	}
+	helper := helperPkg.GetHelper()
+	_ = helper
+
+	var req dto.BatchShortLinkIDsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ctrl.Error(c, constants.ErrCodeBadRequest, bindErrorMessage(err))
+		return
+	}
+
+	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
+	response, err := shortLinkService.BatchDeleteShortLinksInWorkspace(req.IDs, middleware.GetCurrentWorkspaceID(c))
+	if err != nil {
+		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
+		return
+	}
+
+	ctrl.Success(c, response)
+}
+
 // GetShortLinkList 获取短网址列表
 func (ctrl ShortLinkController) GetShortLinkList(c httpInterfaces.RouterContextInterface) {
 	helper := helperPkg.GetHelper()

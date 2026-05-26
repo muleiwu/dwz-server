@@ -387,6 +387,29 @@ func (s *ShortLinkService) UpdateShortLinkStatusInWorkspace(id uint64, isActive 
 	return s.modelToResponse(shortLink), nil
 }
 
+// BatchUpdateShortLinkStatusInWorkspace 批量更新短网址状态
+func (s *ShortLinkService) BatchUpdateShortLinkStatusInWorkspace(ids []uint64, isActive bool, workspaceID, userID uint64) (*dto.BatchUpdateShortLinkStatusResponse, error) {
+	success := make([]dto.ShortLinkResponse, 0, len(ids))
+	failed := make([]dto.BatchShortLinkOperationFailedItem, 0)
+
+	for _, id := range uniqueShortLinkIDs(ids) {
+		response, err := s.UpdateShortLinkStatusInWorkspace(id, isActive, workspaceID, userID)
+		if err != nil {
+			failed = append(failed, dto.BatchShortLinkOperationFailedItem{
+				ID:    id,
+				Error: err.Error(),
+			})
+			continue
+		}
+		success = append(success, *response)
+	}
+
+	return &dto.BatchUpdateShortLinkStatusResponse{
+		Success: success,
+		Failed:  failed,
+	}, nil
+}
+
 // DeleteShortLink 删除短网址
 func (s *ShortLinkService) DeleteShortLink(id uint64) error {
 	return s.DeleteShortLinkInWorkspace(id, 1)
@@ -417,6 +440,28 @@ func (s *ShortLinkService) DeleteShortLinkInWorkspace(id, workspaceID uint64) er
 	s.removeCacheShortLink(shortLink.Domain, shortLink.GetShortCode())
 
 	return nil
+}
+
+// BatchDeleteShortLinksInWorkspace 批量删除短网址
+func (s *ShortLinkService) BatchDeleteShortLinksInWorkspace(ids []uint64, workspaceID uint64) (*dto.BatchDeleteShortLinkResponse, error) {
+	success := make([]uint64, 0, len(ids))
+	failed := make([]dto.BatchShortLinkOperationFailedItem, 0)
+
+	for _, id := range uniqueShortLinkIDs(ids) {
+		if err := s.DeleteShortLinkInWorkspace(id, workspaceID); err != nil {
+			failed = append(failed, dto.BatchShortLinkOperationFailedItem{
+				ID:    id,
+				Error: err.Error(),
+			})
+			continue
+		}
+		success = append(success, id)
+	}
+
+	return &dto.BatchDeleteShortLinkResponse{
+		Success: success,
+		Failed:  failed,
+	}, nil
 }
 
 // GetShortLinkList 获取短网址列表
@@ -746,6 +791,19 @@ func (s *ShortLinkService) BatchCreateShortLinksInWorkspace(req *dto.BatchCreate
 		Success: success,
 		Failed:  failed,
 	}, nil
+}
+
+func uniqueShortLinkIDs(ids []uint64) []uint64 {
+	seen := make(map[uint64]struct{}, len(ids))
+	uniqueIDs := make([]uint64, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		uniqueIDs = append(uniqueIDs, id)
+	}
+	return uniqueIDs
 }
 
 // 私有方法

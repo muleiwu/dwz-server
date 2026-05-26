@@ -48,6 +48,35 @@ type UpdateShortLinkStatusRequest struct {
 	IsActive bool `json:"is_active" example:"true"`
 }
 
+// BatchShortLinkIDsRequest 批量短网址ID请求
+type BatchShortLinkIDsRequest struct {
+	IDs []uint64 `json:"ids" binding:"required,min=1,max=100,dive,gt=0"`
+}
+
+// BatchUpdateShortLinkStatusRequest 批量更新短网址状态请求
+type BatchUpdateShortLinkStatusRequest struct {
+	IDs      []uint64 `json:"ids" binding:"required,min=1,max=100,dive,gt=0"`
+	IsActive *bool    `json:"is_active" binding:"required"`
+}
+
+// BatchShortLinkOperationFailedItem 批量短网址操作失败项
+type BatchShortLinkOperationFailedItem struct {
+	ID    uint64 `json:"id"`
+	Error string `json:"error"`
+}
+
+// BatchUpdateShortLinkStatusResponse 批量更新短网址状态响应
+type BatchUpdateShortLinkStatusResponse struct {
+	Success []ShortLinkResponse                 `json:"success"`
+	Failed  []BatchShortLinkOperationFailedItem `json:"failed"`
+}
+
+// BatchDeleteShortLinkResponse 批量删除短网址响应
+type BatchDeleteShortLinkResponse struct {
+	Success []uint64                            `json:"success"`
+	Failed  []BatchShortLinkOperationFailedItem `json:"failed"`
+}
+
 // ShortLinkResponse 短网址响应
 type ShortLinkResponse struct {
 	ID              uint64        `json:"id"`

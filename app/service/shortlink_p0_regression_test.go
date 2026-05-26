@@ -452,6 +452,146 @@ func TestAdvancedRoutingPriorityFallbackAndABPrecedence(t *testing.T) {
 	}
 }
 
+func TestBatchUpdateShortLinkStatusInWorkspace(t *testing.T) {
+	helper := newShortLinkRegressionHelper(t)
+	db := helper.GetDatabase()
+	shortLinkSvc := NewShortLinkService(helper, context.Background())
+
+	domain := seedBatchShortLinkDomain(t, db)
+	first := seedBatchShortLink(t, db, domain.ID, 1, "batch-status-a", true)
+	second := seedBatchShortLink(t, db, domain.ID, 1, "batch-status-b", true)
+	otherWorkspace := seedBatchShortLink(t, db, domain.ID, 2, "batch-status-c", true)
+	shortLinkSvc.cacheShortLink(&first)
+	shortLinkSvc.cacheShortLink(&second)
+
+	response, err := shortLinkSvc.BatchUpdateShortLinkStatusInWorkspace(
+		[]uint64{first.ID, second.ID, first.ID, otherWorkspace.ID, 999_999},
+		false,
+		1,
+		42,
+	)
+	if err != nil {
+		t.Fatalf("batch update status: %v", err)
+	}
+	if len(response.Success) != 2 {
+		t.Fatalf("expected two successful status updates after de-duplication, got %+v", response)
+	}
+	if len(response.Failed) != 2 {
+		t.Fatalf("expected two failed status updates, got %+v", response)
+	}
+
+	var updatedFirst model.ShortLink
+	if err := db.First(&updatedFirst, first.ID).Error; err != nil {
+		t.Fatalf("load updated first short link: %v", err)
+	}
+	if updatedFirst.IsActive || updatedFirst.UpdatedBy == nil || *updatedFirst.UpdatedBy != 42 {
+		t.Fatalf("first short link status/update actor mismatch: %+v", updatedFirst)
+	}
+	cachedFirst, err := shortLinkSvc.getShortLinkFromCache(first.Domain, first.ShortCode)
+	if err != nil {
+		t.Fatalf("load updated short link from cache: %v", err)
+	}
+	if cachedFirst.IsActive {
+		t.Fatalf("cache was not refreshed after status update: %+v", cachedFirst)
+	}
+
+	var unchangedOther model.ShortLink
+	if err := db.First(&unchangedOther, otherWorkspace.ID).Error; err != nil {
+		t.Fatalf("load other workspace short link: %v", err)
+	}
+	if !unchangedOther.IsActive || unchangedOther.UpdatedBy != nil {
+		t.Fatalf("other workspace short link should be unchanged: %+v", unchangedOther)
+	}
+}
+
+func TestBatchDeleteShortLinksInWorkspace(t *testing.T) {
+	helper := newShortLinkRegressionHelper(t)
+	db := helper.GetDatabase()
+	shortLinkSvc := NewShortLinkService(helper, context.Background())
+
+	domain := seedBatchShortLinkDomain(t, db)
+	active := seedBatchShortLink(t, db, domain.ID, 1, "batch-delete-active", true)
+	inactive := seedBatchShortLink(t, db, domain.ID, 1, "batch-delete-inactive", false)
+	otherWorkspace := seedBatchShortLink(t, db, domain.ID, 2, "batch-delete-other", false)
+	shortLinkSvc.cacheShortLink(&active)
+	shortLinkSvc.cacheShortLink(&inactive)
+
+	response, err := shortLinkSvc.BatchDeleteShortLinksInWorkspace(
+		[]uint64{active.ID, inactive.ID, inactive.ID, otherWorkspace.ID, 999_999},
+		1,
+	)
+	if err != nil {
+		t.Fatalf("batch delete: %v", err)
+	}
+	if len(response.Success) != 1 || response.Success[0] != inactive.ID {
+		t.Fatalf("expected only inactive short link to be deleted, got %+v", response)
+	}
+	if len(response.Failed) != 3 {
+		t.Fatalf("expected active, other workspace, and missing links to fail, got %+v", response)
+	}
+	if response.Failed[0].ID != active.ID || !strings.Contains(response.Failed[0].Error, "请先禁用") {
+		t.Fatalf("expected active link deletion guard, got %+v", response.Failed[0])
+	}
+
+	var activeCount int64
+	if err := db.Model(&model.ShortLink{}).Where("id = ?", active.ID).Count(&activeCount).Error; err != nil {
+		t.Fatalf("count active short link: %v", err)
+	}
+	if activeCount != 1 {
+		t.Fatalf("active short link should remain, got count %d", activeCount)
+	}
+
+	var inactiveCount int64
+	if err := db.Model(&model.ShortLink{}).Where("id = ?", inactive.ID).Count(&inactiveCount).Error; err != nil {
+		t.Fatalf("count inactive short link: %v", err)
+	}
+	if inactiveCount != 0 {
+		t.Fatalf("inactive short link should be hard deleted, got count %d", inactiveCount)
+	}
+	if _, err := shortLinkSvc.getShortLinkFromCache(inactive.Domain, inactive.ShortCode); err == nil {
+		t.Fatal("deleted short link should be removed from cache")
+	}
+	if _, err := shortLinkSvc.getShortLinkFromCache(active.Domain, active.ShortCode); err != nil {
+		t.Fatalf("active short link cache should remain after failed delete: %v", err)
+	}
+}
+
+func seedBatchShortLinkDomain(t *testing.T, db *gorm.DB) model.Domain {
+	t.Helper()
+	domain := model.Domain{
+		WorkspaceID: 1,
+		Protocol:    "https",
+		Domain:      "batch.dwz.do",
+		IsActive:    true,
+	}
+	if err := db.Create(&domain).Error; err != nil {
+		t.Fatalf("seed batch domain: %v", err)
+	}
+	return domain
+}
+
+func seedBatchShortLink(t *testing.T, db *gorm.DB, domainID, workspaceID uint64, code string, active bool) model.ShortLink {
+	t.Helper()
+	shortLink := model.ShortLink{
+		WorkspaceID:  workspaceID,
+		DomainID:     domainID,
+		Protocol:     "https",
+		Domain:       "batch.dwz.do",
+		OriginalURL:  "https://example.com/" + code,
+		RedirectCode: httpStatusFound,
+		ShortCode:    code,
+		IsActive:     active,
+	}
+	if err := db.Create(&shortLink).Error; err != nil {
+		t.Fatalf("seed batch short link: %v", err)
+	}
+	if err := db.Model(&shortLink).Update("is_active", active).Error; err != nil {
+		t.Fatalf("set batch short link active flag: %v", err)
+	}
+	shortLink.IsActive = active
+	return shortLink
+}
+
 func waitForModelCount(t *testing.T, db *gorm.DB, modelValue any, query string, id uint64, want int64) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
