@@ -17,12 +17,23 @@ var staticFS embed.FS
 //go:embed all:migrations
 var migrationsFS embed.FS
 
+var (
+	Version   = "unknown"
+	BuildTime = "unknown"
+	GitCommit = "unknown"
+)
+
 func main() {
 	gomander.Run(func() {
 		cmd.Start(
 			cmd.WithTemplateFs(templateFS),
 			cmd.WithWebStaticFs(staticFS),
-			cmd.WithApp(config.App{MigrationsFS: migrationsFS}),
+			cmd.WithApp(config.App{
+				MigrationsFS: migrationsFS,
+				Version:      Version,
+				BuildTime:    BuildTime,
+				GitCommit:    GitCommit,
+			}),
 		)
 	})
 }

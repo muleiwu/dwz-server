@@ -28,7 +28,7 @@ type UpdateShortLinkRequest struct {
 	OriginalURL  string               `json:"original_url" binding:"omitempty,url"`
 	Title        string               `json:"title"`
 	Description  string               `json:"description"`
-	FallbackURL  *string              `json:"fallback_url" binding:"omitempty,url"`
+	FallbackURL  *string              `json:"fallback_url" binding:"omitempty"`
 	RedirectCode *int                 `json:"redirect_code" binding:"omitempty,oneof=301 302 307 308"`
 	ExpireAt     *time.Time           `json:"expire_at"`
 	IsActive     *bool                `json:"is_active"`
