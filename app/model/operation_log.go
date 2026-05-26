@@ -6,7 +6,8 @@ import (
 
 // OperationLog 操作日志模型
 type OperationLog struct {
-	ID           uint64    `gorm:"primaryKey" json:"id"`               // 自增主键
+	ID           uint64    `gorm:"primaryKey" json:"id"` // 自增主键
+	WorkspaceID  uint64    `gorm:"not null;default:1;index" json:"workspace_id"`
 	UserID       *uint64   `gorm:"index" json:"user_id"`               // 操作用户ID，可为空（匿名操作）
 	Username     string    `gorm:"size:50" json:"username"`            // 用户名（冗余存储便于查询）
 	Operation    string    `gorm:"size:100;not null" json:"operation"` // 操作名称

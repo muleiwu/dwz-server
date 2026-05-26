@@ -1,18 +1,45 @@
 package service
 
 import (
+	"crypto/hmac"
 	"crypto/md5"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/domain_validate"
 	"gorm.io/gorm"
 )
+
+const (
+	ABTestFeedbackQueryParam = "_dwz_abt"
+	abTestFeedbackTokenTTL   = 30 * 24 * time.Hour
+)
+
+var (
+	ErrABTestFeedbackInvalidToken = errors.New("AB测试反馈token无效")
+	ErrABTestFeedbackExpiredToken = errors.New("AB测试反馈token已过期")
+	ErrABTestFeedbackBadRequest   = errors.New("AB测试反馈参数错误")
+)
+
+type abTestFeedbackTokenPayload struct {
+	WorkspaceID uint64 `json:"workspace_id"`
+	ABTestID    uint64 `json:"ab_test_id"`
+	VariantID   uint64 `json:"variant_id"`
+	ShortLinkID uint64 `json:"short_link_id"`
+	SessionID   string `json:"session_id"`
+	IssuedAt    int64  `json:"iat"`
+	ExpiresAt   int64  `json:"exp"`
+}
 
 type ABTestService struct {
 	helper       interfaces.HelperInterface
@@ -30,8 +57,12 @@ func NewABTestService(helper interfaces.HelperInterface) *ABTestService {
 
 // CreateABTest 创建AB测试
 func (s *ABTestService) CreateABTest(req *dto.CreateABTestRequest) (*dto.ABTestResponse, error) {
+	return s.CreateABTestInWorkspace(req, 1)
+}
+
+func (s *ABTestService) CreateABTestInWorkspace(req *dto.CreateABTestRequest, workspaceID uint64) (*dto.ABTestResponse, error) {
 	// 验证短链接是否存在
-	_, err := s.shortLinkDao.FindByID(req.ShortLinkID)
+	_, err := s.shortLinkDao.FindByIDInWorkspace(req.ShortLinkID, workspaceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("短链接不存在")
@@ -52,6 +83,7 @@ func (s *ABTestService) CreateABTest(req *dto.CreateABTestRequest) (*dto.ABTestR
 
 	// 创建AB测试
 	abTest := &model.ABTest{
+		WorkspaceID:  workspaceID,
 		ShortLinkID:  req.ShortLinkID,
 		Name:         req.Name,
 		Description:  req.Description,
@@ -100,7 +132,14 @@ func (s *ABTestService) CreateABTest(req *dto.CreateABTestRequest) (*dto.ABTestR
 
 // GetABTest 获取AB测试详情
 func (s *ABTestService) GetABTest(id uint64) (*dto.ABTestResponse, error) {
+	return s.GetABTestInWorkspace(id, 1)
+}
+
+func (s *ABTestService) GetABTestInWorkspace(id, workspaceID uint64) (*dto.ABTestResponse, error) {
 	abTest, err := s.abTestDao.FindABTestByID(id)
+	if workspaceID > 0 {
+		abTest, err = s.abTestDao.FindABTestByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("AB测试不存在")
@@ -113,7 +152,14 @@ func (s *ABTestService) GetABTest(id uint64) (*dto.ABTestResponse, error) {
 
 // UpdateABTest 更新AB测试
 func (s *ABTestService) UpdateABTest(id uint64, req *dto.UpdateABTestRequest) (*dto.ABTestResponse, error) {
+	return s.UpdateABTestInWorkspace(id, req, 1)
+}
+
+func (s *ABTestService) UpdateABTestInWorkspace(id uint64, req *dto.UpdateABTestRequest, workspaceID uint64) (*dto.ABTestResponse, error) {
 	abTest, err := s.abTestDao.FindABTestByID(id)
+	if workspaceID > 0 {
+		abTest, err = s.abTestDao.FindABTestByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("AB测试不存在")
@@ -157,7 +203,14 @@ func (s *ABTestService) UpdateABTest(id uint64, req *dto.UpdateABTestRequest) (*
 
 // DeleteABTest 删除AB测试
 func (s *ABTestService) DeleteABTest(id uint64) error {
+	return s.DeleteABTestInWorkspace(id, 1)
+}
+
+func (s *ABTestService) DeleteABTestInWorkspace(id, workspaceID uint64) error {
 	abTest, err := s.abTestDao.FindABTestByID(id)
+	if workspaceID > 0 {
+		abTest, err = s.abTestDao.FindABTestByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("AB测试不存在")
@@ -175,6 +228,10 @@ func (s *ABTestService) DeleteABTest(id uint64) error {
 
 // GetABTestList 获取AB测试列表
 func (s *ABTestService) GetABTestList(req *dto.ABTestListRequest) (*dto.ABTestListResponse, error) {
+	return s.GetABTestListInWorkspace(req, 1)
+}
+
+func (s *ABTestService) GetABTestListInWorkspace(req *dto.ABTestListRequest, workspaceID uint64) (*dto.ABTestListResponse, error) {
 	if req.Page < 1 {
 		req.Page = 1
 	}
@@ -183,7 +240,7 @@ func (s *ABTestService) GetABTestList(req *dto.ABTestListRequest) (*dto.ABTestLi
 	}
 
 	offset := (req.Page - 1) * req.PageSize
-	abTests, total, err := s.abTestDao.ListABTests(offset, req.PageSize, req.ShortLinkID, req.Status)
+	abTests, total, err := s.abTestDao.ListABTestsInWorkspace(workspaceID, offset, req.PageSize, req.ShortLinkID, req.Status)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +260,14 @@ func (s *ABTestService) GetABTestList(req *dto.ABTestListRequest) (*dto.ABTestLi
 
 // StartABTest 启动AB测试
 func (s *ABTestService) StartABTest(id uint64, req *dto.StartABTestRequest) (*dto.ABTestResponse, error) {
+	return s.StartABTestInWorkspace(id, req, 1)
+}
+
+func (s *ABTestService) StartABTestInWorkspace(id uint64, req *dto.StartABTestRequest, workspaceID uint64) (*dto.ABTestResponse, error) {
 	abTest, err := s.abTestDao.FindABTestByID(id)
+	if workspaceID > 0 {
+		abTest, err = s.abTestDao.FindABTestByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("AB测试不存在")
@@ -238,7 +302,14 @@ func (s *ABTestService) StartABTest(id uint64, req *dto.StartABTestRequest) (*dt
 
 // StopABTest 停止AB测试
 func (s *ABTestService) StopABTest(id uint64, req *dto.StopABTestRequest) (*dto.ABTestResponse, error) {
+	return s.StopABTestInWorkspace(id, req, 1)
+}
+
+func (s *ABTestService) StopABTestInWorkspace(id uint64, req *dto.StopABTestRequest, workspaceID uint64) (*dto.ABTestResponse, error) {
 	abTest, err := s.abTestDao.FindABTestByID(id)
+	if workspaceID > 0 {
+		abTest, err = s.abTestDao.FindABTestByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("AB测试不存在")
@@ -292,13 +363,20 @@ func (s *ABTestService) GetABTestRedirectInfo(shortLinkID uint64, userIP, userAg
 
 	// 选择变体
 	selectedVariant := s.selectVariant(activeVariants, sessionID, abTest.TrafficSplit)
+	feedbackToken, err := s.generateABTestFeedbackToken(abTest.WorkspaceID, abTest.ID, selectedVariant.ID, abTest.ShortLinkID, sessionID, time.Now().Add(abTestFeedbackTokenTTL))
+	if err != nil {
+		return nil, err
+	}
 
 	return &dto.ABTestRedirectInfo{
-		ABTestID:    abTest.ID,
-		VariantID:   selectedVariant.ID,
-		TargetURL:   selectedVariant.TargetURL,
-		VariantName: selectedVariant.Name,
-		SessionID:   sessionID,
+		WorkspaceID:   abTest.WorkspaceID,
+		ABTestID:      abTest.ID,
+		VariantID:     selectedVariant.ID,
+		ShortLinkID:   abTest.ShortLinkID,
+		TargetURL:     selectedVariant.TargetURL,
+		VariantName:   selectedVariant.Name,
+		SessionID:     sessionID,
+		FeedbackToken: feedbackToken,
 	}, nil
 }
 
@@ -318,10 +396,17 @@ func (s *ABTestService) RecordABTestClick(redirectInfo *dto.ABTestRedirectInfo, 
 	if err != nil {
 		return err
 	}
+	shortLink, err := s.shortLinkDao.FindByID(abTest.ShortLinkID)
+	if err != nil {
+		return err
+	}
 
 	// 创建统计记录
 	region := s.helper.GetIPRegion().Lookup(clientIP)
+	metadata := parseTrafficMetadata(userAgent)
 	stat := &model.ABTestClickStatistic{
+		WorkspaceID: shortLink.WorkspaceID,
+		CampaignID:  shortLink.CampaignID,
 		ABTestID:    redirectInfo.ABTestID,
 		VariantID:   redirectInfo.VariantID,
 		ShortLinkID: abTest.ShortLinkID,
@@ -329,6 +414,16 @@ func (s *ABTestService) RecordABTestClick(redirectInfo *dto.ABTestRedirectInfo, 
 		UserAgent:   userAgent,
 		Referer:     referer,
 		QueryParams: queryParams,
+		UTMSource:   shortLink.UTMSource,
+		UTMMedium:   shortLink.UTMMedium,
+		UTMCampaign: shortLink.UTMCampaign,
+		UTMTerm:     shortLink.UTMTerm,
+		UTMContent:  shortLink.UTMContent,
+		DeviceType:  metadata.DeviceType,
+		Browser:     metadata.Browser,
+		OS:          metadata.OS,
+		IsBot:       metadata.IsBot,
+		BotName:     metadata.BotName,
 		Country:     region.Country,
 		Province:    region.Province,
 		City:        region.City,
@@ -340,9 +435,95 @@ func (s *ABTestService) RecordABTestClick(redirectInfo *dto.ABTestRedirectInfo, 
 	return s.abTestDao.CreateABTestClickStatistic(stat)
 }
 
+// RecordABTestFeedback 记录落地页或业务系统回传的转化结果。
+func (s *ABTestService) RecordABTestFeedback(req *dto.ABTestFeedbackRequest, clientIP, userAgent, referer string) (*dto.ABTestFeedbackResponse, error) {
+	if req == nil {
+		return nil, ErrABTestFeedbackBadRequest
+	}
+	req.FeedbackToken = strings.TrimSpace(req.FeedbackToken)
+	req.EventID = strings.TrimSpace(req.EventID)
+	req.Currency = strings.ToUpper(strings.TrimSpace(req.Currency))
+	if req.FeedbackToken == "" || req.EventID == "" {
+		return nil, ErrABTestFeedbackBadRequest
+	}
+	if len(req.EventID) > 128 || len(req.Currency) > 16 || len(req.Metadata) > 4096 {
+		return nil, ErrABTestFeedbackBadRequest
+	}
+	if req.Value != nil && *req.Value < 0 {
+		return nil, ErrABTestFeedbackBadRequest
+	}
+
+	payload, err := s.verifyABTestFeedbackToken(req.FeedbackToken, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	abTest, err := s.abTestDao.FindABTestByIDInWorkspace(payload.ABTestID, payload.WorkspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrABTestFeedbackInvalidToken
+		}
+		return nil, err
+	}
+	if abTest.ShortLinkID != payload.ShortLinkID {
+		return nil, ErrABTestFeedbackInvalidToken
+	}
+	var variantFound bool
+	for _, variant := range abTest.Variants {
+		if variant.ID == payload.VariantID {
+			variantFound = true
+			break
+		}
+	}
+	if !variantFound {
+		return nil, ErrABTestFeedbackInvalidToken
+	}
+
+	if existing, err := s.abTestDao.FindABTestFeedbackByEventID(payload.ABTestID, req.EventID); err == nil {
+		return s.feedbackResponse(existing, true), nil
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	occurredAt := time.Now()
+	if req.OccurredAt != nil {
+		occurredAt = *req.OccurredAt
+	}
+	feedback := &model.ABTestFeedback{
+		WorkspaceID: payload.WorkspaceID,
+		ABTestID:    payload.ABTestID,
+		VariantID:   payload.VariantID,
+		ShortLinkID: payload.ShortLinkID,
+		SessionID:   payload.SessionID,
+		EventID:     req.EventID,
+		Value:       req.Value,
+		Currency:    domain_validate.TruncateString(req.Currency, 16),
+		Metadata:    string(req.Metadata),
+		IP:          domain_validate.TruncateString(clientIP, 45),
+		UserAgent:   domain_validate.TruncateString(userAgent, 1024),
+		Referer:     domain_validate.TruncateString(referer, 2048),
+		OccurredAt:  occurredAt,
+	}
+	if err := s.abTestDao.CreateABTestFeedback(feedback); err != nil {
+		if existing, findErr := s.abTestDao.FindABTestFeedbackByEventID(payload.ABTestID, req.EventID); findErr == nil {
+			return s.feedbackResponse(existing, true), nil
+		}
+		return nil, err
+	}
+
+	return s.feedbackResponse(feedback, false), nil
+}
+
 // GetABTestStatistics 获取AB测试统计
 func (s *ABTestService) GetABTestStatistics(id uint64, days int) (*dto.ABTestStatisticResponse, error) {
+	return s.GetABTestStatisticsInWorkspace(id, days, 1)
+}
+
+func (s *ABTestService) GetABTestStatisticsInWorkspace(id uint64, days int, workspaceID uint64) (*dto.ABTestStatisticResponse, error) {
 	abTest, err := s.abTestDao.FindABTestByID(id)
+	if workspaceID > 0 {
+		abTest, err = s.abTestDao.FindABTestByIDInWorkspace(id, workspaceID)
+	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("AB测试不存在")
@@ -350,8 +531,12 @@ func (s *ABTestService) GetABTestStatistics(id uint64, days int) (*dto.ABTestSta
 		return nil, err
 	}
 
-	// 获取统计数据
-	variantStats, err := s.abTestDao.GetABTestStatistics(id, days)
+	// 获取点击与反馈统计数据
+	clickStats, err := s.abTestDao.GetABTestClickAggregates(id, days)
+	if err != nil {
+		return nil, err
+	}
+	feedbackStats, err := s.abTestDao.GetABTestFeedbackAggregates(id, days)
 	if err != nil {
 		return nil, err
 	}
@@ -364,34 +549,53 @@ func (s *ABTestService) GetABTestStatistics(id uint64, days int) (*dto.ABTestSta
 
 	// 计算总点击数
 	var totalClicks int64
-	for _, count := range variantStats {
-		totalClicks += count
+	var totalUniqueClicks int64
+	for _, stat := range clickStats {
+		totalClicks += stat.ClickCount
+		totalUniqueClicks += stat.UniqueClicks
+	}
+	var totalConversions int64
+	var conversionValue float64
+	for _, stat := range feedbackStats {
+		totalConversions += stat.ConversionCount
+		conversionValue += stat.ConversionValue
 	}
 
 	// 构建变体统计
 	variantStatsList := make([]dto.ABTestVariantStatResponse, 0, len(abTest.Variants))
 	var winningVariant *dto.ABTestVariantResponse
-	maxClicks := int64(0)
+	maxConversions := int64(0)
 
 	for _, variant := range abTest.Variants {
-		clickCount := variantStats[variant.ID]
+		clickAggregate := clickStats[variant.ID]
+		feedbackAggregate := feedbackStats[variant.ID]
+		clickCount := clickAggregate.ClickCount
+		uniqueClicks := clickAggregate.UniqueClicks
+		conversionCount := feedbackAggregate.ConversionCount
 		percentage := float64(0)
 		if totalClicks > 0 {
 			percentage = float64(clickCount) / float64(totalClicks) * 100
 		}
+		conversionRate := float64(0)
+		if uniqueClicks > 0 {
+			conversionRate = float64(conversionCount) / float64(uniqueClicks) * 100
+		}
 
 		variantStat := dto.ABTestVariantStatResponse{
-			Variant:        *s.variantModelToResponse(&variant),
-			ClickCount:     clickCount,
-			ConversionRate: percentage,
-			Percentage:     percentage,
+			Variant:         *s.variantModelToResponse(&variant),
+			ClickCount:      clickCount,
+			UniqueClicks:    uniqueClicks,
+			ConversionCount: conversionCount,
+			ConversionRate:  conversionRate,
+			ConversionValue: feedbackAggregate.ConversionValue,
+			Percentage:      percentage,
 		}
 
 		variantStatsList = append(variantStatsList, variantStat)
 
-		// 找出表现最好的变体
-		if clickCount > maxClicks {
-			maxClicks = clickCount
+		// 找出真实转化最多的变体，避免点击占比伪装成胜出结果。
+		if conversionCount > maxConversions {
+			maxConversions = conversionCount
 			variantResp := s.variantModelToResponse(&variant)
 			winningVariant = variantResp
 		}
@@ -406,17 +610,107 @@ func (s *ABTestService) GetABTestStatistics(id uint64, days int) (*dto.ABTestSta
 		})
 	}
 
+	conversionRate := float64(0)
+	if totalUniqueClicks > 0 {
+		conversionRate = float64(totalConversions) / float64(totalUniqueClicks) * 100
+	}
+
 	return &dto.ABTestStatisticResponse{
-		ABTestID:       id,
-		TotalClicks:    totalClicks,
-		VariantStats:   variantStatsList,
-		DailyStats:     dailyStatsList,
-		ConversionRate: 0, // 可以根据需要计算实际转化率
-		WinningVariant: winningVariant,
+		ABTestID:         id,
+		TotalClicks:      totalClicks,
+		TotalConversions: totalConversions,
+		ConversionValue:  conversionValue,
+		VariantStats:     variantStatsList,
+		DailyStats:       dailyStatsList,
+		ConversionRate:   conversionRate,
+		WinningVariant:   winningVariant,
 	}, nil
 }
 
 // 私有方法
+
+func (s *ABTestService) feedbackResponse(feedback *model.ABTestFeedback, duplicate bool) *dto.ABTestFeedbackResponse {
+	return &dto.ABTestFeedbackResponse{
+		ID:          feedback.ID,
+		Duplicate:   duplicate,
+		WorkspaceID: feedback.WorkspaceID,
+		ABTestID:    feedback.ABTestID,
+		VariantID:   feedback.VariantID,
+		ShortLinkID: feedback.ShortLinkID,
+		SessionID:   feedback.SessionID,
+		EventID:     feedback.EventID,
+	}
+}
+
+func (s *ABTestService) generateABTestFeedbackToken(workspaceID, abTestID, variantID, shortLinkID uint64, sessionID string, expiresAt time.Time) (string, error) {
+	payload := abTestFeedbackTokenPayload{
+		WorkspaceID: workspaceID,
+		ABTestID:    abTestID,
+		VariantID:   variantID,
+		ShortLinkID: shortLinkID,
+		SessionID:   sessionID,
+		IssuedAt:    time.Now().Unix(),
+		ExpiresAt:   expiresAt.Unix(),
+	}
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	payloadPart := base64.RawURLEncoding.EncodeToString(payloadJSON)
+	signature, err := s.signABTestFeedbackPayload(payloadPart)
+	if err != nil {
+		return "", err
+	}
+	return payloadPart + "." + signature, nil
+}
+
+func (s *ABTestService) verifyABTestFeedbackToken(token string, now time.Time) (*abTestFeedbackTokenPayload, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return nil, ErrABTestFeedbackInvalidToken
+	}
+	expectedSignature, err := s.signABTestFeedbackPayload(parts[0])
+	if err != nil {
+		return nil, err
+	}
+	providedSignature, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, ErrABTestFeedbackInvalidToken
+	}
+	expectedSignatureBytes, err := base64.RawURLEncoding.DecodeString(expectedSignature)
+	if err != nil {
+		return nil, err
+	}
+	if !hmac.Equal(expectedSignatureBytes, providedSignature) {
+		return nil, ErrABTestFeedbackInvalidToken
+	}
+
+	payloadJSON, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return nil, ErrABTestFeedbackInvalidToken
+	}
+	var payload abTestFeedbackTokenPayload
+	if err := json.Unmarshal(payloadJSON, &payload); err != nil {
+		return nil, ErrABTestFeedbackInvalidToken
+	}
+	if payload.WorkspaceID == 0 || payload.ABTestID == 0 || payload.VariantID == 0 || payload.ShortLinkID == 0 || payload.SessionID == "" {
+		return nil, ErrABTestFeedbackInvalidToken
+	}
+	if payload.ExpiresAt <= now.Unix() {
+		return nil, ErrABTestFeedbackExpiredToken
+	}
+	return &payload, nil
+}
+
+func (s *ABTestService) signABTestFeedbackPayload(payloadPart string) (string, error) {
+	secret := strings.TrimSpace(s.helper.GetConfig().GetString("jwt.secret", ""))
+	if secret == "" {
+		return "", ErrABTestFeedbackInvalidToken
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(payloadPart))
+	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil)), nil
+}
 
 // validateVariantWeights 验证变体权重
 func (s *ABTestService) validateVariantWeights(variants []dto.CreateABTestVariantRequest, trafficSplit string) error {
@@ -518,6 +812,7 @@ func (s *ABTestService) modelToResponse(abTest *model.ABTest) *dto.ABTestRespons
 
 	return &dto.ABTestResponse{
 		ID:           abTest.ID,
+		WorkspaceID:  abTest.WorkspaceID,
 		ShortLinkID:  abTest.ShortLinkID,
 		Name:         abTest.Name,
 		Description:  abTest.Description,

@@ -74,6 +74,44 @@ func (dao *OperationLogDAO) GetList(offset, limit int, userID *uint64, username,
 	return logs, total, err
 }
 
+func (dao *OperationLogDAO) GetListByWorkspace(workspaceID uint64, offset, limit int, userID *uint64, username, operation, resource, method string, status *int8, startTime, endTime *time.Time) ([]model.OperationLog, int64, error) {
+	var logs []model.OperationLog
+	var total int64
+
+	query := dao.helper.GetDatabase().Model(&model.OperationLog{}).Where("workspace_id = ?", workspaceID)
+
+	if userID != nil {
+		query = query.Where("user_id = ?", *userID)
+	}
+	if username != "" {
+		query = query.Where("username LIKE ?", "%"+username+"%")
+	}
+	if operation != "" {
+		query = query.Where("operation LIKE ?", "%"+operation+"%")
+	}
+	if resource != "" {
+		query = query.Where("resource = ?", resource)
+	}
+	if method != "" {
+		query = query.Where("method = ?", method)
+	}
+	if status != nil {
+		query = query.Where("status = ?", *status)
+	}
+	if startTime != nil {
+		query = query.Where("created_at >= ?", *startTime)
+	}
+	if endTime != nil {
+		query = query.Where("created_at <= ?", *endTime)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&logs).Error
+	return logs, total, err
+}
+
 // DeleteOldLogs 删除过期日志（物理删除）
 func (dao *OperationLogDAO) DeleteOldLogs(days int) error {
 	cutoffTime := time.Now().AddDate(0, 0, -days)

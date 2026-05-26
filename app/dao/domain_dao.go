@@ -39,10 +39,28 @@ func (d *DomainDao) FindByID(id uint64) (*model.Domain, error) {
 	return &domainModel, nil
 }
 
+func (d *DomainDao) FindByIDInWorkspace(id, workspaceID uint64) (*model.Domain, error) {
+	var domainModel model.Domain
+	err := d.helper.GetDatabase().Where("id = ? AND workspace_id = ? AND deleted_at IS NULL", id, workspaceID).First(&domainModel).Error
+	if err != nil {
+		return nil, err
+	}
+	return &domainModel, nil
+}
+
 // List 获取域名列表
 func (d *DomainDao) List() ([]model.Domain, error) {
 	var domains []model.Domain
 	err := d.helper.GetDatabase().Where("deleted_at IS NULL").Order("created_at DESC").Find(&domains).Error
+	return domains, err
+}
+
+func (d *DomainDao) ListByWorkspace(workspaceID uint64) ([]model.Domain, error) {
+	var domains []model.Domain
+	err := d.helper.GetDatabase().
+		Where("workspace_id = ? AND deleted_at IS NULL", workspaceID).
+		Order("created_at DESC").
+		Find(&domains).Error
 	return domains, err
 }
 
@@ -56,6 +74,12 @@ func (d *DomainDao) IdToUpdate(domainId uint64, where map[string]any) error {
 	return d.helper.GetDatabase().Model(&model.Domain{}).Where("id = ?", domainId).Updates(where).Error
 }
 
+func (d *DomainDao) IdToUpdateInWorkspace(domainId, workspaceID uint64, where map[string]any) error {
+	return d.helper.GetDatabase().Model(&model.Domain{}).
+		Where("id = ? AND workspace_id = ?", domainId, workspaceID).
+		Updates(where).Error
+}
+
 // Delete 删除域名（硬删除）
 func (d *DomainDao) Delete(id uint64) error {
 	return d.helper.GetDatabase().Unscoped().Delete(&model.Domain{}, id).Error
@@ -65,6 +89,14 @@ func (d *DomainDao) Delete(id uint64) error {
 func (d *DomainDao) GetActiveDomains() ([]model.Domain, error) {
 	var domains []model.Domain
 	err := d.helper.GetDatabase().Where("is_active = ? AND deleted_at IS NULL", true).Find(&domains).Error
+	return domains, err
+}
+
+func (d *DomainDao) GetActiveDomainsByWorkspace(workspaceID uint64) ([]model.Domain, error) {
+	var domains []model.Domain
+	err := d.helper.GetDatabase().
+		Where("workspace_id = ? AND is_active = ? AND deleted_at IS NULL", workspaceID, true).
+		Find(&domains).Error
 	return domains, err
 }
 

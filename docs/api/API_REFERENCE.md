@@ -15,6 +15,14 @@
 1. **签名认证（推荐）**：基于 HMAC-SHA256 的安全认证，详见 [签名认证文档](./API_SIGNATURE_AUTH.md)
 2. **Bearer Token 认证**：传统 Token 认证，详见 [Bearer Token 文档](./API_BEARER_AUTH.md)
 
+所有受保护接口支持工作区上下文请求头：
+
+```http
+X-Workspace-Id: 1
+```
+
+未传 `X-Workspace-Id` 时，服务端会自动选择当前用户第一个可用工作区，以兼容旧客户端。
+
 ## 通用响应格式
 
 ### 成功响应
@@ -264,10 +272,16 @@ POST /api/v1/short_links
 ```json
 {
     "original_url": "https://www.example.com/very/long/url",
-    "domain": "https://short.ly",
+    "domain": "dwz.do",
     "custom_code": "mylink",
     "title": "示例网站",
     "description": "这是一个示例网站",
+    "campaign_id": 1,
+    "tag_ids": [1, 2],
+    "utm_source": "newsletter",
+    "utm_medium": "email",
+    "utm_campaign": "spring",
+    "notes": "投放备注",
     "expire_at": "2025-12-31T23:59:59Z"
 }
 ```
@@ -279,6 +293,10 @@ POST /api/v1/short_links
 | custom_code | string | 否 | 自定义短码 |
 | title | string | 否 | 标题 |
 | description | string | 否 | 描述 |
+| campaign_id | number | 否 | 活动 Campaign ID |
+| tag_ids | array | 否 | 标签 Tag ID 列表 |
+| utm_source/utm_medium/utm_campaign/utm_term/utm_content | string | 否 | UTM 参数；服务端会合并到原始 URL query，同名参数以请求字段为准 |
+| notes | string | 否 | 内部备注 |
 | expire_at | string | 否 | 过期时间 |
 
 **响应**
@@ -290,11 +308,19 @@ POST /api/v1/short_links
     "data": {
         "id": 1,
         "short_code": "abc123",
-        "domain": "https://short.ly",
-        "short_url": "https://short.ly/abc123",
-        "original_url": "https://www.example.com/very/long/url",
+        "workspace_id": 1,
+        "campaign_id": 1,
+        "campaign_name": "spring",
+        "tags": [{"id": 1, "name": "推广", "color": "#1677ff"}],
+        "domain": "dwz.do",
+        "short_url": "https://dwz.do/abc123",
+        "original_url": "https://www.example.com/very/long/url?utm_campaign=spring&utm_medium=email&utm_source=newsletter",
         "title": "示例网站",
         "description": "这是一个示例网站",
+        "utm_source": "newsletter",
+        "utm_medium": "email",
+        "utm_campaign": "spring",
+        "notes": "投放备注",
         "expire_at": "2025-12-31T23:59:59Z",
         "is_active": true,
         "click_count": 0,
@@ -321,7 +347,7 @@ POST /api/v1/short_links/batch
         "https://www.example2.com",
         "https://www.example3.com"
     ],
-    "domain": "https://short.ly"
+    "domain": "dwz.do"
 }
 ```
 
@@ -341,7 +367,7 @@ POST /api/v1/short_links/batch
             {
                 "id": 1,
                 "short_code": "abc123",
-                "short_url": "https://short.ly/abc123",
+                "short_url": "https://dwz.do/abc123",
                 "original_url": "https://www.example1.com"
             }
         ],
@@ -404,8 +430,8 @@ GET /api/v1/short_links/:id
     "data": {
         "id": 1,
         "short_code": "abc123",
-        "domain": "https://short.ly",
-        "short_url": "https://short.ly/abc123",
+        "domain": "dwz.do",
+        "short_url": "https://dwz.do/abc123",
         "original_url": "https://www.example.com",
         "title": "示例网站",
         "description": "这是一个示例网站",
@@ -491,6 +517,80 @@ GET /api/v1/short_links/:id/statistics
 
 ---
 
+## 工作区、活动 Campaign 与标签 Tag
+
+### 工作区
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/v1/workspaces` | 当前用户可用工作区 |
+| POST | `/api/v1/workspaces` | 创建工作区并成为所有者 owner |
+| PUT | `/api/v1/workspaces/current` | 更新当前工作区 |
+| GET | `/api/v1/workspaces/current/members` | 当前工作区成员 |
+| POST | `/api/v1/workspaces/current/members` | 添加已有用户到当前工作区 |
+| PUT | `/api/v1/workspaces/current/members/:user_id` | 更新成员角色 |
+| DELETE | `/api/v1/workspaces/current/members/:user_id` | 移除成员 |
+
+### 活动 Campaign
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/v1/campaigns` | 活动列表 |
+| POST | `/api/v1/campaigns` | 创建活动 |
+| GET | `/api/v1/campaigns/:id` | 活动详情 |
+| PUT | `/api/v1/campaigns/:id` | 更新活动 |
+| DELETE | `/api/v1/campaigns/:id` | 删除活动 |
+| GET | `/api/v1/reports/campaigns` | 活动报表 |
+
+### 标签 Tag
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/v1/tags` | 标签列表 |
+| POST | `/api/v1/tags` | 创建标签 |
+| GET | `/api/v1/tags/:id` | 标签详情 |
+| PUT | `/api/v1/tags/:id` | 更新标签 |
+| DELETE | `/api/v1/tags/:id` | 删除标签，短链不会被删除 |
+
+## 链接安全 Link Security
+
+受保护接口继续使用 `X-Workspace-Id` 工作区上下文；公开接口不需要登录。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/v1/short_links/:id/security` | 获取短链安全配置 |
+| PUT | `/api/v1/short_links/:id/security` | 更新访问密码、时间窗、最大访问次数、IP/Bot 策略和举报入口 |
+| POST | `/api/v1/short_links/:id/security/rescan` | 使用当前 URL 安全规则重扫短链 |
+| GET | `/api/v1/security/url_rules` | URL 安全规则列表 |
+| POST | `/api/v1/security/url_rules` | 创建域名/关键词 allow/block 规则 |
+| PUT | `/api/v1/security/url_rules/:id` | 更新 URL 安全规则 |
+| DELETE | `/api/v1/security/url_rules/:id` | 删除 URL 安全规则 |
+| GET | `/api/v1/security/events` | 安全事件列表 |
+| GET | `/api/v1/abuse_reports` | 滥用举报列表 |
+| PUT | `/api/v1/abuse_reports/:id` | 处理举报，可选择禁用短链 |
+| POST | `/api/v1/public/link_access/password` | 公开访问密码验证 |
+| POST | `/api/v1/public/abuse_reports` | 公开滥用举报提交 |
+
+短链创建/更新可附带 `security` 对象：
+
+```json
+{
+  "security": {
+    "password": "secret",
+    "password_enabled": true,
+    "access_window_start": "2026-06-01T00:00:00+08:00",
+    "access_window_end": "2026-06-30T23:59:59+08:00",
+    "max_clicks": 1000,
+    "ip_policy": "off",
+    "ip_rules": [{"cidr": "203.0.113.0/24"}],
+    "bot_policy": "record_only",
+    "report_enabled": true
+  }
+}
+```
+
+短链响应增加 `security_enabled`、`security_summary`、`report_enabled`。短链列表支持 `security_status=none|enabled|password|restricted|url_blocked|reported`。
+
 ## 域名管理接口
 
 ### 创建域名
@@ -505,7 +605,7 @@ POST /api/v1/domains
 
 ```json
 {
-    "domain": "short.ly",
+    "domain": "dwz.do",
     "protocol": "https",
     "site_name": "短链接服务",
     "icp_number": "京ICP备12345678号",
@@ -736,6 +836,224 @@ GET /api/v1/click_statistics
 
 ```
 GET /api/v1/click_statistics/analysis
+```
+
+响应增加设备、浏览器、操作系统、机器人 Bot 和 UTM 维度字段：`top_devices`、`top_browsers`、`top_os`、`bot_stats`、`top_utm_sources`、`top_utm_campaigns`。支持 `short_link_id`、`campaign_id`、`tag_id`、`device_type`、`is_bot`、`start_date`、`end_date` 过滤。
+
+### 获取地图地理聚合
+
+**请求**
+
+```
+GET /api/v1/click_statistics/geo-analysis
+```
+
+地图专用地理聚合，不做 Top N 截断。支持 `level=country|province|city`，默认 `country`；支持 `short_link_id`、`campaign_id`、`route_id`、`tag_id`、`country`、`province`、`device_type`、`is_bot`、`start_date`、`end_date` 过滤。响应包含 `total_clicks`、`unique_ips`、`level`、`country`、`province` 与 `regions`。
+
+### 导出点击明细
+
+**请求**
+
+```
+GET /api/v1/click_statistics/export
+```
+
+返回同步 CSV 文件，支持 `short_link_id`、`campaign_id`、`tag_id`、`start_date`、`end_date`、`device_type`、`is_bot`。单次最多 50,000 行，超过时返回 400，需缩小筛选范围。
+
+---
+
+## A/B 测试接口
+
+### A/B 测试反馈流程
+
+1. 管理端创建并启动 A/B 测试。
+2. 用户访问短链后，系统按实验配置选择变体并跳转到变体目标 URL。
+3. 跳转目标 URL 会追加 `_dwz_abt` 查询参数，例如：`https://example.com/page-a?_dwz_abt=<token>`。
+4. 落地页或业务系统在注册、下单、购买等结果发生后，调用公开反馈接口回传转化。
+5. 统计接口根据点击与反馈事件计算真实转化数、转化率和转化价值。
+
+`_dwz_abt` 是服务端签名 token，绑定 `workspace_id`、`ab_test_id`、`variant_id`、`short_link_id` 和 `session_id`，默认有效期 30 天。直接访问变体目标 URL 不会生成 token，必须通过短链跳转进入实验。
+
+管理端 A/B 测试统计弹窗中的“分流反馈”表单仅用于手动验证。生产环境应在落地页或业务系统中自动调用反馈接口。
+
+### 获取 A/B 测试统计
+
+**请求**
+
+```
+GET /api/v1/ab_tests/{id}/statistics
+```
+
+**路径参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | A/B 测试 ID |
+
+**查询参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| days | int | 否 | 统计最近天数，默认 7，最大 365 |
+
+**响应示例**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "ab_test_id": 1,
+    "total_clicks": 1000,
+    "total_conversions": 138,
+    "conversion_value": 2999.5,
+    "variant_stats": [
+      {
+        "variant": {
+          "id": 1,
+          "ab_test_id": 1,
+          "name": "版本A",
+          "target_url": "https://example.com/page-a",
+          "weight": 50,
+          "is_control": true
+        },
+        "click_count": 480,
+        "unique_clicks": 460,
+        "conversion_count": 58,
+        "conversion_rate": 12.61,
+        "conversion_value": 1200,
+        "percentage": 48
+      }
+    ],
+    "daily_stats": [
+      {
+        "date": "2024-01-15",
+        "variants": {
+          "1": 45,
+          "2": 55
+        }
+      }
+    ],
+    "conversion_rate": 13.8,
+    "winning_variant": {
+      "id": 1,
+      "name": "版本A"
+    }
+  }
+}
+```
+
+**统计口径**
+
+- `click_count`：变体点击次数。
+- `unique_clicks`：变体唯一会话点击数。
+- `conversion_count`：通过反馈接口写入的业务结果数。
+- 变体 `conversion_rate`：`conversion_count / unique_clicks * 100`，无唯一点击时为 `0`。
+- 顶层 `conversion_rate`：`total_conversions / 所有变体 unique_clicks 之和 * 100`。
+- `conversion_value`：反馈事件 `value` 汇总。
+- `winning_variant`：当前按转化数最高的变体计算。
+
+### 上报转化反馈
+
+**请求**
+
+```
+POST /api/v1/public/ab_test_feedback
+```
+
+公开接口，不需要登录态或 Bearer Token。写入范围由 `_dwz_abt` 签名 token 限制。
+
+**请求体**
+
+```json
+{
+  "feedback_token": "<_dwz_abt 参数值>",
+  "event_id": "order-202401150001",
+  "value": 99.9,
+  "currency": "CNY",
+  "metadata": {
+    "plan": "pro"
+  },
+  "occurred_at": "2024-01-15T10:30:00Z"
+}
+```
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| feedback_token | string | 是 | 短链 A/B 跳转目标 URL 中 `_dwz_abt` 的值 |
+| event_id | string | 是 | 业务事件唯一 ID，同一 A/B 测试内幂等，最长 128 字符 |
+| value | number | 否 | 转化价值，必须大于等于 0 |
+| currency | string | 否 | 币种，服务端会转为大写，最长 16 字符 |
+| metadata | object | 否 | 业务附加信息，序列化后最大 4096 字节 |
+| occurred_at | string | 否 | 业务事件发生时间，ISO 8601 格式；不传则使用服务端当前时间 |
+
+**成功响应**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": 10,
+    "duplicate": false,
+    "workspace_id": 1,
+    "ab_test_id": 1,
+    "variant_id": 2,
+    "short_link_id": 5,
+    "session_id": "ab_1_5_xxx",
+    "event_id": "order-202401150001"
+  }
+}
+```
+
+重复提交相同 `event_id` 会返回成功，但 `duplicate` 为 `true`，不会重复计入转化：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": 10,
+    "duplicate": true,
+    "workspace_id": 1,
+    "ab_test_id": 1,
+    "variant_id": 2,
+    "short_link_id": 5,
+    "session_id": "ab_1_5_xxx",
+    "event_id": "order-202401150001"
+  }
+}
+```
+
+**错误说明**
+
+| HTTP 状态 | code | 场景 |
+|-----------|------|------|
+| 400 | 40001 | 缺少 `feedback_token`、缺少 `event_id`、字段长度非法、`value` 为负数 |
+| 401 | 40101 | token 无效、被篡改、过期，或 token 绑定的实验/变体不存在 |
+| 500 | 50001 | 服务端写入失败 |
+
+**落地页自动回传示例**
+
+```js
+const token = new URLSearchParams(location.search).get('_dwz_abt');
+
+if (token) {
+  await fetch('https://your-domain.com/api/v1/public/ab_test_feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      feedback_token: token,
+      event_id: 'order-202401150001',
+      value: 99.9,
+      currency: 'CNY',
+      metadata: {
+        order_id: '202401150001',
+        plan: 'pro'
+      }
+    })
+  });
+}
 ```
 
 ---

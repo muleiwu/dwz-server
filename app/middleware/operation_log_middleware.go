@@ -77,6 +77,7 @@ func OperationLogMiddleware(config ...*OperationLogConfig) httpInterfaces.Handle
 
 		var userID uint64
 		var username string
+		workspaceID := GetCurrentWorkspaceID(c)
 		if user := GetCurrentUser(c); user != nil {
 			userID = user.ID
 			username = user.Username
@@ -93,6 +94,7 @@ func OperationLogMiddleware(config ...*OperationLogConfig) httpInterfaces.Handle
 
 		logFunc := func() {
 			if err := createOperationLog(
+				workspaceID,
 				&userID,
 				username,
 				operation,
@@ -195,7 +197,7 @@ func maskJSONSensitiveFields(data map[string]any, sensitiveFields []string) {
 	}
 }
 
-func createOperationLog(userID *uint64, username, operation, resource, resourceID, method, path, requestBody, responseBody, ip, userAgent string, responseCode int, executeTime int64) error {
+func createOperationLog(workspaceID uint64, userID *uint64, username, operation, resource, resourceID, method, path, requestBody, responseBody, ip, userAgent string, responseCode int, executeTime int64) error {
 	logService := service.NewOperationLogService(helper.GetHelper())
 	status := int8(1)
 	errorMessage := ""
@@ -203,6 +205,7 @@ func createOperationLog(userID *uint64, username, operation, resource, resourceI
 		status = 0
 	}
 	return logService.CreateLog(
+		workspaceID,
 		userID,
 		username,
 		operation,
@@ -236,6 +239,12 @@ var defaultOperationMappings = []OperationMapping{
 	{"PUT", "/api/v1/short_links/[^/]+", "更新", "短网址"},
 	{"DELETE", "/api/v1/short_links/[^/]+", "删除", "短网址"},
 	{"GET", "/api/v1/short_links/[^/]+/statistics", "查看统计", "短网址"},
+	{"GET", "/api/v1/short_links/[^/]+/routes", "查看", "高级路由"},
+	{"POST", "/api/v1/short_links/[^/]+/routes", "创建", "高级路由"},
+	{"PUT", "/api/v1/short_links/[^/]+/routes/[^/]+", "更新", "高级路由"},
+	{"DELETE", "/api/v1/short_links/[^/]+/routes/[^/]+", "删除", "高级路由"},
+	{"POST", "/api/v1/short_links/[^/]+/routes/reorder", "排序", "高级路由"},
+	{"POST", "/api/v1/short_links/[^/]+/routes/test", "测试", "高级路由"},
 	{"POST", "/api/v1/domains", "创建", "域名"},
 	{"GET", "/api/v1/domains", "查看列表", "域名"},
 	{"GET", "/api/v1/domains/[^/]+", "查看详情", "域名"},

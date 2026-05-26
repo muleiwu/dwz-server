@@ -1,0 +1,31 @@
+# 功能矩阵
+
+## 已实现
+
+| 模块 | 功能 |
+| --- | --- |
+| 短链管理 | 创建、更新、禁用、删除、批量创建、自定义短码、过期时间 |
+| 域名管理 | 多域名、协议配置、启用/禁用、参数透传、防红配置、短码生成策略 |
+| A/B 测试 | 多版本、权重/平均分流、会话一致性、基础统计 |
+| 用户与认证 | 登录、用户管理、JWT、Bearer Token、签名 Token、OIDC 登录/绑定 |
+| 统计分析 | 点击记录、地域/IP/来源/时间分布、设备/浏览器/OS/机器人 Bot/UTM 分布、CSV 导出 |
+| 工作区 | 默认工作区、多工作区切换、成员管理、所有者 owner/管理员 admin/成员 member/只读 viewer 权限 |
+| 营销归因 | 活动 Campaign、标签 Tag、短链 UTM Builder、活动报表 |
+| 链接安全 | 访问密码 Password、时间窗/最大访问次数、IP allowlist/blocklist、Bot 策略、URL 本地规则扫描、滥用举报 Abuse report、安全事件 |
+| 部署 | MySQL、PostgreSQL、SQLite，Redis/本地缓存，安装向导 |
+
+## P0 已落地
+
+| 增量 | 状态 | 说明 |
+| --- | --- | --- |
+| P0.0 基线修正 | 已完成 Done | 文档示例修正、README 导出描述更新、功能矩阵补齐 |
+| P0.1 工作区 Workspace 与权限 | 已完成 Done | 默认工作区兼容迁移、`X-Workspace-Id`、角色权限、管理端工作区页 |
+| P0.2 活动 Campaign/标签 Tag/UTM | 已完成 Done | 活动/标签 API、短链 UTM 字段和合并、管理端基础页面 |
+| P0.3 统计增强与导出 | 已完成 Done | User-Agent 解析、机器人 Bot/设备/UTM 统计、同步 CSV 导出 50,000 行上限 |
+
+## P1/P2 规划中
+
+| 优先级 | 功能 |
+| --- | --- |
+| P1 | 二维码产品化、高级路由、Webhook、Link-in-bio |
+| P2 | DNS/SSL 运维、异步导出任务、数据保留和隐私治理 |

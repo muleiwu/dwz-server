@@ -11,33 +11,30 @@
 
     <main class="error-section">
         <div class="container">
-            <div class="error-content">
-                <div class="error-icon">🚫</div>
-                <h1 class="error-title">短链接已禁用</h1>
+            <section class="error-content" role="alert" aria-labelledby="pageTitle">
+                <div class="status-icon error-icon">{{template "icon_disabled" .}}</div>
+                <div class="status-kicker">访问已暂停</div>
+                <h1 class="error-title" id="pageTitle">短链接已禁用</h1>
                 <p class="error-message">
-                    抱歉，您访问的短链接已被管理员禁用。<br>
-                    该链接可能因为违规或其他原因被暂停访问。
+                    该短链接当前已被管理员暂停访问。链接可能正在审核、存在风险，或由创建者主动关闭。
                 </p>
-                <div class="error-code">错误代码: 403</div>
-                
+                <div class="error-code">错误代码：403</div>
                 <div class="action-buttons">
                     <a href="/" class="btn btn-primary">返回首页</a>
                     <a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
                 </div>
-                
                 <div class="suggestions">
-                    <h3>可能的原因</h3>
+                    <h3>建议处理方式</h3>
                     <ul>
-                        <li>• 链接内容违反了使用条款</li>
-                        <li>• 链接被举报并经核实违规</li>
-                        <li>• 链接存在安全风险</li>
-                        <li>• 链接创建者主动禁用了访问</li>
+                        <li>联系链接创建者确认链接状态。</li>
+                        <li>检查是否有新的可访问链接。</li>
+                        <li>如认为误拦截，请联系网站管理员。</li>
                     </ul>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 
     {{template "footer" .}}
 </body>
-</html> 
+</html>

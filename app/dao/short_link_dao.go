@@ -3,6 +3,7 @@ package dao
 import (
 	"time"
 
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	"gorm.io/gorm"
@@ -34,7 +35,19 @@ func (d *ShortLinkDao) FindByShortCode(domain, shortCode string) (*model.ShortLi
 // FindByID 根据ID查找短网址
 func (d *ShortLinkDao) FindByID(id uint64) (*model.ShortLink, error) {
 	var shortLink model.ShortLink
-	err := d.helper.GetDatabase().Where("id = ? AND deleted_at IS NULL", id).First(&shortLink).Error
+	err := d.helper.GetDatabase().Preload("Campaign").Where("id = ? AND deleted_at IS NULL", id).First(&shortLink).Error
+	if err != nil {
+		return nil, err
+	}
+	return &shortLink, nil
+}
+
+func (d *ShortLinkDao) FindByIDInWorkspace(id, workspaceID uint64) (*model.ShortLink, error) {
+	var shortLink model.ShortLink
+	err := d.helper.GetDatabase().
+		Preload("Campaign").
+		Where("id = ? AND workspace_id = ? AND deleted_at IS NULL", id, workspaceID).
+		First(&shortLink).Error
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +87,70 @@ func (d *ShortLinkDao) List(offset, limit int, domain, keyword string) ([]model.
 
 	// 获取列表
 	err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&shortLinks).Error
+	return shortLinks, total, err
+}
+
+func (d *ShortLinkDao) ListInWorkspace(workspaceID uint64, offset, limit int, req *dto.ShortLinkListRequest) ([]model.ShortLink, int64, error) {
+	var shortLinks []model.ShortLink
+	var total int64
+
+	query := d.helper.GetDatabase().Model(&model.ShortLink{}).
+		Where("short_links.workspace_id = ? AND short_links.deleted_at IS NULL", workspaceID)
+
+	if req.Domain != "" {
+		query = query.Where("short_links.domain = ?", req.Domain)
+	}
+	if req.Keyword != "" {
+		keyword := "%" + req.Keyword + "%"
+		query = query.Where("short_links.original_url LIKE ? OR short_links.title LIKE ? OR short_links.description LIKE ?",
+			keyword, keyword, keyword)
+	}
+	if req.CampaignID > 0 {
+		query = query.Where("short_links.campaign_id = ?", req.CampaignID)
+	}
+	if req.CreatedBy > 0 {
+		query = query.Where("short_links.created_by = ?", req.CreatedBy)
+	}
+	if req.TagID > 0 {
+		query = query.Joins("JOIN short_link_tags slt ON slt.short_link_id = short_links.id AND slt.tag_id = ?", req.TagID)
+	}
+	switch req.SecurityStatus {
+	case "none":
+		query = query.Joins("LEFT JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.id IS NULL OR (lss.password_enabled = ? AND lss.access_window_start IS NULL AND lss.access_window_end IS NULL AND lss.max_clicks IS NULL AND lss.ip_policy = ? AND lss.bot_policy <> ? AND lss.report_enabled = ? AND lss.url_blocked = ?)",
+				false, model.LinkIPPolicyOff, model.LinkBotPolicyBlockKnownBots, false, false)
+	case "enabled":
+		query = query.Joins("JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.password_enabled = ? OR lss.access_window_start IS NOT NULL OR lss.access_window_end IS NOT NULL OR lss.max_clicks IS NOT NULL OR lss.ip_policy <> ? OR lss.bot_policy = ? OR lss.report_enabled = ? OR lss.url_blocked = ?",
+				true, model.LinkIPPolicyOff, model.LinkBotPolicyBlockKnownBots, true, true)
+	case "password":
+		query = query.Joins("JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.password_enabled = ?", true)
+	case "restricted":
+		query = query.Joins("JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.access_window_start IS NOT NULL OR lss.access_window_end IS NOT NULL OR lss.max_clicks IS NOT NULL OR lss.ip_policy <> ? OR lss.bot_policy = ?",
+				model.LinkIPPolicyOff, model.LinkBotPolicyBlockKnownBots)
+	case "url_blocked":
+		query = query.Joins("JOIN link_security_settings lss ON lss.short_link_id = short_links.id AND lss.deleted_at IS NULL").
+			Where("lss.url_blocked = ?", true)
+	case "reported":
+		query = query.Where("EXISTS (SELECT 1 FROM abuse_reports ar WHERE ar.short_link_id = short_links.id AND ar.workspace_id = short_links.workspace_id)")
+	}
+	switch req.RoutingStatus {
+	case "none":
+		query = query.Where("NOT EXISTS (SELECT 1 FROM link_routes lr WHERE lr.short_link_id = short_links.id AND lr.workspace_id = short_links.workspace_id AND lr.deleted_at IS NULL)")
+	case "enabled":
+		query = query.Where("EXISTS (SELECT 1 FROM link_routes lr WHERE lr.short_link_id = short_links.id AND lr.workspace_id = short_links.workspace_id AND lr.is_active = ? AND lr.deleted_at IS NULL)", true)
+	case "fallback":
+		query = query.Where("short_links.fallback_url <> '' AND EXISTS (SELECT 1 FROM link_routes lr WHERE lr.short_link_id = short_links.id AND lr.workspace_id = short_links.workspace_id AND lr.is_active = ? AND lr.deleted_at IS NULL)", true)
+	case "disabled":
+		query = query.Where("EXISTS (SELECT 1 FROM link_routes lr WHERE lr.short_link_id = short_links.id AND lr.workspace_id = short_links.workspace_id AND lr.deleted_at IS NULL) AND NOT EXISTS (SELECT 1 FROM link_routes lr2 WHERE lr2.short_link_id = short_links.id AND lr2.workspace_id = short_links.workspace_id AND lr2.is_active = ? AND lr2.deleted_at IS NULL)", true)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := query.Preload("Campaign").Order("short_links.created_at DESC").Offset(offset).Limit(limit).Find(&shortLinks).Error
 	return shortLinks, total, err
 }
 
@@ -200,6 +277,20 @@ func (d *ShortLinkDao) GetTopClicked(limit int) ([]model.ShortLink, error) {
 	var shortLinks []model.ShortLink
 	err := d.helper.GetDatabase().Model(&model.ShortLink{}).
 		Where("deleted_at IS NULL").
+		Order("click_count DESC").
+		Limit(limit).
+		Find(&shortLinks).Error
+	return shortLinks, err
+}
+
+// GetTopClickedByDateRange 获取指定时间范围内点击量最高的短链接
+func (d *ShortLinkDao) GetTopClickedByDateRange(startDate, endDate time.Time, limit int) ([]model.ShortLink, error) {
+	var shortLinks []model.ShortLink
+	err := d.helper.GetDatabase().Model(&model.ShortLink{}).
+		Select("short_links.id, short_links.protocol, short_links.domain, short_links.issuer_number, short_links.short_code, short_links.original_url, short_links.title, COUNT(click_statistics.id) AS click_count").
+		Joins("JOIN click_statistics ON click_statistics.short_link_id = short_links.id").
+		Where("short_links.deleted_at IS NULL AND click_statistics.click_date >= ? AND click_statistics.click_date < ?", startDate, endDate).
+		Group("short_links.id, short_links.protocol, short_links.domain, short_links.issuer_number, short_links.short_code, short_links.original_url, short_links.title").
 		Order("click_count DESC").
 		Limit(limit).
 		Find(&shortLinks).Error

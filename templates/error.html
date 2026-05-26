@@ -11,33 +11,31 @@
 
     <main class="error-section">
         <div class="container">
-            <div class="error-content">
-                <div class="error-icon">⚠️</div>
-                <h1 class="error-title">服务暂时异常</h1>
+            <section class="error-content" role="alert" aria-labelledby="pageTitle">
+                <div class="status-icon error-icon">{{template "icon_alert" .}}</div>
+                <div class="status-kicker">服务正在恢复</div>
+                <h1 class="error-title" id="pageTitle">服务暂时异常</h1>
                 <p class="error-message">
-                    抱歉，短链接服务暂时遇到了一些问题。<br>
-                    我们的技术团队正在努力解决，请稍后再试。
+                    短链接服务暂时遇到问题。系统已返回错误状态，请稍后重试或联系技术支持确认。
                 </p>
-                <div class="error-code">错误代码: 500</div>
-                
+                <div class="error-code">错误代码：500</div>
                 <div class="action-buttons">
                     <a href="/" class="btn btn-primary">返回首页</a>
                     <a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
                 </div>
-                
                 <div class="suggestions">
                     <h3>您可以尝试</h3>
                     <ul>
-                        <li>• 刷新页面重新访问</li>
-                        <li>• 稍后几分钟再试</li>
-                        <li>• 检查网络连接是否正常</li>
-                        <li>• 联系技术支持获取帮助</li>
+                        <li>刷新页面后重新访问。</li>
+                        <li>稍后几分钟再次打开链接。</li>
+                        <li>确认网络连接稳定。</li>
+                        <li>联系管理员查看服务状态。</li>
                     </ul>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 
     {{template "footer" .}}
 </body>
-</html> 
+</html>

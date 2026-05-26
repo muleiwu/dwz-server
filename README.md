@@ -23,7 +23,7 @@
    - Gitee [https://gitee.com/muleiwu/dwz-admin-webui](https://gitee.com/muleiwu/dwz-admin-webui)
    - GitHub[https://github.com/muleiwu/dwz-admin-webui](https://github.com/muleiwu/dwz-admin-webui)
 3. 文档地址
-   - https://www.mliev.com/docs/dwz
+   - https://mdoc.cc/mliev/dwz
 
 ###  📞 加群获取帮助
 
@@ -47,7 +47,8 @@
 - **多版本测试**: 为同一短链接创建多个目标URL版本
 - **智能分流**: 支持平均分配、权重分配等流量分配策略
 - **会话一致性**: 同一用户在测试期间始终访问相同版本
-- **实时统计**: 实时收集各版本的点击数据和转化率
+- **结果反馈**: 目标页可通过签名 token 回传注册、下单等转化结果
+- **实时统计**: 实时收集各版本的点击数据、转化率和转化价值
 - **测试管理**: 完整的测试生命周期管理
 
 ### 👥 用户管理
@@ -60,7 +61,7 @@
 - **点击统计**: 实时记录点击数据，包括IP、地理位置、设备信息
 - **数据分析**: 提供多维度统计分析，包括地理分布、时间分布等
 - **AB测试分析**: 专门的AB测试数据分析和转化率统计
-- **导出功能**: 支持数据导出，便于进一步分析
+- **导出功能**: 支持点击明细 CSV 导出，便于进一步分析
 
 ### 🛡️ 安全与监控
 - **操作日志**: 自动记录所有操作，支持敏感信息脱敏
@@ -368,7 +369,7 @@ docker run -d \
 POST /api/v1/short_links
 {
   "original_url": "https://example.com",
-  "domain": "short.ly",
+  "domain": "dwz.do",
   "custom_code": "abc123"
 }
 
@@ -424,6 +425,49 @@ POST /api/v1/ab_tests
 
 # 获取AB测试统计
 GET /api/v1/ab_tests/{id}/statistics
+
+# 上报AB测试转化反馈（目标URL会带上 _dwz_abt 参数）
+POST /api/v1/public/ab_test_feedback
+{
+  "feedback_token": "<_dwz_abt 参数值>",
+  "event_id": "order-202401150001",
+  "value": 99.9,
+  "currency": "CNY",
+  "metadata": {
+    "plan": "pro"
+  }
+}
+```
+
+A/B 测试反馈流程：
+
+1. 用户访问短链，命中运行中的 A/B 测试后会被分流到某个变体目标 URL。
+2. 系统会在目标 URL 上追加 `_dwz_abt` 参数，该参数是短期签名 token，绑定工作区、实验、变体、短链和会话。
+3. 落地页或业务系统在注册、下单、购买等业务结果发生后调用 `POST /api/v1/public/ab_test_feedback`。
+4. `event_id` 在同一个 A/B 测试内幂等，重复回传不会重复计入转化。
+5. 管理端 A/B 测试统计弹窗里的“分流反馈”区域仅用于手动验证；生产环境应由落地页自动回传。
+
+落地页自动回传示例：
+
+```js
+const token = new URLSearchParams(location.search).get('_dwz_abt');
+
+if (token) {
+  await fetch('https://your-domain.com/api/v1/public/ab_test_feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      feedback_token: token,
+      event_id: 'order-202401150001',
+      value: 99.9,
+      currency: 'CNY',
+      metadata: {
+        order_id: '202401150001',
+        plan: 'pro',
+      },
+    }),
+  });
+}
 ```
 
 详细的API文档请参考 [API.md](temp/docs/API.md)
@@ -453,7 +497,7 @@ id_generator:
 
 # 短链接配置
 shortlink:
-  domain: "http://localhost:8080"
+  domain: "dwz.do"
   length: 6
   custom_length: true
 
@@ -497,7 +541,7 @@ id_generator:
 
 # 短链接配置
 shortlink:
-  domain: "http://localhost:8080"
+  domain: "dwz.do"
   length: 6
   custom_length: true
 

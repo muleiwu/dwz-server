@@ -6,6 +6,7 @@ import (
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
+	"gorm.io/gorm"
 )
 
 // ClickStatisticDao 点击统计DAO
@@ -71,6 +72,70 @@ func (d *ClickStatisticDao) List(req *dto.ClickStatisticListRequest) ([]model.Cl
 	offset := (req.Page - 1) * req.PageSize
 	err := query.Order("click_date DESC").Offset(offset).Limit(req.PageSize).Find(&statistics).Error
 	return statistics, total, err
+}
+
+func (d *ClickStatisticDao) ListInWorkspace(workspaceID uint64, req *dto.ClickStatisticListRequest) ([]model.ClickStatistic, int64, error) {
+	var statistics []model.ClickStatistic
+	var total int64
+	query := d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req)
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	offset := (req.Page - 1) * req.PageSize
+	err := query.Order("click_date DESC").Offset(offset).Limit(req.PageSize).Find(&statistics).Error
+	return statistics, total, err
+}
+
+func (d *ClickStatisticDao) ExportInWorkspace(workspaceID uint64, req *dto.ClickStatisticListRequest, limit int) ([]model.ClickStatistic, error) {
+	var statistics []model.ClickStatistic
+	query := d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req)
+	err := query.Order("click_date DESC").Limit(limit).Find(&statistics).Error
+	return statistics, err
+}
+
+func (d *ClickStatisticDao) applyFilters(query *gorm.DB, workspaceID uint64, req *dto.ClickStatisticListRequest) *gorm.DB {
+	query = query.Where("click_statistics.workspace_id = ?", workspaceID)
+	if req.ShortLinkID > 0 {
+		query = query.Where("click_statistics.short_link_id = ?", req.ShortLinkID)
+	}
+	if req.CampaignID > 0 {
+		query = query.Where("click_statistics.campaign_id = ?", req.CampaignID)
+	}
+	if req.RouteID > 0 {
+		query = query.Where("click_statistics.route_id = ?", req.RouteID)
+	}
+	if req.TagID > 0 {
+		query = query.Joins("JOIN short_link_tags slt ON slt.short_link_id = click_statistics.short_link_id AND slt.tag_id = ?", req.TagID)
+	}
+	if req.DeviceType != "" {
+		query = query.Where("click_statistics.device_type = ?", req.DeviceType)
+	}
+	if req.IsBot != nil {
+		query = query.Where("click_statistics.is_bot = ?", *req.IsBot)
+	}
+	if req.IP != "" {
+		query = query.Where("click_statistics.ip = ?", req.IP)
+	}
+	if req.Country != "" {
+		query = query.Where("click_statistics.country = ?", req.Country)
+	}
+	if req.Province != "" {
+		query = query.Where("click_statistics.province = ?", req.Province)
+	}
+	if req.City != "" {
+		query = query.Where("click_statistics.city = ?", req.City)
+	}
+	if req.ISP != "" {
+		query = query.Where("click_statistics.isp = ?", req.ISP)
+	}
+	if !req.StartDate.IsZero() {
+		query = query.Where("click_statistics.click_date >= ?", req.StartDate)
+	}
+	if !req.EndDate.IsZero() {
+		query = query.Where("click_statistics.click_date < ?", req.EndDate)
+	}
+	return query
 }
 
 // GetAnalysis 获取点击统计分析数据
@@ -196,6 +261,136 @@ func (d *ClickStatisticDao) GetAnalysis(shortLinkID uint64, startDate, endDate t
 	analysis.DailyStats = dailyStats
 
 	return analysis, nil
+}
+
+func (d *ClickStatisticDao) GetAnalysisInWorkspace(workspaceID uint64, req *dto.ClickStatisticListRequest) (*dto.ClickStatisticAnalysisResponse, error) {
+	analysis := &dto.ClickStatisticAnalysisResponse{}
+
+	d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Count(&analysis.TotalClicks)
+	d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Distinct("ip").
+		Count(&analysis.UniqueIPs)
+
+	group := func(selectSQL, whereSQL, groupSQL, orderSQL string, dest any) {
+		q := d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+			Select(selectSQL).
+			Where(whereSQL).
+			Group(groupSQL).
+			Order(orderSQL).
+			Limit(10)
+		q.Find(dest)
+	}
+
+	group("country, COUNT(*) as count", "country != ''", "country", "count DESC", &analysis.TopCountries)
+	group("province, COUNT(*) as count", "province != ''", "province", "count DESC", &analysis.TopProvinces)
+	group("city, COUNT(*) as count", "city != ''", "city", "count DESC", &analysis.TopCities)
+	group("isp, COUNT(*) as count", "isp != ''", "isp", "count DESC", &analysis.TopISPs)
+	group("referer, COUNT(*) as count", "referer != ''", "referer", "count DESC", &analysis.TopReferers)
+	group("device_type, COUNT(*) as count", "device_type != ''", "device_type", "count DESC", &analysis.TopDevices)
+	group("browser, COUNT(*) as count", "browser != ''", "browser", "count DESC", &analysis.TopBrowsers)
+	group("os, COUNT(*) as count", "os != ''", "os", "count DESC", &analysis.TopOS)
+	group("utm_source AS value, COUNT(*) as count", "utm_source != ''", "utm_source", "count DESC", &analysis.TopUTMSources)
+	group("utm_campaign AS value, COUNT(*) as count", "utm_campaign != ''", "utm_campaign", "count DESC", &analysis.TopUTMCampaigns)
+	group("route_id, route_name, COUNT(*) as count", "route_id IS NOT NULL", "route_id, route_name", "count DESC", &analysis.TopRoutes)
+
+	type botRow struct {
+		IsBot bool
+		Count int64
+	}
+	var botRows []botRow
+	d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Select("is_bot, COUNT(*) as count").
+		Group("is_bot").
+		Find(&botRows)
+	for _, row := range botRows {
+		if row.IsBot {
+			analysis.BotStats.BotClicks = row.Count
+		} else {
+			analysis.BotStats.HumanClicks = row.Count
+		}
+	}
+
+	hourSQL := d.getHourSQL("click_date")
+	dateSQL := d.getDateSQL("click_date")
+	d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Select(hourSQL + " as hour, COUNT(*) as count").
+		Group(hourSQL).
+		Order("hour").
+		Find(&analysis.HourlyStats)
+	d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Select(dateSQL + " as date, COUNT(*) as count").
+		Group(dateSQL).
+		Order("date").
+		Find(&analysis.DailyStats)
+
+	return analysis, nil
+}
+
+func (d *ClickStatisticDao) GetGeoAnalysisInWorkspace(workspaceID uint64, req *dto.ClickStatisticListRequest, level string) (*dto.ClickStatisticGeoAnalysisResponse, error) {
+	analysis := &dto.ClickStatisticGeoAnalysisResponse{
+		Level:    level,
+		Country:  req.Country,
+		Province: req.Province,
+		Regions:  []dto.GeoRegionStatistic{},
+	}
+
+	if err := d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Count(&analysis.TotalClicks).Error; err != nil {
+		return nil, err
+	}
+	if err := d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Distinct("ip").
+		Count(&analysis.UniqueIPs).Error; err != nil {
+		return nil, err
+	}
+
+	column := "country"
+	switch level {
+	case "province":
+		column = "province"
+	case "city":
+		column = "city"
+	}
+	columnSQL := "click_statistics." + column
+
+	err := d.applyFilters(d.helper.GetDatabase().Model(&model.ClickStatistic{}), workspaceID, req).
+		Select(columnSQL + " AS name, COUNT(*) as count").
+		Where(columnSQL + " != ''").
+		Group(columnSQL).
+		Order("count DESC").
+		Find(&analysis.Regions).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return analysis, nil
+}
+
+func (d *ClickStatisticDao) getDBDriver() string {
+	return d.helper.GetConfig().GetString("database.driver", "mysql")
+}
+
+func (d *ClickStatisticDao) getHourSQL(column string) string {
+	switch d.getDBDriver() {
+	case "sqlite":
+		return "CAST(strftime('%H', " + column + ") AS INTEGER)"
+	case "postgres", "postgresql":
+		return "EXTRACT(HOUR FROM " + column + ")::INT"
+	default:
+		return "HOUR(" + column + ")"
+	}
+}
+
+func (d *ClickStatisticDao) getDateSQL(column string) string {
+	switch d.getDBDriver() {
+	case "sqlite":
+		return "date(" + column + ")"
+	case "postgres", "postgresql":
+		return "TO_CHAR(" + column + ", 'YYYY-MM-DD')"
+	default:
+		return "DATE(" + column + ")"
+	}
 }
 
 // CountAll 获取所有点击统计数量

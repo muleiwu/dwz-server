@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.SiteName}}</title>
+    {{template "styles" .}}
+</head>
+<body>
+    {{template "header" .}}
+
+    <main class="error-section">
+        <div class="container">
+            <section class="error-content" role="status" aria-labelledby="pageTitle">
+                <div class="status-icon error-icon">{{template "icon_check" .}}</div>
+                <div class="status-kicker">处理完成</div>
+                <h1 class="error-title" id="pageTitle">{{.Title}}</h1>
+                <p class="error-message">{{.Message}}</p>
+                <div class="action-buttons">
+                    <a href="/" class="btn btn-primary">返回首页</a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    {{template "footer" .}}
+</body>
+</html>

@@ -11,22 +11,37 @@ import (
 // ShortLink 短网址模型
 type ShortLink struct {
 	ID           uint64         `gorm:"primaryKey" json:"id"`
+	WorkspaceID  uint64         `gorm:"not null;default:1;index" json:"workspace_id"`
+	CampaignID   *uint64        `gorm:"index" json:"campaign_id"`
 	IssuerNumber *uint64        `gorm:"index" json:"issuer_number"`                       // 发号器分配的号码
 	DomainID     uint64         `gorm:"not null;index" json:"domain_id"`                  // 关联域名表ID
 	Protocol     string         `gorm:"size:10;default:'https';not null" json:"protocol"` // 协议头 http或https
 	Domain       string         `gorm:"size:100;not null;index;" json:"domain"`           // 域名
 	OriginalURL  string         `gorm:"size:2000;not null" json:"original_url"`           // 原始URL
+	FallbackURL  string         `gorm:"size:2000" json:"fallback_url"`                    // 高级路由未命中时的兜底URL
+	RedirectCode int            `gorm:"not null;default:302" json:"redirect_code"`        // 跳转状态码
 	Title        string         `gorm:"size:255" json:"title"`                            // 网页标题
 	IsCustomCode bool           `gorm:"default:false;" json:"is_custom_code"`             // 是否使用自定义短代码
 	ShortCode    string         `gorm:"size:20;index" json:"short_code"`                  // 短代码(可自定义)
 	ClickCount   int64          `gorm:"default:0" json:"click_count"`                     // 点击次数
 	CreatorIP    string         `gorm:"size:45" json:"creator_ip"`                        // 创建者IP
-	Description  string         `gorm:"size:500" json:"description"`                      // 描述
-	ExpireAt     *time.Time     `json:"expire_at"`                                        // 过期时间，null表示永不过期
-	IsActive     bool           `gorm:"default:true" json:"is_active"`                    // 是否激活
+	CreatedBy    *uint64        `gorm:"index" json:"created_by"`
+	UpdatedBy    *uint64        `json:"updated_by"`
+	Description  string         `gorm:"size:500" json:"description"` // 描述
+	UTMSource    string         `gorm:"size:255" json:"utm_source"`
+	UTMMedium    string         `gorm:"size:255" json:"utm_medium"`
+	UTMCampaign  string         `gorm:"size:255" json:"utm_campaign"`
+	UTMTerm      string         `gorm:"size:255" json:"utm_term"`
+	UTMContent   string         `gorm:"size:255" json:"utm_content"`
+	Notes        string         `gorm:"type:text" json:"notes"`
+	ExpireAt     *time.Time     `json:"expire_at"`                     // 过期时间，null表示永不过期
+	IsActive     bool           `gorm:"default:true" json:"is_active"` // 是否激活
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+
+	Campaign *Campaign `gorm:"foreignKey:CampaignID" json:"campaign,omitempty"`
+	Tags     []Tag     `gorm:"many2many:short_link_tags;" json:"tags,omitempty"`
 }
 
 func (s *ShortLink) TableName() string {

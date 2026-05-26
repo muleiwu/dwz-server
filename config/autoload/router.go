@@ -51,10 +51,18 @@ func (Router) InitConfig() map[string]any {
 				compatLogin.POST("/login", controller.AuthController{}.Login)
 			}
 
+			public := router.Group("/api/v1/public")
+			{
+				public.POST("/link_access/password", controller.LinkSecurityController{}.SubmitPassword)
+				public.POST("/abuse_reports", controller.LinkSecurityController{}.CreatePublicAbuseReport)
+				public.POST("/ab_test_feedback", controller.ABTestController{}.CreateABTestFeedback)
+			}
+
 			// 受保护的 API：操作日志 + 鉴权
 			v1 := router.Group("/api/v1")
 			v1.Use(middleware.OperationLogMiddleware())
 			v1.Use(middleware.AuthMiddleware())
+			v1.Use(middleware.WorkspaceMiddleware())
 			{
 				auth := v1.Group("/auth")
 				{
@@ -80,7 +88,65 @@ func (Router) InitConfig() map[string]any {
 					short.PUT("/:id/status", controller.ShortLinkController{}.UpdateShortLinkStatus)
 					short.DELETE("/:id", controller.ShortLinkController{}.DeleteShortLink)
 					short.GET("/:id/statistics", controller.ShortLinkController{}.GetShortLinkStatistics)
+					short.GET("/:id/security", controller.LinkSecurityController{}.GetShortLinkSecurity)
+					short.PUT("/:id/security", controller.LinkSecurityController{}.UpdateShortLinkSecurity)
+					short.POST("/:id/security/rescan", controller.LinkSecurityController{}.RescanShortLink)
+					short.GET("/:id/routes", controller.LinkRouteController{}.ListRoutes)
+					short.POST("/:id/routes", controller.LinkRouteController{}.CreateRoute)
+					short.PUT("/:id/routes/:route_id", controller.LinkRouteController{}.UpdateRoute)
+					short.DELETE("/:id/routes/:route_id", controller.LinkRouteController{}.DeleteRoute)
+					short.POST("/:id/routes/reorder", controller.LinkRouteController{}.ReorderRoutes)
+					short.POST("/:id/routes/test", controller.LinkRouteController{}.TestRoute)
 					short.POST("/batch", controller.ShortLinkController{}.BatchCreateShortLinks)
+				}
+
+				workspaces := v1.Group("/workspaces")
+				{
+					workspaces.GET("", controller.WorkspaceController{}.ListWorkspaces)
+					workspaces.POST("", controller.WorkspaceController{}.CreateWorkspace)
+					workspaces.PUT("/current", controller.WorkspaceController{}.UpdateWorkspace)
+					workspaces.GET("/current/members", controller.WorkspaceController{}.ListMembers)
+					workspaces.POST("/current/members", controller.WorkspaceController{}.AddMember)
+					workspaces.PUT("/current/members/:user_id", controller.WorkspaceController{}.UpdateMember)
+					workspaces.DELETE("/current/members/:user_id", controller.WorkspaceController{}.RemoveMember)
+				}
+
+				campaigns := v1.Group("/campaigns")
+				{
+					campaigns.POST("", controller.CampaignController{}.Create)
+					campaigns.GET("", controller.CampaignController{}.List)
+					campaigns.GET("/:id", controller.CampaignController{}.Get)
+					campaigns.PUT("/:id", controller.CampaignController{}.Update)
+					campaigns.DELETE("/:id", controller.CampaignController{}.Delete)
+				}
+
+				tags := v1.Group("/tags")
+				{
+					tags.POST("", controller.TagController{}.Create)
+					tags.GET("", controller.TagController{}.List)
+					tags.GET("/:id", controller.TagController{}.Get)
+					tags.PUT("/:id", controller.TagController{}.Update)
+					tags.DELETE("/:id", controller.TagController{}.Delete)
+				}
+
+				reports := v1.Group("/reports")
+				{
+					reports.GET("/campaigns", controller.CampaignController{}.Reports)
+				}
+
+				security := v1.Group("/security")
+				{
+					security.GET("/url_rules", controller.LinkSecurityController{}.ListURLRules)
+					security.POST("/url_rules", controller.LinkSecurityController{}.CreateURLRule)
+					security.PUT("/url_rules/:id", controller.LinkSecurityController{}.UpdateURLRule)
+					security.DELETE("/url_rules/:id", controller.LinkSecurityController{}.DeleteURLRule)
+					security.GET("/events", controller.LinkSecurityController{}.ListEvents)
+				}
+
+				abuseReports := v1.Group("/abuse_reports")
+				{
+					abuseReports.GET("", controller.LinkSecurityController{}.ListAbuseReports)
+					abuseReports.PUT("/:id", controller.LinkSecurityController{}.UpdateAbuseReport)
 				}
 
 				domains := v1.Group("/domains")
@@ -137,6 +203,8 @@ func (Router) InitConfig() map[string]any {
 				{
 					clickStats.GET("", controller.ClickStatisticController{}.GetClickStatisticList)
 					clickStats.GET("/analysis", controller.ClickStatisticController{}.GetClickStatisticAnalysis)
+					clickStats.GET("/geo-analysis", controller.ClickStatisticController{}.GetClickStatisticGeoAnalysis)
+					clickStats.GET("/export", controller.ClickStatisticController{}.ExportCSV)
 				}
 
 				stats := v1.Group("/statistics")

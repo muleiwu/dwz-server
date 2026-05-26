@@ -175,15 +175,48 @@ func (d *ABTestClickStatisticDao) GetAnalysis(abTestID uint64, startDate, endDat
 		Find(&dailyStats)
 	analysis.DailyStats = dailyStats
 
+	var feedbackStats []struct {
+		VariantID       uint64  `json:"variant_id"`
+		ConversionCount int64   `json:"conversion_count"`
+		ConversionValue float64 `json:"conversion_value"`
+	}
+	feedbackQuery := d.helper.GetDatabase().Table("ab_test_feedbacks").
+		Select("variant_id, COUNT(*) as conversion_count, COALESCE(SUM(value), 0) as conversion_value")
+	if abTestID > 0 {
+		feedbackQuery = feedbackQuery.Where("ab_test_id = ?", abTestID)
+	}
+	if !startDate.IsZero() {
+		feedbackQuery = feedbackQuery.Where("occurred_at >= ?", startDate)
+	}
+	if !endDate.IsZero() {
+		feedbackQuery = feedbackQuery.Where("occurred_at <= ?", endDate)
+	}
+	feedbackQuery.Group("variant_id").Find(&feedbackStats)
+	feedbackByVariant := make(map[uint64]struct {
+		ConversionCount int64
+		ConversionValue float64
+	})
+	for _, stat := range feedbackStats {
+		feedbackByVariant[stat.VariantID] = struct {
+			ConversionCount int64
+			ConversionValue float64
+		}{ConversionCount: stat.ConversionCount, ConversionValue: stat.ConversionValue}
+	}
+
 	// 转化率统计（按版本）
 	analysis.ConversionRate = make(map[string]dto.ConversionRateStats)
 	for _, variant := range variantStats {
-		// 这里可以根据需要计算具体的转化率
-		// 目前先用点击数作为基础数据
+		feedback := feedbackByVariant[variant.VariantID]
+		conversionRate := 0.0
+		if variant.UniqueClicks > 0 {
+			conversionRate = float64(feedback.ConversionCount) / float64(variant.UniqueClicks) * 100
+		}
 		analysis.ConversionRate[variant.VariantName] = dto.ConversionRateStats{
-			Impressions:    variant.ClickCount, // 展示数可以从其他地方获取
-			Clicks:         variant.ClickCount,
-			ConversionRate: 100.0, // 这里需要根据实际业务逻辑计算
+			Impressions:     variant.UniqueClicks,
+			Clicks:          variant.ClickCount,
+			Conversions:     feedback.ConversionCount,
+			ConversionValue: feedback.ConversionValue,
+			ConversionRate:  conversionRate,
 		}
 	}
 

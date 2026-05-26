@@ -11,33 +11,31 @@
 
     <main class="error-section">
         <div class="container">
-            <div class="error-content">
-                <div class="error-icon">🔍</div>
-                <h1 class="error-title">短链接不存在</h1>
+            <section class="error-content" role="alert" aria-labelledby="pageTitle">
+                <div class="status-icon error-icon">{{template "icon_search" .}}</div>
+                <div class="status-kicker">短链无法解析</div>
+                <h1 class="error-title" id="pageTitle">短链接不存在</h1>
                 <p class="error-message">
-                    抱歉，您访问的短链接不存在或已失效。<br>
-                    请检查链接是否正确，或联系提供方获取新的链接。
+                    您访问的短链接不存在或已经失效。请检查链接是否完整，或联系链接提供方获取新的访问地址。
                 </p>
-                <div class="error-code">错误代码: 404</div>
-                
+                <div class="error-code">错误代码：404</div>
                 <div class="action-buttons">
                     <a href="/" class="btn btn-primary">返回首页</a>
                     <a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
                 </div>
-                
                 <div class="suggestions">
                     <h3>可能的原因</h3>
                     <ul>
-                        <li>• 短链接已过期或被删除</li>
-                        <li>• 链接地址输入错误</li>
-                        <li>• 短链接服务暂时不可用</li>
-                        <li>• 链接已被禁用或限制访问</li>
+                        <li>短链接已过期、被删除或尚未创建。</li>
+                        <li>链接地址在复制或分享时被截断。</li>
+                        <li>当前域名下没有匹配的短码。</li>
+                        <li>服务暂时不可用，请稍后重试。</li>
                     </ul>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 
     {{template "footer" .}}
 </body>
-</html> 
+</html>

@@ -12,14 +12,16 @@ import (
 )
 
 type UserService struct {
-	userDAO *dao.UserDAO
-	helper  interfaces.HelperInterface
+	userDAO      *dao.UserDAO
+	workspaceDao *dao.WorkspaceDao
+	helper       interfaces.HelperInterface
 }
 
 func NewUserService(helper interfaces.HelperInterface) *UserService {
 	return &UserService{
-		helper:  helper,
-		userDAO: dao.NewUserDAO(helper),
+		helper:       helper,
+		userDAO:      dao.NewUserDAO(helper),
+		workspaceDao: dao.NewWorkspaceDao(helper),
 	}
 }
 
@@ -106,6 +108,14 @@ func (s *UserService) CreateUser(req *dto.CreateUserRequest) (*dto.UserInfo, err
 
 	// 保存到数据库
 	if err := s.userDAO.Create(user); err != nil {
+		return nil, err
+	}
+	if err := s.workspaceDao.CreateMember(&model.WorkspaceMember{
+		WorkspaceID: 1,
+		UserID:      user.ID,
+		Role:        model.WorkspaceRoleAdmin,
+		Status:      1,
+	}); err != nil {
 		return nil, err
 	}
 

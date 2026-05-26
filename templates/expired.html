@@ -11,33 +11,30 @@
 
     <main class="error-section">
         <div class="container">
-            <div class="error-content">
-                <div class="error-icon">⏰</div>
-                <h1 class="error-title">短链接已过期</h1>
+            <section class="error-content" role="alert" aria-labelledby="pageTitle">
+                <div class="status-icon error-icon">{{template "icon_clock" .}}</div>
+                <div class="status-kicker">有效期已结束</div>
+                <h1 class="error-title" id="pageTitle">短链接已过期</h1>
                 <p class="error-message">
-                    抱歉，您访问的短链接已过期失效。<br>
-                    请联系短链接的创建者获取新的有效链接。
+                    该短链接已经超过可访问时间，不再继续跳转。请联系链接创建者获取新的有效链接。
                 </p>
-                <div class="error-code">错误代码: 410</div>
-                
+                <div class="error-code">错误代码：410</div>
                 <div class="action-buttons">
                     <a href="/" class="btn btn-primary">返回首页</a>
                     <a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
                 </div>
-                
                 <div class="suggestions">
                     <h3>建议您</h3>
                     <ul>
-                        <li>• 联系短链接的创建者获取新链接</li>
-                        <li>• 检查是否有更新的链接版本</li>
-                        <li>• 访问原始网站获取最新内容</li>
-                        <li>• 如有疑问，请联系网站管理员</li>
+                        <li>联系短链接创建者获取新链接。</li>
+                        <li>检查是否有更新版本的访问地址。</li>
+                        <li>访问原始网站获取最新内容。</li>
                     </ul>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 
     {{template "footer" .}}
 </body>
-</html> 
+</html>

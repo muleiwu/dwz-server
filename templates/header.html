@@ -1,9 +1,20 @@
 {{define "header"}}
 <header class="header">
     <div class="container">
-        <nav class="nav">
-            <a href="/" class="logo">{{.SiteName}}</a>
-            <button class="nav-toggle" id="navToggle" onclick="this.classList.toggle('active'); document.getElementById('navLinks').classList.toggle('open');">
+        <nav class="nav" aria-label="主导航">
+            <a href="/" class="logo" aria-label="{{.SiteName}} 首页">
+                <span class="logo-mark">{{template "icon_logo" .}}</span>
+                <span>{{.SiteName}}</span>
+            </a>
+            <button
+                class="nav-toggle"
+                id="navToggle"
+                type="button"
+                aria-label="打开导航菜单"
+                aria-controls="navLinks"
+                aria-expanded="false"
+                onclick="this.classList.toggle('active'); var nav = document.getElementById('navLinks'); var open = nav.classList.toggle('open'); this.setAttribute('aria-expanded', open ? 'true' : 'false'); this.setAttribute('aria-label', open ? '关闭导航菜单' : '打开导航菜单');"
+            >
                 <span></span>
                 <span></span>
                 <span></span>
@@ -15,4 +26,4 @@
         </nav>
     </div>
 </header>
-{{end}} 
+{{end}}

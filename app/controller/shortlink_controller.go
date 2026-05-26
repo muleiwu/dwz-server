@@ -1,8 +1,11 @@
 package controller
 
 import (
+	"errors"
+
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/constants"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
+	"cnb.cool/mliev/dwz/dwz-server/v2/app/middleware"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
 
@@ -10,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
 type ShortLinkController struct {
@@ -20,6 +23,10 @@ type ShortLinkController struct {
 
 // CreateShortLink 创建短网址
 func (ctrl ShortLinkController) CreateShortLink(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限创建短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	var req dto.CreateShortLinkRequest
@@ -31,7 +38,7 @@ func (ctrl ShortLinkController) CreateShortLink(c httpInterfaces.RouterContextIn
 	clientIP := c.ClientIP()
 
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.CreateShortLink(&req, clientIP)
+	response, err := shortLinkService.CreateShortLinkInWorkspace(&req, clientIP, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -52,7 +59,7 @@ func (ctrl ShortLinkController) GetShortLink(c httpInterfaces.RouterContextInter
 	}
 
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.GetShortLink(id)
+	response, err := shortLinkService.GetShortLinkInWorkspace(id, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -67,6 +74,10 @@ func (ctrl ShortLinkController) GetShortLink(c httpInterfaces.RouterContextInter
 
 // UpdateShortLink 更新短网址
 func (ctrl ShortLinkController) UpdateShortLink(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限更新短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -82,7 +93,7 @@ func (ctrl ShortLinkController) UpdateShortLink(c httpInterfaces.RouterContextIn
 		return
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.UpdateShortLink(id, &req)
+	response, err := shortLinkService.UpdateShortLinkInWorkspace(id, &req, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -97,6 +108,10 @@ func (ctrl ShortLinkController) UpdateShortLink(c httpInterfaces.RouterContextIn
 
 // UpdateShortLinkStatus 更新短网址状态
 func (ctrl ShortLinkController) UpdateShortLinkStatus(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限更新短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -113,7 +128,7 @@ func (ctrl ShortLinkController) UpdateShortLinkStatus(c httpInterfaces.RouterCon
 	}
 
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.UpdateShortLinkStatus(id, req.IsActive)
+	response, err := shortLinkService.UpdateShortLinkStatusInWorkspace(id, req.IsActive, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -128,6 +143,10 @@ func (ctrl ShortLinkController) UpdateShortLinkStatus(c httpInterfaces.RouterCon
 
 // DeleteShortLink 删除短网址
 func (ctrl ShortLinkController) DeleteShortLink(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限删除短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -137,7 +156,7 @@ func (ctrl ShortLinkController) DeleteShortLink(c httpInterfaces.RouterContextIn
 		return
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	err = shortLinkService.DeleteShortLink(id)
+	err = shortLinkService.DeleteShortLinkInWorkspace(id, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -162,7 +181,7 @@ func (ctrl ShortLinkController) GetShortLinkList(c httpInterfaces.RouterContextI
 		return
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.GetShortLinkList(&req)
+	response, err := shortLinkService.GetShortLinkListInWorkspace(&req, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -188,7 +207,7 @@ func (ctrl ShortLinkController) GetShortLinkStatistics(c httpInterfaces.RouterCo
 		days = 7
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.GetShortLinkStatistics(id, days)
+	response, err := shortLinkService.GetShortLinkStatisticsInWorkspace(id, days, middleware.GetCurrentWorkspaceID(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -203,6 +222,10 @@ func (ctrl ShortLinkController) GetShortLinkStatistics(c httpInterfaces.RouterCo
 
 // BatchCreateShortLinks 批量创建短网址
 func (ctrl ShortLinkController) BatchCreateShortLinks(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageBusinessResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限创建短网址")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	var req dto.BatchCreateShortLinkRequest
@@ -214,7 +237,7 @@ func (ctrl ShortLinkController) BatchCreateShortLinks(c httpInterfaces.RouterCon
 	// 获取客户端IP
 	clientIP := c.ClientIP()
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	response, err := shortLinkService.BatchCreateShortLinks(&req, clientIP, helper)
+	response, err := shortLinkService.BatchCreateShortLinksInWorkspace(&req, clientIP, helper, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -242,6 +265,19 @@ type AntiRedPageData struct {
 	TargetURL    string
 }
 
+type SecurityPageData struct {
+	SiteName     string
+	ICPNumber    string
+	PoliceNumber string
+	Domain       string
+	Copyright    string
+	ShortCode    string
+	Message      string
+	Title        string
+	Next         string
+	ReportURL    string
+}
+
 // paramOrCtx fetches a path parameter from the router, falling back to the
 // request-scoped context Set by middleware-driven dispatch (used by the
 // short-code interceptor in config/autoload/short_code_dispatch.go).
@@ -265,7 +301,7 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 	shortCode := paramOrCtx(c, "code")
 	if shortCode == "" {
 		// 当shortCode为空时，渲染404页面
-		ctrl.render404Page(c,c.Host())
+		ctrl.render404Page(c, c.Host())
 		return
 	}
 
@@ -276,19 +312,30 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 	clientIP := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 	referer := c.GetHeader("Referer")
+	acceptLanguage := c.GetHeader("Accept-Language")
 
 	// 获取查询参数字符串
 	queryString := c.Request().URL.RawQuery
+	linkSecurityService := service.NewLinkSecurityService(helper)
+	accessToken := ""
+	if cookie, cookieErr := c.Cookie(linkSecurityService.AccessCookieName(domain, shortCode)); cookieErr == nil {
+		accessToken = cookie
+	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
-	// 进行跳转（使用新的支持GET参数透传的方法）
-	originalURL, err := shortLinkService.RedirectShortLinkWithQuery(domain, shortCode, clientIP, userAgent, referer, queryString)
+	decision, err := shortLinkService.ResolveRedirectWithSecurityAndLanguage(domain, shortCode, clientIP, userAgent, referer, queryString, accessToken, acceptLanguage)
 	if err != nil {
-		if strings.Contains(err.Error(), "不存在") {
+		if errors.Is(err, service.ErrSecurityPasswordRequired) {
+			ctrl.renderPasswordPage(c, domain, shortCode, "")
+		} else if errors.Is(err, service.ErrSecurityURLBlocked) {
+			ctrl.renderSecurityBlockedPage(c, domain, "链接存在安全风险", "该短链接暂时无法访问，请联系链接管理员确认。", http.StatusForbidden)
+		} else if errors.Is(err, service.ErrSecurityAccessDenied) {
+			ctrl.renderSecurityBlockedPage(c, domain, "访问受限", "当前访问不符合该短链接的安全策略。", http.StatusForbidden)
+		} else if strings.Contains(err.Error(), "不存在") {
 			// 渲染404页面而不是返回JSON错误
-			ctrl.render404Page(c,domain)
+			ctrl.render404Page(c, domain)
 		} else if strings.Contains(err.Error(), "无效") {
 			// 渲染过期页面而不是返回JSON错误
-			ctrl.render404Page(c,domain)
+			ctrl.render404Page(c, domain)
 		} else if strings.Contains(err.Error(), "过期") {
 			// 渲染过期页面而不是返回JSON错误
 			ctrl.renderExpiredPage(c, domain)
@@ -301,6 +348,7 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 		}
 		return
 	}
+	originalURL := decision.TargetURL
 
 	// 防红检查：如果域名启用了防红且为微信/QQ内置浏览器，则显示引导页
 	if isWeChatOrQQBrowser(userAgent) {
@@ -312,8 +360,11 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 		}
 	}
 
-	// 302重定向到原始URL
-	c.Redirect(http.StatusFound, originalURL)
+	statusCode := decision.StatusCode
+	if statusCode == 0 {
+		statusCode = http.StatusFound
+	}
+	c.Redirect(statusCode, originalURL)
 }
 
 // renderAntiRedPage 渲染防红引导页面
@@ -387,6 +438,46 @@ func (ctrl ShortLinkController) renderErrorPage(c httpInterfaces.RouterContextIn
 	c.HTML(statusCode, template, pageData)
 }
 
+func (ctrl ShortLinkController) renderPasswordPage(c httpInterfaces.RouterContextInterface, domain, shortCode, message string) {
+	ctrl.renderSecurityPage(c, domain, "password.html", http.StatusOK, SecurityPageData{
+		Title:     "需要访问密码",
+		ShortCode: shortCode,
+		Message:   message,
+		Next:      c.Request().URL.RequestURI(),
+	})
+}
+
+func (ctrl ShortLinkController) renderSecurityBlockedPage(c httpInterfaces.RouterContextInterface, domain, title, message string, statusCode int) {
+	ctrl.renderSecurityPage(c, domain, "security_blocked.html", statusCode, SecurityPageData{
+		Title:   title,
+		Message: message,
+	})
+}
+
+func (ctrl ShortLinkController) renderSecurityMessagePage(c httpInterfaces.RouterContextInterface, domain, title, message string, statusCode int) {
+	ctrl.renderSecurityPage(c, domain, "security_message.html", statusCode, SecurityPageData{
+		Title:   title,
+		Message: message,
+	})
+}
+
+func (ctrl ShortLinkController) renderSecurityPage(c httpInterfaces.RouterContextInterface, domain, template string, statusCode int, pageData SecurityPageData) {
+	helper := helperPkg.GetHelper()
+	domainService := service.NewDomainService(helper)
+	domainInfo, err := domainService.GetDomainByName(domain)
+	pageData.SiteName = helper.GetEnv().GetString("website.name", "短网址服务")
+	pageData.Copyright = helper.GetEnv().GetString("website.copyright", "")
+	pageData.Domain = domain
+	if err == nil {
+		if domainInfo.SiteName != "" {
+			pageData.SiteName = domainInfo.SiteName
+		}
+		pageData.ICPNumber = domainInfo.ICPNumber
+		pageData.PoliceNumber = domainInfo.PoliceNumber
+	}
+	c.HTML(statusCode, template, pageData)
+}
+
 // PreviewShortLink 预览短网址信息（不计入统计）
 func (ctrl ShortLinkController) PreviewShortLink(c httpInterfaces.RouterContextInterface) {
 	helper := helperPkg.GetHelper()
@@ -406,7 +497,11 @@ func (ctrl ShortLinkController) PreviewShortLink(c httpInterfaces.RouterContextI
 	// 预览时不传递IP信息，这样就不会记录统计，也不传递查询参数
 	originalURL, err := shortLinkService.RedirectShortLinkWithQuery(domain, shortCode, "", "", "", "")
 	if err != nil {
-		if strings.Contains(err.Error(), "不存在") {
+		if errors.Is(err, service.ErrSecurityPasswordRequired) {
+			ctrl.Error(c, constants.ErrCodeForbidden, "短网址受访问密码保护")
+		} else if errors.Is(err, service.ErrSecurityAccessDenied) || errors.Is(err, service.ErrSecurityURLBlocked) {
+			ctrl.Error(c, constants.ErrCodeForbidden, "短网址访问受限")
+		} else if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, "短网址不存在或已失效")
 		} else if strings.Contains(err.Error(), "过期") {
 			ctrl.Error(c, 410, "短网址已过期")

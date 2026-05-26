@@ -8,8 +8,8 @@ import (
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dto"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/middleware"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
-	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
 type UserController struct {
@@ -18,6 +18,10 @@ type UserController struct {
 
 // CreateUser 创建用户
 func (ctrl UserController) CreateUser(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理用户")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	var req dto.CreateUserRequest
@@ -38,6 +42,10 @@ func (ctrl UserController) CreateUser(c httpInterfaces.RouterContextInterface) {
 
 // GetUser 获取用户详情
 func (ctrl UserController) GetUser(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理用户")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -63,6 +71,10 @@ func (ctrl UserController) GetUser(c httpInterfaces.RouterContextInterface) {
 
 // UpdateUser 更新用户
 func (ctrl UserController) UpdateUser(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理用户")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -94,6 +106,10 @@ func (ctrl UserController) UpdateUser(c httpInterfaces.RouterContextInterface) {
 
 // DeleteUser 删除用户
 func (ctrl UserController) DeleteUser(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理用户")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -119,6 +135,10 @@ func (ctrl UserController) DeleteUser(c httpInterfaces.RouterContextInterface) {
 
 // GetUserList 获取用户列表
 func (ctrl UserController) GetUserList(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理用户")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	var req dto.UserListRequest
@@ -166,6 +186,10 @@ func (ctrl UserController) ChangePassword(c httpInterfaces.RouterContextInterfac
 
 // ResetPassword 重置密码
 func (ctrl UserController) ResetPassword(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理用户")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	idStr := c.Param("id")
@@ -212,6 +236,10 @@ func (ctrl UserController) GetCurrentUser(c httpInterfaces.RouterContextInterfac
 
 // CreateToken 创建Token
 func (ctrl UserController) CreateToken(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理Token")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	currentUser := middleware.GetCurrentUser(c)
@@ -227,7 +255,7 @@ func (ctrl UserController) CreateToken(c httpInterfaces.RouterContextInterface) 
 	}
 
 	tokenService := service.NewUserTokenService(helper)
-	response, err := tokenService.CreateToken(currentUser.ID, &req)
+	response, err := tokenService.CreateTokenInWorkspace(currentUser.ID, middleware.GetCurrentWorkspaceID(c), &req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -238,6 +266,10 @@ func (ctrl UserController) CreateToken(c httpInterfaces.RouterContextInterface) 
 
 // GetTokenList 获取Token列表
 func (ctrl UserController) GetTokenList(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理Token")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	currentUser := middleware.GetCurrentUser(c)
@@ -253,7 +285,7 @@ func (ctrl UserController) GetTokenList(c httpInterfaces.RouterContextInterface)
 	}
 
 	tokenService := service.NewUserTokenService(helper)
-	response, err := tokenService.GetTokenList(currentUser.ID, &req)
+	response, err := tokenService.GetTokenListInWorkspace(currentUser.ID, middleware.GetCurrentWorkspaceID(c), &req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return
@@ -264,6 +296,10 @@ func (ctrl UserController) GetTokenList(c httpInterfaces.RouterContextInterface)
 
 // DeleteToken 删除Token
 func (ctrl UserController) DeleteToken(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限管理Token")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	currentUser := middleware.GetCurrentUser(c)
@@ -280,7 +316,7 @@ func (ctrl UserController) DeleteToken(c httpInterfaces.RouterContextInterface) 
 	}
 
 	tokenService := service.NewUserTokenService(helper)
-	err = tokenService.DeleteToken(currentUser.ID, tokenId)
+	err = tokenService.DeleteTokenInWorkspace(currentUser.ID, middleware.GetCurrentWorkspaceID(c), tokenId)
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") || strings.Contains(err.Error(), "无权限") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
@@ -295,6 +331,10 @@ func (ctrl UserController) DeleteToken(c httpInterfaces.RouterContextInterface) 
 
 // GetOperationLogs 获取操作日志
 func (ctrl UserController) GetOperationLogs(c httpInterfaces.RouterContextInterface) {
+	if !middleware.CanManageAdminResource(c) {
+		ctrl.Error(c, constants.ErrCodeForbidden, "无权限查看操作日志")
+		return
+	}
 	helper := helperPkg.GetHelper()
 	_ = helper
 	var req dto.OperationLogListRequest
@@ -304,7 +344,7 @@ func (ctrl UserController) GetOperationLogs(c httpInterfaces.RouterContextInterf
 	}
 
 	logService := service.NewOperationLogService(helper)
-	response, err := logService.GetLogList(&req)
+	response, err := logService.GetLogListByWorkspace(middleware.GetCurrentWorkspaceID(c), &req)
 	if err != nil {
 		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		return

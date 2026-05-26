@@ -2,25 +2,22 @@
 <footer class="footer">
     <div class="container">
         <div class="footer-content">
-            <div class="footer-info">
-                <div class="footer-links">
-                    {{if .Copyright}}
-                    <span>{{.Copyright}}</span>
-                    <span>&</span>
-                    {{end}}
-                    <span>Powered by <a href="https://www.mliev.com/docs/dwz" target="_blank">木雷短网址</a></span>
-                </div>
+            <div class="footer-links">
+                {{if .Copyright}}
+                <span>{{.Copyright}}</span>
+                <span aria-hidden="true">·</span>
+                {{end}}
+                <span>Powered by <a href="https://mdoc.cc/mliev/dwz" target="_blank" rel="noopener noreferrer">木雷短网址</a></span>
             </div>
         </div>
         {{if or .ICPNumber .PoliceNumber}}
-        <div class="footer-content" style="margin-top: 1rem;">
+        <div class="footer-content footer-beian">
             <div class="beian-info">
                 {{if .ICPNumber}}
-                <div><a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{{.ICPNumber}}</a>
-                </div>
+                <a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{{.ICPNumber}}</a>
                 {{end}}
                 {{if .PoliceNumber}}
-                <div>公安备案号：{{.PoliceNumber}}</div>
+                <span>公安备案号：{{.PoliceNumber}}</span>
                 {{end}}
             </div>
         </div>

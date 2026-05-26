@@ -72,7 +72,9 @@ type ABTestVariantStatistic struct {
 
 // ConversionRateStats 转化率统计
 type ConversionRateStats struct {
-	Impressions    int64   `json:"impressions"`     // 展示数
-	Clicks         int64   `json:"clicks"`          // 点击数
-	ConversionRate float64 `json:"conversion_rate"` // 转化率
+	Impressions     int64   `json:"impressions"`      // 展示数
+	Clicks          int64   `json:"clicks"`           // 点击数
+	Conversions     int64   `json:"conversions"`      // 转化数
+	ConversionValue float64 `json:"conversion_value"` // 转化价值
+	ConversionRate  float64 `json:"conversion_rate"`  // 转化率
 }
