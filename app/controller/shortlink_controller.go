@@ -31,7 +31,7 @@ func (ctrl ShortLinkController) CreateShortLink(c httpInterfaces.RouterContextIn
 	_ = helper
 	var req dto.CreateShortLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
+		ctrl.Error(c, constants.ErrCodeBadRequest, bindErrorMessage(err))
 		return
 	}
 	// 获取客户端IP
@@ -40,7 +40,7 @@ func (ctrl ShortLinkController) CreateShortLink(c httpInterfaces.RouterContextIn
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
 	response, err := shortLinkService.CreateShortLinkInWorkspace(&req, clientIP, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
-		ctrl.Error(c, constants.ErrCodeInternal, err.Error())
+		ctrl.writeShortLinkError(c, err)
 		return
 	}
 
@@ -89,17 +89,13 @@ func (ctrl ShortLinkController) UpdateShortLink(c httpInterfaces.RouterContextIn
 
 	var req dto.UpdateShortLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
+		ctrl.Error(c, constants.ErrCodeBadRequest, bindErrorMessage(err))
 		return
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
 	response, err := shortLinkService.UpdateShortLinkInWorkspace(id, &req, middleware.GetCurrentWorkspaceID(c), middleware.GetCurrentUserID(c))
 	if err != nil {
-		if strings.Contains(err.Error(), "不存在") {
-			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
-		} else {
-			ctrl.Error(c, constants.ErrCodeInternal, err.Error())
-		}
+		ctrl.writeShortLinkError(c, err)
 		return
 	}
 
@@ -123,7 +119,7 @@ func (ctrl ShortLinkController) UpdateShortLinkStatus(c httpInterfaces.RouterCon
 
 	var req dto.UpdateShortLinkStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
+		ctrl.Error(c, constants.ErrCodeBadRequest, bindErrorMessage(err))
 		return
 	}
 
@@ -177,7 +173,7 @@ func (ctrl ShortLinkController) GetShortLinkList(c httpInterfaces.RouterContextI
 	_ = helper
 	var req dto.ShortLinkListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
+		ctrl.Error(c, constants.ErrCodeBadRequest, bindErrorMessage(err))
 		return
 	}
 	shortLinkService := service.NewShortLinkService(helper, c.Request().Context())
@@ -230,7 +226,7 @@ func (ctrl ShortLinkController) BatchCreateShortLinks(c httpInterfaces.RouterCon
 	_ = helper
 	var req dto.BatchCreateShortLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		ctrl.Error(c, constants.ErrCodeBadRequest, "请求参数错误: "+err.Error())
+		ctrl.Error(c, constants.ErrCodeBadRequest, bindErrorMessage(err))
 		return
 	}
 
@@ -522,4 +518,35 @@ func (ctrl ShortLinkController) PreviewShortLink(c httpInterfaces.RouterContextI
 	}
 
 	ctrl.Success(c, previewInfo)
+}
+
+func (ctrl ShortLinkController) writeShortLinkError(c httpInterfaces.RouterContextInterface, err error) {
+	message := err.Error()
+	if strings.Contains(message, "短网址不存在") {
+		ctrl.Error(c, constants.ErrCodeNotFound, message)
+		return
+	}
+	if isShortLinkBadRequestError(message) {
+		ctrl.Error(c, constants.ErrCodeBadRequest, message)
+		return
+	}
+	ctrl.Error(c, constants.ErrCodeInternal, message)
+}
+
+func isShortLinkBadRequestError(message string) bool {
+	badRequestPhrases := []string{
+		"无效",
+		"不能为空",
+		"不存在",
+		"未激活",
+		"命中安全规则",
+		"仅支持",
+		"已存在",
+	}
+	for _, phrase := range badRequestPhrases {
+		if strings.Contains(message, phrase) {
+			return true
+		}
+	}
+	return false
 }
