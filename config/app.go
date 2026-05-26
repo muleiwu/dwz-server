@@ -23,10 +23,15 @@ import (
 // resolve the dialect-specific SQL files.
 type App struct {
 	MigrationsFS embed.FS
+	Version      string
+	BuildTime    string
+	GitCommit    string
 }
 
-func (a App) Assemblies() []interfaces.AssemblyInterface { return DefaultAssemblies() }
-func (a App) Servers() []interfaces.ServerInterface      { return DefaultServers(a.MigrationsFS) }
+func (a App) Assemblies() []interfaces.AssemblyInterface {
+	return DefaultAssembliesWithVersion(a.Version, a.GitCommit, a.BuildTime)
+}
+func (a App) Servers() []interfaces.ServerInterface { return DefaultServers(a.MigrationsFS) }
 
 // DefaultAssemblies returns the CE assembly chain. EE consumers wrap this and
 // append their own assemblies before passing the combined slice to the
@@ -38,12 +43,22 @@ func (a App) Servers() []interfaces.ServerInterface      { return DefaultServers
 // download boots straight into the install wizard regardless of whether
 // MySQL or Redis is running.
 func DefaultAssemblies() []interfaces.AssemblyInterface {
+	return DefaultAssembliesWithVersion("", "", "")
+}
+
+// DefaultAssembliesWithVersion returns the CE assembly chain and initializes
+// the version service with linker-provided build information.
+func DefaultAssembliesWithVersion(version, gitCommit, buildTime string) []interfaces.AssemblyInterface {
 	return []interfaces.AssemblyInterface{
 		&envAssembly.Env{},
 		&configAssembly.Config{DefaultConfigs: Config{}.Get()},
 		&loggerAssembly.Logger{},
 		&installedAssembly.Installed{},
-		&versionAssembly.Version{},
+		&versionAssembly.Version{
+			Version:   version,
+			GitCommit: gitCommit,
+			BuildTime: buildTime,
+		},
 		&databaseAssembly.Database{},
 		&redisAssembly.Redis{},
 		&cacheAssembly.Cache{},

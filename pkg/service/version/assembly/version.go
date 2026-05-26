@@ -6,12 +6,17 @@ import (
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/version/impl"
 )
 
-// Version assembles the build-info holder. No dependencies; populated by
-// AppProvider after assembly via SetVersionInfo (see config/app.go).
-type Version struct{}
+// Version assembles the build-info holder.
+type Version struct {
+	Version   string
+	GitCommit string
+	BuildTime string
+}
 
 func (Version) Type() reflect.Type        { return reflect.TypeFor[*impl.Version]() }
 func (Version) DependsOn() []reflect.Type { return nil }
-func (Version) Assembly() (any, error) {
-	return impl.NewVersion(), nil
+func (v Version) Assembly() (any, error) {
+	version := impl.NewVersion()
+	version.SetVersionInfo(v.Version, v.GitCommit, v.BuildTime)
+	return version, nil
 }
