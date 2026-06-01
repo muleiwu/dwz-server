@@ -326,7 +326,7 @@ vim config.yaml
 
 ### 迁移文件命名规范
 
-后续业务迁移文件以 CE 仓库的 `migrations/{mysql,postgresql,sqlite}/` 目录为主维护；如需 EE 包含冗余副本，可以在 EE 仓库的同名方言目录放置同名同内容迁移。CE 和 EE 存在相同版本号时，goose 只会记录并执行其中一份。
+CE 迁移只放 CE/shared schema；EE-only schema 只放 EE 仓库的 `migrations/{mysql,postgresql,sqlite}/` 目录，例如 `ee_workspace_brandings`、`ee_domain_brandings`、`ee_system_brandings`。如果迁移影响 CE 代码实际依赖的共享表字段，例如 `users.is_system_admin`，仍放 CE。
 
 新迁移文件使用时间顺序友好的命名格式，方便后续合并迁移时按文件名字典序排序：
 
@@ -340,7 +340,7 @@ YYYYMMDDHHmmssRR_<随机数字>_<迁移名>.sql
 2026052718150350_1234_add_workspace_branding.sql
 ```
 
-同一迁移需要在 `mysql`、`postgresql`、`sqlite` 三个方言目录中保持同名；如果 CE 和 EE 两边都放置副本，也必须保持同名同内容。迁移名使用小写 `snake_case`。
+同一迁移需要在 `mysql`、`postgresql`、`sqlite` 三个方言目录中保持同名；迁移名使用小写 `snake_case`。
 
 5. **启动服务**
 ```bash
