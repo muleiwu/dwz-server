@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"strings"
 	"time"
 
 	// 触发 migrations 包加载 —— 包内的 Go 迁移（如 0015）需要在
@@ -86,6 +87,10 @@ func (m *Migration) Run() error {
 	if !ok {
 		return fmt.Errorf("[migration] 缺少 %s 驱动的迁移目录映射", driver)
 	}
+	baseDir, ok := resolveMigrationDir(m.BaseFS, dir)
+	if !ok {
+		return fmt.Errorf("[migration] CE 迁移目录不存在: %s", dir)
+	}
 
 	if err := goose.SetDialect(dialect); err != nil {
 		return fmt.Errorf("[migration] 设置方言失败: %w", err)
@@ -99,21 +104,24 @@ func (m *Migration) Run() error {
 		logger.Warn("[migration] baseline 失败: " + err.Error())
 	}
 
-	if err := goose.Up(sqlDB, dir); err != nil {
+	if err := goose.Up(sqlDB, baseDir); err != nil {
 		return fmt.Errorf("[migration] CE 迁移失败: %w", err)
 	}
-	logger.Info(fmt.Sprintf("[migration] CE 迁移完成 (driver=%s, dir=%s)", driver, dir))
+	logger.Info(fmt.Sprintf("[migration] CE 迁移完成 (driver=%s, dir=%s)", driver, baseDir))
 
 	// EE additional migrations FS (also in dialect subdirectory).
 	if extra := h.GetConfig().Get("ee.extra_migrations_fs", nil); extra != nil {
-		if eeFS, ok := extra.(embed.FS); ok && hasEntries(eeFS, dir) {
-			goose.SetBaseFS(eeFS)
-			if err := goose.Up(sqlDB, dir); err != nil {
-				return fmt.Errorf("[migration] EE 迁移失败: %w", err)
+		if eeFS, ok := extra.(embed.FS); ok {
+			eeDir, ok := resolveMigrationDir(eeFS, dir)
+			if ok {
+				goose.SetBaseFS(eeFS)
+				if err := goose.Up(sqlDB, eeDir); err != nil {
+					return fmt.Errorf("[migration] EE 迁移失败: %w", err)
+				}
+				logger.Info("[migration] EE 迁移完成")
+				// reset to CE FS for any later operations
+				goose.SetBaseFS(m.BaseFS)
 			}
-			logger.Info("[migration] EE 迁移完成")
-			// reset to CE FS for any later operations
-			goose.SetBaseFS(m.BaseFS)
 		}
 	}
 
@@ -230,6 +238,18 @@ func (m *Migration) baselineLegacyVersions() error {
 	return nil
 }
 
+func resolveMigrationDir(fsys embed.FS, dir string) (string, bool) {
+	if hasEntries(fsys, dir) {
+		return dir, true
+	}
+
+	if alt := strings.TrimPrefix(dir, "migrations/"); alt != dir && hasEntries(fsys, alt) {
+		return alt, true
+	}
+
+	return dir, false
+}
+
 // hasEntries returns true when fsys contains at least one regular file under
 // dir. This avoids invoking goose against an empty subtree (which it would
 // surface as an error).
@@ -254,8 +274,12 @@ func hasEntries(fsys embed.FS, dir string) bool {
 // gooseLogger bridges goose's logger contract onto helper.GetLogger().
 type gooseLogger struct{}
 
-func (gooseLogger) Fatal(v ...any)               { helper.GetHelper().GetLogger().Fatal(fmt.Sprint(v...)) }
-func (gooseLogger) Fatalf(f string, v ...any)    { helper.GetHelper().GetLogger().Fatal(fmt.Sprintf(f, v...)) }
-func (gooseLogger) Print(v ...any)               { helper.GetHelper().GetLogger().Info(fmt.Sprint(v...)) }
-func (gooseLogger) Println(v ...any)             { helper.GetHelper().GetLogger().Info(fmt.Sprint(v...)) }
-func (gooseLogger) Printf(f string, v ...any)    { helper.GetHelper().GetLogger().Info(fmt.Sprintf(f, v...)) }
+func (gooseLogger) Fatal(v ...any) { helper.GetHelper().GetLogger().Fatal(fmt.Sprint(v...)) }
+func (gooseLogger) Fatalf(f string, v ...any) {
+	helper.GetHelper().GetLogger().Fatal(fmt.Sprintf(f, v...))
+}
+func (gooseLogger) Print(v ...any)   { helper.GetHelper().GetLogger().Info(fmt.Sprint(v...)) }
+func (gooseLogger) Println(v ...any) { helper.GetHelper().GetLogger().Info(fmt.Sprint(v...)) }
+func (gooseLogger) Printf(f string, v ...any) {
+	helper.GetHelper().GetLogger().Info(fmt.Sprintf(f, v...))
+}

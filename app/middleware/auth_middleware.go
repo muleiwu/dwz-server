@@ -226,3 +226,10 @@ func GetCurrentUserID(c httpInterfaces.RouterContextInterface) uint64 {
 	}
 	return 0
 }
+
+func IsSystemAdmin(c httpInterfaces.RouterContextInterface) bool {
+	if u := GetCurrentUser(c); u != nil {
+		return u.IsSystemAdmin
+	}
+	return false
+}

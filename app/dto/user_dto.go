@@ -17,15 +17,16 @@ type LoginResponse struct {
 
 // UserInfo 用户信息
 type UserInfo struct {
-	ID        uint64     `json:"id"`
-	Username  string     `json:"username"`
-	RealName  string     `json:"real_name"`
-	Email     string     `json:"email"`
-	Phone     string     `json:"phone"`
-	Status    int8       `json:"status"`
-	LastLogin *time.Time `json:"last_login"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID            uint64     `json:"id"`
+	Username      string     `json:"username"`
+	RealName      string     `json:"real_name"`
+	Email         string     `json:"email"`
+	Phone         string     `json:"phone"`
+	Status        int8       `json:"status"`
+	IsSystemAdmin bool       `json:"is_system_admin"`
+	LastLogin     *time.Time `json:"last_login"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 // CreateUserRequest 创建用户请求
@@ -39,10 +40,11 @@ type CreateUserRequest struct {
 
 // UpdateUserRequest 更新用户请求
 type UpdateUserRequest struct {
-	RealName string `json:"real_name" binding:"omitempty,max=100" example:"李四"`
-	Email    string `json:"email" binding:"omitempty,email,max=255" example:"user@example.com"`
-	Phone    string `json:"phone" binding:"omitempty,max=20" example:"13800138000"`
-	Status   *int8  `json:"status" binding:"omitempty,oneof=0 1" example:"1"`
+	RealName      string `json:"real_name" binding:"omitempty,max=100" example:"李四"`
+	Email         string `json:"email" binding:"omitempty,email,max=255" example:"user@example.com"`
+	Phone         string `json:"phone" binding:"omitempty,max=20" example:"13800138000"`
+	Status        *int8  `json:"status" binding:"omitempty,oneof=0 1" example:"1"`
+	IsSystemAdmin *bool  `json:"is_system_admin"`
 }
 
 // ChangePasswordRequest 修改密码请求
