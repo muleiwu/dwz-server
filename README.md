@@ -326,7 +326,7 @@ vim config.yaml
 
 ### 迁移文件命名规范
 
-CE 迁移只放 CE/shared schema；EE-only schema 只放 EE 仓库的 `migrations/{mysql,postgresql,sqlite}/` 目录，例如 `ee_workspace_brandings`、`ee_domain_brandings`、`ee_system_brandings`。如果迁移影响 CE 代码实际依赖的共享表字段，例如 `users.is_system_admin`，仍放 CE。
+数据表创建和结构变更需要按 CE/EE 的最终 schema 保持一致：同一逻辑表在 CE 和 EE 两边必须使用同名迁移、同名表、同名字段和同名索引，避免后续开发出现字段脑裂。品牌相关表虽然沿用历史命名 `ee_system_brandings`、`ee_workspace_brandings`、`ee_domain_brandings`，但字段结构在 CE 和 EE 两边保持完全一致；版本功能差异只通过代码、路由、前端编译开关和权限控制区分。
 
 新迁移文件使用时间顺序友好的命名格式，方便后续合并迁移时按文件名字典序排序：
 

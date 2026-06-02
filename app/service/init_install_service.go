@@ -57,11 +57,12 @@ func NewInitInstallService(helper interfaces.HelperInterface) *InitInstallServic
 
 func (s *InitInstallService) CreateAdminUser(username, realName, email, phone, password string) error {
 	user := &model.User{
-		Username: username,
-		RealName: realName,
-		Email:    email,
-		Phone:    phone,
-		Status:   1,
+		Username:      username,
+		RealName:      realName,
+		Email:         email,
+		Phone:         phone,
+		Status:        1,
+		IsSystemAdmin: true,
 	}
 	if err := user.SetPassword(password); err != nil {
 		return err
