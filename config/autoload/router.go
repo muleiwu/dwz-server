@@ -13,9 +13,11 @@ type Router struct{}
 func (Router) InitConfig() map[string]any {
 	return map[string]any{
 		"http.router": func(router httpInterfaces.RouterInterface) {
-			router.GET("/favicon.ico", func(c httpInterfaces.RouterContextInterface) {
-				c.Status(http.StatusNoContent)
-			})
+			redirectFavicon := func(c httpInterfaces.RouterContextInterface) {
+				c.Redirect(http.StatusFound, "/admin/favicon.ico")
+			}
+			router.GET("/favicon.ico", redirectFavicon)
+			router.HEAD("/favicon.ico", redirectFavicon)
 
 			// 健康检查
 			health := router.Group("/health")

@@ -1,0 +1,17 @@
+<svg width="264" height="80" viewBox="0 0 264 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dwz-logo-lockup-dark-title dwz-logo-lockup-dark-desc">
+  <title id="dwz-logo-lockup-dark-title">木雷短网址横向标志深色版</title>
+  <desc id="dwz-logo-lockup-dark-desc">由清爽流线短链图形标和中文品牌字标组成的深色背景可用版本。</desc>
+  <g aria-hidden="true" transform="translate(8 8)">
+    <rect width="64" height="64" rx="18" fill="#E0F2FE" stroke="#BAE6FD" stroke-width="1.5"/>
+    <path d="M16 20H22.5C27.5 20 29 28 33 31.5" stroke="#38BDF8" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M16 32H34" stroke="#0EA5E9" stroke-width="4.4" stroke-linecap="round"/>
+    <path d="M16 44H22.5C27.5 44 29 36 33 32.5" stroke="#38BDF8" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M38 32H49" stroke="#0EA5E9" stroke-width="4.4" stroke-linecap="round"/>
+    <path d="M46 28.5L50 32L46 35.5" stroke="#0EA5E9" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="16" cy="20" r="3.4" fill="#38BDF8"/>
+    <circle cx="16" cy="32" r="3.4" fill="#0EA5E9"/>
+    <circle cx="16" cy="44" r="3.4" fill="#38BDF8"/>
+    <circle cx="34" cy="32" r="6" fill="#22C55E" stroke="#FFFFFF" stroke-width="2"/>
+  </g>
+  <text x="94" y="51" fill="#FFFFFF" font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, Source Han Sans SC, sans-serif" font-size="30" font-weight="700" letter-spacing="0">木雷短网址</text>
+</svg>
