@@ -60,6 +60,10 @@ func (ctrl UserController) GetUser(c httpInterfaces.RouterContextInterface) {
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
+		} else if strings.Contains(err.Error(), "无权限") {
+			ctrl.Error(c, constants.ErrCodeForbidden, err.Error())
+		} else if strings.Contains(err.Error(), "至少保留") {
+			ctrl.Error(c, constants.ErrCodeBadRequest, err.Error())
 		} else {
 			ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		}
@@ -91,10 +95,14 @@ func (ctrl UserController) UpdateUser(c httpInterfaces.RouterContextInterface) {
 	}
 
 	userService := service.NewUserService(helper)
-	response, err := userService.UpdateUser(id, &req)
+	response, err := userService.UpdateUser(id, &req, middleware.IsSystemAdmin(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
+		} else if strings.Contains(err.Error(), "无权限") {
+			ctrl.Error(c, constants.ErrCodeForbidden, err.Error())
+		} else if strings.Contains(err.Error(), "至少保留") {
+			ctrl.Error(c, constants.ErrCodeBadRequest, err.Error())
 		} else {
 			ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		}
@@ -120,10 +128,14 @@ func (ctrl UserController) DeleteUser(c httpInterfaces.RouterContextInterface) {
 	}
 
 	userService := service.NewUserService(helper)
-	err = userService.DeleteUser(id)
+	err = userService.DeleteUser(id, middleware.IsSystemAdmin(c))
 	if err != nil {
 		if strings.Contains(err.Error(), "不存在") {
 			ctrl.Error(c, constants.ErrCodeNotFound, err.Error())
+		} else if strings.Contains(err.Error(), "无权限") {
+			ctrl.Error(c, constants.ErrCodeForbidden, err.Error())
+		} else if strings.Contains(err.Error(), "至少保留") {
+			ctrl.Error(c, constants.ErrCodeBadRequest, err.Error())
 		} else {
 			ctrl.Error(c, constants.ErrCodeInternal, err.Error())
 		}

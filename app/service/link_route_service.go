@@ -283,7 +283,7 @@ func (s *LinkRouteService) validateRouteRequest(workspaceID uint64, req *dto.Lin
 	if strings.TrimSpace(req.TargetURL) == "" {
 		return errors.New("目标 URL 不能为空")
 	}
-	if _, err := url.ParseRequestURI(req.TargetURL); err != nil {
+	if _, err := parseTargetURL(req.TargetURL); err != nil {
 		return errors.New("目标 URL 格式无效")
 	}
 	if result := s.securityService.ScanURL(workspaceID, req.TargetURL); !result.Safe {

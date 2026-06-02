@@ -351,9 +351,10 @@ func openInstallGormDB(cfg InstallDatabaseConfig) (*gorm.DB, error) {
 
 func seedInstallAdmin(db *gorm.DB, admin install_bootstrap.AdminPayload) error {
 	user := &model.User{
-		Username: admin.Username,
-		Email:    admin.Email,
-		Status:   1,
+		Username:      admin.Username,
+		Email:         admin.Email,
+		Status:        1,
+		IsSystemAdmin: true,
 	}
 	if err := user.SetPassword(admin.Password); err != nil {
 		return err

@@ -136,6 +136,16 @@ func (dao *UserDAO) CountAll() (int64, error) {
 	return count, err
 }
 
+func (dao *UserDAO) CountSystemAdmins(excludeID uint64) (int64, error) {
+	var count int64
+	query := dao.helper.GetDatabase().Model(&model.User{}).Where("is_system_admin = ? AND status = ?", true, 1)
+	if excludeID > 0 {
+		query = query.Where("id != ?", excludeID)
+	}
+	err := query.Count(&count).Error
+	return count, err
+}
+
 // CountActive 获取活跃用户数量（30天内登录）
 func (dao *UserDAO) CountActive() (int64, error) {
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)

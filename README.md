@@ -324,6 +324,24 @@ vim config.yaml
 # 执行项目中的数据库迁移脚本
 ```
 
+### 迁移文件命名规范
+
+CE 迁移只放 CE/shared schema；EE-only schema 只放 EE 仓库的 `migrations/{mysql,postgresql,sqlite}/` 目录，例如 `ee_workspace_brandings`、`ee_domain_brandings`、`ee_system_brandings`。如果迁移影响 CE 代码实际依赖的共享表字段，例如 `users.is_system_admin`，仍放 CE。
+
+新迁移文件使用时间顺序友好的命名格式，方便后续合并迁移时按文件名字典序排序：
+
+```text
+YYYYMMDDHHmmssRR_<随机数字>_<迁移名>.sql
+```
+
+示例：
+
+```text
+2026052718150350_1234_add_workspace_branding.sql
+```
+
+同一迁移需要在 `mysql`、`postgresql`、`sqlite` 三个方言目录中保持同名；迁移名使用小写 `snake_case`。
+
 5. **启动服务**
 ```bash
 go run main.go

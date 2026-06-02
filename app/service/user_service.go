@@ -124,7 +124,7 @@ func (s *UserService) CreateUser(req *dto.CreateUserRequest) (*dto.UserInfo, err
 }
 
 // UpdateUser 更新用户
-func (s *UserService) UpdateUser(id uint64, req *dto.UpdateUserRequest) (*dto.UserInfo, error) {
+func (s *UserService) UpdateUser(id uint64, req *dto.UpdateUserRequest, actorIsSystemAdmin bool) (*dto.UserInfo, error) {
 	// 获取用户
 	user, err := s.userDAO.GetByID(id)
 	if err != nil {
@@ -156,7 +156,23 @@ func (s *UserService) UpdateUser(id uint64, req *dto.UpdateUserRequest) (*dto.Us
 		user.Phone = req.Phone
 	}
 	if req.Status != nil {
+		if *req.Status == 0 && user.IsSystemAdmin {
+			if err := s.ensureAnotherSystemAdmin(user.ID); err != nil {
+				return nil, err
+			}
+		}
 		user.Status = *req.Status
+	}
+	if req.IsSystemAdmin != nil {
+		if !actorIsSystemAdmin {
+			return nil, errors.New("无权限管理系统管理员")
+		}
+		if user.IsSystemAdmin && !*req.IsSystemAdmin {
+			if err := s.ensureAnotherSystemAdmin(user.ID); err != nil {
+				return nil, err
+			}
+		}
+		user.IsSystemAdmin = *req.IsSystemAdmin
 	}
 
 	// 保存更新
@@ -169,14 +185,22 @@ func (s *UserService) UpdateUser(id uint64, req *dto.UpdateUserRequest) (*dto.Us
 }
 
 // DeleteUser 删除用户
-func (s *UserService) DeleteUser(id uint64) error {
+func (s *UserService) DeleteUser(id uint64, actorIsSystemAdmin bool) error {
 	// 检查用户是否存在
-	_, err := s.userDAO.GetByID(id)
+	user, err := s.userDAO.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("用户不存在")
 		}
 		return err
+	}
+	if user.IsSystemAdmin {
+		if !actorIsSystemAdmin {
+			return errors.New("无权限管理系统管理员")
+		}
+		if err := s.ensureAnotherSystemAdmin(user.ID); err != nil {
+			return err
+		}
 	}
 
 	// 删除用户的所有Token
@@ -267,6 +291,17 @@ func (s *UserService) ResetPassword(id uint64, req *dto.ResetPasswordRequest) er
 	return s.userDAO.Update(user)
 }
 
+func (s *UserService) ensureAnotherSystemAdmin(userID uint64) error {
+	count, err := s.userDAO.CountSystemAdmins(userID)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return errors.New("至少保留一个系统管理员")
+	}
+	return nil
+}
+
 // ConvertToUserInfo 转换为UserInfo（公开方法）
 func (s *UserService) ConvertToUserInfo(user *model.User) dto.UserInfo {
 	return s.convertToUserInfo(user)
@@ -275,14 +310,15 @@ func (s *UserService) ConvertToUserInfo(user *model.User) dto.UserInfo {
 // convertToUserInfo 转换为UserInfo
 func (s *UserService) convertToUserInfo(user *model.User) dto.UserInfo {
 	return dto.UserInfo{
-		ID:        user.ID,
-		Username:  user.Username,
-		RealName:  user.RealName,
-		Email:     user.Email,
-		Phone:     user.Phone,
-		Status:    user.Status,
-		LastLogin: user.LastLogin,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		ID:            user.ID,
+		Username:      user.Username,
+		RealName:      user.RealName,
+		Email:         user.Email,
+		Phone:         user.Phone,
+		Status:        user.Status,
+		IsSystemAdmin: user.IsSystemAdmin,
+		LastLogin:     user.LastLogin,
+		CreatedAt:     user.CreatedAt,
+		UpdatedAt:     user.UpdatedAt,
 	}
 }
