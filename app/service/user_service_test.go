@@ -11,9 +11,9 @@ import (
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	ceInterfaces "cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	ipRegionImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/ip_region/impl"
+	"github.com/glebarez/sqlite"
 	"github.com/muleiwu/gsr"
 	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
