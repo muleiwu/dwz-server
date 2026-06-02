@@ -6,6 +6,6 @@ config.yaml
 AGENTS.md
 WARP.md
 go.work
-go.work.sum
+go.work.*
 /.claude/
 /config/install.lock
