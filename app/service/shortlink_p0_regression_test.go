@@ -237,6 +237,65 @@ func TestShortLinkP0RegressionCreateRedirectStatisticsAndABSplit(t *testing.T) {
 	}
 }
 
+func TestShortLinkHashRouteURLPreservedOnSaveAndRedirect(t *testing.T) {
+	helper := newShortLinkRegressionHelper(t)
+	db := helper.GetDatabase()
+
+	if err := db.Create(&model.Domain{
+		WorkspaceID:     1,
+		Protocol:        "https",
+		Domain:          "dwz.do",
+		PassQueryParams: true,
+		IsActive:        true,
+	}).Error; err != nil {
+		t.Fatalf("seed domain: %v", err)
+	}
+
+	shortLinkSvc := NewShortLinkService(helper, context.Background())
+	hashURL := "https://app.example.com/#/orders/detail?id=123&tab=items"
+	createResp, err := shortLinkSvc.CreateShortLinkInWorkspace(&dto.CreateShortLinkRequest{
+		OriginalURL: hashURL,
+		Domain:      "dwz.do",
+		CustomCode:  "hash",
+	}, "203.0.113.20", 1, 7)
+	if err != nil {
+		t.Fatalf("create hash short link: %v", err)
+	}
+	if createResp.OriginalURL != hashURL || strings.Contains(createResp.OriginalURL, "%23") {
+		t.Fatalf("hash URL changed on create: %s", createResp.OriginalURL)
+	}
+
+	targetURL, err := shortLinkSvc.RedirectShortLinkWithQuery("dwz.do", "hash", "", "", "", "")
+	if err != nil {
+		t.Fatalf("redirect hash short link: %v", err)
+	}
+	if targetURL != hashURL {
+		t.Fatalf("hash URL changed on redirect: %s", targetURL)
+	}
+
+	targetURL, err = shortLinkSvc.RedirectShortLinkWithQuery("dwz.do", "hash", "", "", "", "from=dwz")
+	if err != nil {
+		t.Fatalf("redirect hash short link with query: %v", err)
+	}
+	expectedWithQuery := "https://app.example.com/?from=dwz#/orders/detail?id=123&tab=items"
+	if targetURL != expectedWithQuery {
+		t.Fatalf("query passthrough should stay before fragment: %s", targetURL)
+	}
+
+	hashURLWithQuery := "https://app.example.com/report?keep=1#/dash?filter=open&tab=2"
+	updateResp, err := shortLinkSvc.UpdateShortLinkInWorkspace(createResp.ID, &dto.UpdateShortLinkRequest{
+		OriginalURL: hashURLWithQuery,
+		UTMSource:   "newsletter",
+	}, 1, 7)
+	if err != nil {
+		t.Fatalf("update hash short link with UTM: %v", err)
+	}
+	expectedWithUTM := "https://app.example.com/report?keep=1&utm_source=newsletter#/dash?filter=open&tab=2"
+	if updateResp.OriginalURL != expectedWithUTM || strings.Contains(updateResp.OriginalURL, "%23") {
+		t.Fatalf("UTM merge should preserve fragment: %s", updateResp.OriginalURL)
+	}
+}
+
 func TestParseTrafficMetadataUnknownAndBot(t *testing.T) {
 	unknown := parseTrafficMetadata("   ")
 	if unknown.DeviceType != "unknown" || unknown.Browser != "unknown" || unknown.OS != "unknown" || unknown.IsBot {

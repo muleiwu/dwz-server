@@ -59,7 +59,7 @@ func (s *ShortLinkService) CreateShortLink(req *dto.CreateShortLinkRequest, crea
 
 func (s *ShortLinkService) CreateShortLinkInWorkspace(req *dto.CreateShortLinkRequest, creatorIP string, workspaceID, userID uint64) (*dto.ShortLinkResponse, error) {
 	// 验证原始URL
-	if _, err := url.ParseRequestURI(req.OriginalURL); err != nil {
+	if _, err := parseTargetURL(req.OriginalURL); err != nil {
 		return nil, errors.New("无效的URL格式")
 	}
 	finalURL, err := mergeUTMToURL(req.OriginalURL, req.UTMSource, req.UTMMedium, req.UTMCampaign, req.UTMTerm, req.UTMContent)
@@ -100,7 +100,7 @@ func (s *ShortLinkService) CreateShortLinkInWorkspace(req *dto.CreateShortLinkRe
 		return nil, errors.New("目标 URL 命中安全规则: " + result.Reason)
 	}
 	if req.FallbackURL != "" {
-		if _, err := url.ParseRequestURI(req.FallbackURL); err != nil {
+		if _, err := parseTargetURL(req.FallbackURL); err != nil {
 			return nil, errors.New("兜底地址 URL 格式无效")
 		}
 		if result := s.linkSecurityService.ScanURL(workspaceID, req.FallbackURL); !result.Safe {
@@ -261,7 +261,7 @@ func (s *ShortLinkService) UpdateShortLinkInWorkspace(id uint64, req *dto.Update
 
 	// 更新字段
 	if req.OriginalURL != "" {
-		if _, err := url.ParseRequestURI(req.OriginalURL); err != nil {
+		if _, err := parseTargetURL(req.OriginalURL); err != nil {
 			return nil, errors.New("无效的URL格式")
 		}
 		shortLink.OriginalURL = req.OriginalURL
@@ -269,7 +269,7 @@ func (s *ShortLinkService) UpdateShortLinkInWorkspace(id uint64, req *dto.Update
 	if req.FallbackURL != nil {
 		fallbackURL := strings.TrimSpace(*req.FallbackURL)
 		if fallbackURL != "" {
-			if _, err := url.ParseRequestURI(fallbackURL); err != nil {
+			if _, err := parseTargetURL(fallbackURL); err != nil {
 				return nil, errors.New("兜底地址 URL 格式无效")
 			}
 			if result := s.linkSecurityService.ScanURL(workspaceID, fallbackURL); !result.Safe {
@@ -980,7 +980,7 @@ func (s *ShortLinkService) validateCampaignAndTags(workspaceID uint64, campaignI
 }
 
 func mergeUTMToURL(rawURL, source, medium, campaign, term, content string) (string, error) {
-	parsedURL, err := url.ParseRequestURI(rawURL)
+	parsedURL, err := parseTargetURL(rawURL)
 	if err != nil {
 		return "", err
 	}
@@ -1002,6 +1002,17 @@ func mergeUTMToURL(rawURL, source, medium, campaign, term, content string) (stri
 	}
 	parsedURL.RawQuery = query.Encode()
 	return parsedURL.String(), nil
+}
+
+func parseTargetURL(rawURL string) (*url.URL, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, err
+	}
+	if parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return nil, errors.New("missing URL scheme or host")
+	}
+	return parsedURL, nil
 }
 
 func isAllowedRedirectCode(code int) bool {
