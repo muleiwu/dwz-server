@@ -7,18 +7,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+	"unicode"
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/dao"
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	"cnb.cool/mliev/dwz/dwz-server/v2/migrations"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/install_bootstrap"
-	"github.com/glebarez/sqlite"
+	dbconfig "cnb.cool/mliev/open/go-web/pkg/server/database/config"
+	dbDriver "cnb.cool/mliev/open/go-web/pkg/server/database/driver"
 	"github.com/pressly/goose/v3"
 	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/postgres"
+	"go.yaml.in/yaml/v3"
 	"gorm.io/gorm"
 )
 
@@ -98,84 +100,21 @@ func (s *InitInstallService) CreateInstallLock() error {
 }
 
 func (s *InitInstallService) CreateConfigFile(db InstallDatabaseConfig, rd InstallRedisConfig, cacheDriver, idGeneratorDriver string) error {
-	content := fmt.Sprintf(`# 短网址服务配置文件
-# 由安装向导自动生成于 %s
-
-# 服务配置
-server:
-  port: 8080
-  mode: release
-
-# 数据库配置
-database:
-  driver: %s`,
-		time.Now().Format("2006-01-02 15:04:05"),
-		db.Driver)
-
-	if db.Driver == "sqlite" {
-		content += fmt.Sprintf(`
-  filepath: %s`, db.Filepath)
-	} else {
-		content += fmt.Sprintf(`
-  host: %s
-  port: %d
-  dbname: %s
-  username: %s
-  password: %s`, db.Host, db.Port, db.DBName, db.Username, db.Password)
+	db, err := NormalizeInstallDatabaseConfig(db)
+	if err != nil {
+		return err
 	}
-
-	content += `
-  charset: utf8mb4
-  max_open_conns: 100
-  max_idle_conns: 20
-  conn_max_lifetime: 300s`
-
-	needsRedis := cacheDriver == "redis" || idGeneratorDriver == "redis"
-	if needsRedis {
-		content += fmt.Sprintf(`
-
-# Redis配置
-redis:
-  host: %s
-  port: %d
-  password: %s
-  db: %d
-  max_idle: 10
-  max_active: 100
-  idle_timeout: 300s`, rd.Host, rd.Port, rd.Password, rd.DB)
+	content, err := renderInstallConfigFile(db, rd, cacheDriver, idGeneratorDriver, time.Now())
+	if err != nil {
+		return err
 	}
-
-	jwtSecret := generateInstallSecret(32)
-	content += fmt.Sprintf(`
-
-# JWT配置
-jwt:
-  secret: %s
-  expire_hours: 24
-
-# 日志配置
-logger:
-  level: info
-  file: logs/app.log
-  max_size: 100
-  max_age: 7
-  max_backups: 10
-
-# 缓存配置
-cache:
-  driver: %s
-
-# ID生成器配置
-id_generator:
-  driver: %s
-`, jwtSecret, cacheDriver, idGeneratorDriver)
 
 	// Ensure parent directory exists — common cause of silent failures when the
 	// binary is launched from a fresh checkout without a config/ folder.
 	if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
 		return fmt.Errorf("创建配置目录失败 (%s): %v", filepath.Dir(configFile), err)
 	}
-	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configFile, content, 0644); err != nil {
 		return fmt.Errorf("配置文件写入失败 (%s): %v", configFile, err)
 	}
 	if abs, err := filepath.Abs(configFile); err == nil {
@@ -185,6 +124,12 @@ id_generator:
 }
 
 func (s *InitInstallService) TestDatabaseConnection(cfg InstallDatabaseConfig, maxRetries int) error {
+	var err error
+	cfg, err = NormalizeInstallDatabaseConfig(cfg)
+	if err != nil {
+		return err
+	}
+
 	// 复用 openInstallGormDB —— 走 GORM 各 driver 的 init 注册路径，避免直接
 	// 调 sql.Open("postgres", ...) 时因没有 _ "github.com/lib/pq" /
 	// _ "github.com/jackc/pgx/v5/stdlib" blank import 触发
@@ -265,6 +210,11 @@ var installMigrationDirMap = map[string]string{
 // assembly 重装失败,用户看到 HTTP 正常但数据库空空;改为在这里同步执行后,
 // 失败可以直接通过 HTTP 响应返回给前端,状态与 install.lock 的写入保持一致。
 func (s *InitInstallService) RunMigrationsAndSeed(cfg InstallDatabaseConfig, admin install_bootstrap.AdminPayload) error {
+	var err error
+	cfg, err = NormalizeInstallDatabaseConfig(cfg)
+	if err != nil {
+		return err
+	}
 	db, err := openInstallGormDB(cfg)
 	if err != nil {
 		return fmt.Errorf("数据库连接失败: %w", err)
@@ -334,20 +284,197 @@ func pingInstallDB(cfg InstallDatabaseConfig) error {
 }
 
 func openInstallGormDB(cfg InstallDatabaseConfig) (*gorm.DB, error) {
-	switch cfg.Driver {
-	case "mysql":
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-			cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
-		return gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	case "postgresql":
-		dsn := fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=disable TimeZone=Asia/Shanghai",
-			cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
-		return gorm.Open(postgres.New(postgres.Config{DSN: dsn, PreferSimpleProtocol: true}), &gorm.Config{})
-	case "sqlite":
-		return gorm.Open(sqlite.Open(cfg.Filepath), &gorm.Config{})
-	default:
-		return nil, fmt.Errorf("不支持的数据库类型: %s", cfg.Driver)
+	var err error
+	cfg, err = NormalizeInstallDatabaseConfig(cfg)
+	if err != nil {
+		return nil, err
 	}
+	driverCfg := toGoWebDatabaseConfig(cfg)
+	db, err := dbDriver.DatabaseDriverManager.Make(driverCfg.Driver, driverCfg)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+func toGoWebDatabaseConfig(cfg InstallDatabaseConfig) *dbconfig.DatabaseConfig {
+	host := cfg.Host
+	if cfg.Driver == "sqlite" {
+		host = cfg.Filepath
+	}
+	return &dbconfig.DatabaseConfig{
+		Driver:   cfg.Driver,
+		Host:     host,
+		Port:     cfg.Port,
+		DBName:   cfg.DBName,
+		Username: cfg.Username,
+		Password: cfg.Password,
+	}
+}
+
+func NormalizeInstallDatabaseConfig(cfg InstallDatabaseConfig) (InstallDatabaseConfig, error) {
+	cfg.Driver = strings.ToLower(strings.TrimSpace(cfg.Driver))
+	switch cfg.Driver {
+	case "mysql", "postgresql":
+		host, err := dbconfig.NormalizeTCPHost(cfg.Host)
+		if err != nil {
+			return cfg, err
+		}
+		if err := dbconfig.ValidateTCPPort(cfg.Port); err != nil {
+			return cfg, err
+		}
+		if err := validateInstallIdentifier("数据库名", cfg.DBName); err != nil {
+			return cfg, err
+		}
+		if strings.TrimSpace(cfg.Username) == "" {
+			return cfg, fmt.Errorf("数据库用户名不能为空")
+		}
+		cfg.Host = host
+	case "sqlite":
+		cfg.Filepath = strings.TrimSpace(cfg.Filepath)
+		if cfg.Filepath == "" {
+			return cfg, fmt.Errorf("SQLite 数据库文件不能为空")
+		}
+		if hasControlChar(cfg.Filepath) {
+			return cfg, fmt.Errorf("SQLite 数据库文件路径包含控制字符")
+		}
+	default:
+		return cfg, fmt.Errorf("不支持的数据库类型: %s", cfg.Driver)
+	}
+	return cfg, nil
+}
+
+func validateInstallIdentifier(label, value string) error {
+	if strings.TrimSpace(value) == "" {
+		return fmt.Errorf("%s不能为空", label)
+	}
+	if hasControlChar(value) {
+		return fmt.Errorf("%s包含控制字符", label)
+	}
+	if strings.ContainsAny(value, "?&=#/\\") {
+		return fmt.Errorf("%s不能包含连接串分隔符", label)
+	}
+	return nil
+}
+
+func hasControlChar(value string) bool {
+	for _, r := range value {
+		if unicode.IsControl(r) {
+			return true
+		}
+	}
+	return false
+}
+
+type installConfigFile struct {
+	Server      installServerConfig `yaml:"server"`
+	Database    installDatabaseFile `yaml:"database"`
+	Redis       *installRedisFile   `yaml:"redis,omitempty"`
+	JWT         installJWTConfig    `yaml:"jwt"`
+	Logger      installLoggerConfig `yaml:"logger"`
+	Cache       installDriverConfig `yaml:"cache"`
+	IDGenerator installDriverConfig `yaml:"id_generator"`
+}
+
+type installServerConfig struct {
+	Port int    `yaml:"port"`
+	Mode string `yaml:"mode"`
+}
+
+type installDatabaseFile struct {
+	Driver          string `yaml:"driver"`
+	Filepath        string `yaml:"filepath,omitempty"`
+	Host            string `yaml:"host,omitempty"`
+	Port            int    `yaml:"port,omitempty"`
+	DBName          string `yaml:"dbname,omitempty"`
+	Username        string `yaml:"username,omitempty"`
+	Password        string `yaml:"password,omitempty"`
+	Charset         string `yaml:"charset"`
+	MaxOpenConns    int    `yaml:"max_open_conns"`
+	MaxIdleConns    int    `yaml:"max_idle_conns"`
+	ConnMaxLifetime string `yaml:"conn_max_lifetime"`
+}
+
+type installRedisFile struct {
+	Host        string `yaml:"host"`
+	Port        int    `yaml:"port"`
+	Password    string `yaml:"password"`
+	DB          int    `yaml:"db"`
+	MaxIdle     int    `yaml:"max_idle"`
+	MaxActive   int    `yaml:"max_active"`
+	IdleTimeout string `yaml:"idle_timeout"`
+}
+
+type installJWTConfig struct {
+	Secret      string `yaml:"secret"`
+	ExpireHours int    `yaml:"expire_hours"`
+}
+
+type installLoggerConfig struct {
+	Level      string `yaml:"level"`
+	File       string `yaml:"file"`
+	MaxSize    int    `yaml:"max_size"`
+	MaxAge     int    `yaml:"max_age"`
+	MaxBackups int    `yaml:"max_backups"`
+}
+
+type installDriverConfig struct {
+	Driver string `yaml:"driver"`
+}
+
+func renderInstallConfigFile(db InstallDatabaseConfig, rd InstallRedisConfig, cacheDriver, idGeneratorDriver string, generatedAt time.Time) ([]byte, error) {
+	cfg := installConfigFile{
+		Server: installServerConfig{
+			Port: 8080,
+			Mode: "release",
+		},
+		Database: installDatabaseFile{
+			Driver:          db.Driver,
+			Charset:         "utf8mb4",
+			MaxOpenConns:    100,
+			MaxIdleConns:    20,
+			ConnMaxLifetime: "300s",
+		},
+		JWT: installJWTConfig{
+			Secret:      generateInstallSecret(32),
+			ExpireHours: 24,
+		},
+		Logger: installLoggerConfig{
+			Level:      "info",
+			File:       "logs/app.log",
+			MaxSize:    100,
+			MaxAge:     7,
+			MaxBackups: 10,
+		},
+		Cache:       installDriverConfig{Driver: cacheDriver},
+		IDGenerator: installDriverConfig{Driver: idGeneratorDriver},
+	}
+	if db.Driver == "sqlite" {
+		cfg.Database.Filepath = db.Filepath
+	} else {
+		cfg.Database.Host = db.Host
+		cfg.Database.Port = db.Port
+		cfg.Database.DBName = db.DBName
+		cfg.Database.Username = db.Username
+		cfg.Database.Password = db.Password
+	}
+	if cacheDriver == "redis" || idGeneratorDriver == "redis" {
+		cfg.Redis = &installRedisFile{
+			Host:        rd.Host,
+			Port:        rd.Port,
+			Password:    rd.Password,
+			DB:          rd.DB,
+			MaxIdle:     10,
+			MaxActive:   100,
+			IdleTimeout: "300s",
+		}
+	}
+	body, err := yaml.Marshal(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("生成配置文件失败: %w", err)
+	}
+	header := fmt.Sprintf("# 短网址服务配置文件\n# 由安装向导自动生成于 %s\n\n", generatedAt.Format("2006-01-02 15:04:05"))
+	return append([]byte(header), body...), nil
 }
 
 func seedInstallAdmin(db *gorm.DB, admin install_bootstrap.AdminPayload) error {

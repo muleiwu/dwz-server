@@ -8,6 +8,7 @@ import (
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
 	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	dwzInterfaces "cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/install_bootstrap"
 	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
@@ -15,6 +16,11 @@ import (
 type InstallController struct {
 	BaseResponse
 }
+
+const (
+	installCompletedTitle   = "系统已经安装成功"
+	installCompletedMessage = "安装入口已关闭，无需重复执行安装。"
+)
 
 type installPageData struct {
 	SiteName       string
@@ -66,8 +72,8 @@ type installTestRequest struct {
 
 func (ctrl InstallController) GetInstall(c httpInterfaces.RouterContextInterface) {
 	helper := helperPkg.GetHelper()
-	if installed := helper.GetInstalled(); installed != nil && installed.IsInstalled() {
-		c.Redirect(http.StatusFound, "/")
+	if isInstallCompleted(helper) {
+		ctrl.renderInstallCompletedPage(c, helper)
 		return
 	}
 
@@ -102,6 +108,10 @@ func (ctrl InstallController) GetInstall(c httpInterfaces.RouterContextInterface
 }
 
 func (ctrl InstallController) TestConnection(c httpInterfaces.RouterContextInterface) {
+	if ctrl.rejectInstallCompleted(c) {
+		return
+	}
+
 	var req installTestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
@@ -126,18 +136,19 @@ func (ctrl InstallController) TestConnection(c httpInterfaces.RouterContextInter
 }
 
 func (ctrl InstallController) Install(c httpInterfaces.RouterContextInterface) {
+	helper := helperPkg.GetHelper()
+	if isInstallCompleted(helper) {
+		ctrl.Error(c, http.StatusForbidden, installCompletedTitle)
+		return
+	}
+
 	var req installRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		ctrl.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
-	helper := helperPkg.GetHelper()
 	logger := helper.GetLogger()
-	if installed := helper.GetInstalled(); installed != nil && installed.IsInstalled() {
-		ctrl.Error(c, http.StatusBadRequest, "系统已经安装")
-		return
-	}
 
 	installer := service.NewInitInstallService(helper)
 
@@ -208,6 +219,35 @@ func (ctrl InstallController) Install(c httpInterfaces.RouterContextInterface) {
 			logger.Error("[install] 重启服务失败，请手动重启: " + err.Error())
 		}
 	}()
+}
+
+func (ctrl InstallController) rejectInstallCompleted(c httpInterfaces.RouterContextInterface) bool {
+	if !isInstallCompleted(helperPkg.GetHelper()) {
+		return false
+	}
+	ctrl.Error(c, http.StatusForbidden, installCompletedTitle)
+	return true
+}
+
+func (ctrl InstallController) renderInstallCompletedPage(c httpInterfaces.RouterContextInterface, helper dwzInterfaces.HelperInterface) {
+	c.HTML(http.StatusForbidden, "security_message.html", installStatusPageData(c, helper, installCompletedTitle, installCompletedMessage))
+}
+
+func installStatusPageData(c httpInterfaces.RouterContextInterface, helper dwzInterfaces.HelperInterface, title, message string) SecurityPageData {
+	env := helper.GetEnv()
+	cfg := helper.GetConfig()
+	return SecurityPageData{
+		SiteName:  env.GetString("website.name", cfg.GetString("website.name", "短网址服务")),
+		Domain:    c.Host(),
+		Copyright: env.GetString("website.copyright", cfg.GetString("website.copyright", "")),
+		Title:     title,
+		Message:   message,
+	}
+}
+
+func isInstallCompleted(helper dwzInterfaces.HelperInterface) bool {
+	installed := helper.GetInstalled()
+	return installed != nil && installed.IsInstalled()
 }
 
 func toInstallDB(p installDatabasePayload) service.InstallDatabaseConfig {
