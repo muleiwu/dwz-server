@@ -3,7 +3,7 @@ module cnb.cool/mliev/dwz/dwz-server/v2
 go 1.26.0
 
 require (
-	cnb.cool/mliev/open/go-web v1.8.3
+	cnb.cool/mliev/open/go-web v1.8.4
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/glebarez/sqlite v1.11.0
