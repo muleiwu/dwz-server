@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
-	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 	helperPkg "cnb.cool/mliev/dwz/dwz-server/v2/pkg/helper"
+	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
 )
 
 type IndexController struct {
@@ -15,6 +15,7 @@ type IndexController struct {
 // IndexPageData 首页模板数据结构
 type IndexPageData struct {
 	SiteName     string
+	LogoURL      string
 	ICPNumber    string
 	PoliceNumber string
 	Domain       string
@@ -33,9 +34,18 @@ func (receiver IndexController) GetIndex(c httpInterfaces.RouterContextInterface
 
 	siteName := helper.GetEnv().GetString("website.name", "短网址服务")
 	copyright := helper.GetEnv().GetString("website.copyright", "")
+	logoURL := ""
+	if branding, brandingErr := service.NewBrandingService(helper).GetPublicBranding(host); brandingErr == nil {
+		if branding.BrandName != "" {
+			siteName = branding.BrandName
+		}
+		logoURL = branding.LogoURL
+		copyright = branding.CopyrightText
+	}
 	// 默认数据
 	pageData := IndexPageData{
-		SiteName:     "木雷短网址",
+		SiteName:     siteName,
+		LogoURL:      logoURL,
 		ICPNumber:    "",
 		PoliceNumber: "",
 		Domain:       host,

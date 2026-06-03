@@ -295,6 +295,7 @@ func (ctrl ShortLinkController) BatchCreateShortLinks(c httpInterfaces.RouterCon
 // ErrorPageData 错误页面模板数据结构
 type ErrorPageData struct {
 	SiteName     string
+	LogoURL      string
 	ICPNumber    string
 	PoliceNumber string
 	Domain       string
@@ -304,6 +305,7 @@ type ErrorPageData struct {
 // AntiRedPageData 防红页面模板数据结构
 type AntiRedPageData struct {
 	SiteName     string
+	LogoURL      string
 	ICPNumber    string
 	PoliceNumber string
 	Domain       string
@@ -313,6 +315,7 @@ type AntiRedPageData struct {
 
 type SecurityPageData struct {
 	SiteName     string
+	LogoURL      string
 	ICPNumber    string
 	PoliceNumber string
 	Domain       string
@@ -417,16 +420,26 @@ func (ctrl ShortLinkController) RedirectShortLink(c httpInterfaces.RouterContext
 func (ctrl ShortLinkController) renderAntiRedPage(c httpInterfaces.RouterContextInterface, domainInfo *model.Domain, targetURL string) {
 	helper := helperPkg.GetHelper()
 	siteName := helper.GetEnv().GetString("website.name", "短网址服务")
+	copyright := helper.GetEnv().GetString("website.copyright", "")
+	logoURL := ""
+	if branding, brandingErr := service.NewBrandingService(helper).GetPublicBranding(domainInfo.Domain); brandingErr == nil {
+		if branding.BrandName != "" {
+			siteName = branding.BrandName
+		}
+		logoURL = branding.LogoURL
+		copyright = branding.CopyrightText
+	}
 	if domainInfo.SiteName != "" {
 		siteName = domainInfo.SiteName
 	}
 
 	pageData := AntiRedPageData{
 		SiteName:     siteName,
+		LogoURL:      logoURL,
 		ICPNumber:    domainInfo.ICPNumber,
 		PoliceNumber: domainInfo.PoliceNumber,
 		Domain:       domainInfo.Domain,
-		Copyright:    helper.GetEnv().GetString("website.copyright", ""),
+		Copyright:    copyright,
 		TargetURL:    targetURL,
 	}
 
@@ -462,9 +475,18 @@ func (ctrl ShortLinkController) renderErrorPage(c httpInterfaces.RouterContextIn
 
 	siteName := helper.GetEnv().GetString("website.name", "短网址服务")
 	copyright := helper.GetEnv().GetString("website.copyright", "")
+	logoURL := ""
+	if branding, brandingErr := service.NewBrandingService(helper).GetPublicBranding(domain); brandingErr == nil {
+		if branding.BrandName != "" {
+			siteName = branding.BrandName
+		}
+		logoURL = branding.LogoURL
+		copyright = branding.CopyrightText
+	}
 	// 默认数据
 	pageData := ErrorPageData{
 		SiteName:     siteName,
+		LogoURL:      logoURL,
 		ICPNumber:    "",
 		PoliceNumber: "",
 		Domain:       domain,
@@ -514,6 +536,13 @@ func (ctrl ShortLinkController) renderSecurityPage(c httpInterfaces.RouterContex
 	pageData.SiteName = helper.GetEnv().GetString("website.name", "短网址服务")
 	pageData.Copyright = helper.GetEnv().GetString("website.copyright", "")
 	pageData.Domain = domain
+	if branding, brandingErr := service.NewBrandingService(helper).GetPublicBranding(domain); brandingErr == nil {
+		if branding.BrandName != "" {
+			pageData.SiteName = branding.BrandName
+		}
+		pageData.LogoURL = branding.LogoURL
+		pageData.Copyright = branding.CopyrightText
+	}
 	if err == nil {
 		if domainInfo.SiteName != "" {
 			pageData.SiteName = domainInfo.SiteName

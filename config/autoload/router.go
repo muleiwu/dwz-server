@@ -18,6 +18,7 @@ func (Router) InitConfig() map[string]any {
 			}
 			router.GET("/favicon.ico", redirectFavicon)
 			router.HEAD("/favicon.ico", redirectFavicon)
+			router.GET("/uploads/branding/:filename", controller.BrandingController{}.ServeLogo)
 
 			// 健康检查
 			health := router.Group("/health")
@@ -55,6 +56,7 @@ func (Router) InitConfig() map[string]any {
 
 			public := router.Group("/api/v1/public")
 			{
+				public.GET("/site-branding", controller.BrandingController{}.GetPublicBranding)
 				public.POST("/link_access/password", controller.LinkSecurityController{}.SubmitPassword)
 				public.POST("/abuse_reports", controller.LinkSecurityController{}.CreatePublicAbuseReport)
 				public.POST("/ab_test_feedback", controller.ABTestController{}.CreateABTestFeedback)
@@ -79,6 +81,13 @@ func (Router) InitConfig() map[string]any {
 					adminOIDC.GET("/config", controller.OIDCAdminController{}.GetConfig)
 					adminOIDC.PUT("/config", controller.OIDCAdminController{}.SaveConfig)
 					adminOIDC.POST("/test", controller.OIDCAdminController{}.TestConnection)
+				}
+
+				branding := v1.Group("/branding")
+				{
+					branding.GET("/system", controller.BrandingController{}.GetSystemBranding)
+					branding.PUT("/system", controller.BrandingController{}.SaveSystemBranding)
+					branding.POST("/logo", controller.BrandingController{}.UploadLogo)
 				}
 
 				short := v1.Group("/short_links")

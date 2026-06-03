@@ -13,7 +13,7 @@ COPY ./admin-webui /app
 RUN pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm build:antd --filter=\!./docs
 
 # 构建阶段
-FROM golang:1.25.0-alpine AS builder-go
+FROM golang:1.26.0-alpine AS builder-go
 
 # 设置工作目录
 WORKDIR /app

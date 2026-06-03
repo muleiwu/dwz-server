@@ -3,7 +3,13 @@
     <div class="container">
         <nav class="nav" aria-label="主导航">
             <a href="/" class="logo" aria-label="{{.SiteName}} 首页">
-                <span class="logo-mark">{{template "icon_logo" .}}</span>
+                <span class="logo-mark">
+                    {{if .LogoURL}}
+                    <img src="{{.LogoURL}}" alt="" class="logo-image">
+                    {{else}}
+                    {{template "icon_logo" .}}
+                    {{end}}
+                </span>
                 <span>{{.SiteName}}</span>
             </a>
             <button
