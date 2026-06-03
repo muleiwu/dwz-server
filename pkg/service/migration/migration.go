@@ -223,10 +223,11 @@ func (m *Migration) baselineLegacyVersions() error {
 	// 4) 写入 baseline 行。
 	now := time.Now()
 	for v := int64(1); v <= baselineLegacyVersion; v++ {
-		err := db.Exec(
-			"INSERT INTO "+goose.TableName()+" (version_id, is_applied, tstamp) VALUES (?, ?, ?)",
-			v, true, now,
-		).Error
+		err := db.Table(goose.TableName()).Create(map[string]any{
+			"version_id": v,
+			"is_applied": true,
+			"tstamp":     now,
+		}).Error
 		if err != nil {
 			return fmt.Errorf("写入 baseline version=%d 失败: %w", v, err)
 		}
