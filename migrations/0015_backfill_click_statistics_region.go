@@ -48,6 +48,15 @@ var backfillTargets = []string{
 	"ab_test_click_statistics",
 }
 
+func requireBackfillTarget(table string) (string, error) {
+	for _, target := range backfillTargets {
+		if table == target {
+			return target, nil
+		}
+	}
+	return "", fmt.Errorf("[migration 0015] 非法回填表: %s", table)
+}
+
 func init() {
 	goose.AddNamedMigrationNoTxContext(
 		"0015_backfill_click_statistics_region.go",
@@ -120,13 +129,18 @@ func runBackfillAsync() {
 // backfillIPRegionTable 扫一张表，按 IP 分桶，按 PK IN (batch) 批量 UPDATE。
 // 返回 (unique_ip 数, 累计 rows_affected)。
 func backfillIPRegionTable(db *gorm.DB, ipr ipRegionImpl.IPRegion, table string) (int, int64, error) {
+	tableName, err := requireBackfillTarget(table)
+	if err != nil {
+		return 0, 0, err
+	}
+
 	type row struct {
 		ID uint64 `gorm:"column:id"`
 		IP string `gorm:"column:ip"`
 	}
 	var rows []row
 	if err := db.
-		Table(table).
+		Table(tableName).
 		Select("id, ip").
 		Where("ip <> ?", "").
 		Where("ip IS NOT NULL").
@@ -150,12 +164,17 @@ func backfillIPRegionTable(db *gorm.DB, ipr ipRegionImpl.IPRegion, table string)
 		for start := 0; start < len(ids); start += backfillUpdateBatchSize {
 			end := min(start+backfillUpdateBatchSize, len(ids))
 			chunk := ids[start:end]
-			res := db.Exec(
-				"UPDATE "+table+" SET country = ?, province = ?, city = ?, isp = ? WHERE id IN ?",
-				country, province, city, isp, chunk,
-			)
+			res := db.
+				Table(tableName).
+				Where("id IN ?", chunk).
+				Updates(map[string]any{
+					"country":  country,
+					"province": province,
+					"city":     city,
+					"isp":      isp,
+				})
 			if res.Error != nil {
-				return len(idsByIP), totalAffected, fmt.Errorf("update ip=%s chunk=%d: %w", ip, start/backfillUpdateBatchSize, res.Error)
+				return len(idsByIP), totalAffected, fmt.Errorf("update %s ip=%s chunk=%d: %w", tableName, ip, start/backfillUpdateBatchSize, res.Error)
 			}
 			totalAffected += res.RowsAffected
 		}
@@ -172,10 +191,20 @@ func downBackfillClickRegion(_ context.Context, _ *sql.DB) error {
 		return errors.New("[migration 0015] 数据库不可用")
 	}
 	for _, table := range backfillTargets {
-		if err := db.Exec(
-			"UPDATE " + table + " SET country = '', province = '', city = '', isp = ''",
-		).Error; err != nil {
-			return fmt.Errorf("[migration 0015] 回滚 %s 失败: %w", table, err)
+		tableName, err := requireBackfillTarget(table)
+		if err != nil {
+			return err
+		}
+		if err := db.
+			Session(&gorm.Session{AllowGlobalUpdate: true}).
+			Table(tableName).
+			Updates(map[string]any{
+				"country":  "",
+				"province": "",
+				"city":     "",
+				"isp":      "",
+			}).Error; err != nil {
+			return fmt.Errorf("[migration 0015] 回滚 %s 失败: %w", tableName, err)
 		}
 	}
 	return nil
