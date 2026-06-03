@@ -326,7 +326,9 @@ vim config.yaml
 
 ### 迁移文件命名规范
 
-数据表创建和结构变更需要按 CE/EE 的最终 schema 保持一致：同一逻辑表在 CE 和 EE 两边必须使用同名迁移、同名表、同名字段和同名索引，避免后续开发出现字段脑裂。品牌相关表虽然沿用历史命名 `ee_system_brandings`、`ee_workspace_brandings`、`ee_domain_brandings`，但字段结构在 CE 和 EE 两边保持完全一致；版本功能差异只通过代码、路由、前端编译开关和权限控制区分。
+数据表创建和结构变更需要按 CE/EE 的最终 schema 保持一致：同一逻辑表在 CE 和 EE 两边必须使用同名表、同名字段和同名索引，避免后续开发出现字段脑裂。品牌相关表虽然沿用历史命名 `ee_system_brandings`、`ee_workspace_brandings`、`ee_domain_brandings`，但字段结构在 CE 和 EE 两边保持完全一致；版本功能差异只通过代码、路由、前端编译开关和权限控制区分。
+
+已发布版本之后，不允许向迁移目录补加低于当前已发布版本号的新迁移文件。Goose 会把这类文件判定为当前数据库版本之前缺失的迁移，导致升级失败。需要补齐 CE/EE schema 时，应新增一个更高版本号的自愈迁移，通过 `CREATE TABLE IF NOT EXISTS`、兼容字段补齐等方式保证最终结构一致。
 
 新迁移文件使用时间顺序友好的命名格式，方便后续合并迁移时按文件名字典序排序：
 
@@ -337,7 +339,7 @@ YYYYMMDDHHmmssRR_<随机数字>_<迁移名>.sql
 示例：
 
 ```text
-2026052718150350_1234_add_workspace_branding.sql
+2026060311000050_1234_add_workspace_branding.sql
 ```
 
 同一迁移需要在 `mysql`、`postgresql`、`sqlite` 三个方言目录中保持同名；迁移名使用小写 `snake_case`。
