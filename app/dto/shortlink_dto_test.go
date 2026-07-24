@@ -1,10 +1,57 @@
 package dto
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/gin-gonic/gin/binding"
 )
+
+func TestUpdateShortLinkRequestCampaignIDTriState(t *testing.T) {
+	t.Run("omitted keeps field unset", func(t *testing.T) {
+		var req UpdateShortLinkRequest
+		if err := json.Unmarshal([]byte(`{"title":"unchanged campaign"}`), &req); err != nil {
+			t.Fatalf("unmarshal request: %v", err)
+		}
+		if req.CampaignID.Set || req.CampaignID.Value != nil {
+			t.Fatalf("omitted campaign_id should stay unset: %+v", req.CampaignID)
+		}
+	})
+
+	t.Run("null explicitly clears", func(t *testing.T) {
+		var req UpdateShortLinkRequest
+		if err := json.Unmarshal([]byte(`{"campaign_id":null}`), &req); err != nil {
+			t.Fatalf("unmarshal request: %v", err)
+		}
+		if !req.CampaignID.Set || req.CampaignID.Value != nil {
+			t.Fatalf("null campaign_id should be explicitly set to nil: %+v", req.CampaignID)
+		}
+	})
+
+	t.Run("positive integer explicitly sets", func(t *testing.T) {
+		var req UpdateShortLinkRequest
+		if err := json.Unmarshal([]byte(`{"campaign_id":42}`), &req); err != nil {
+			t.Fatalf("unmarshal request: %v", err)
+		}
+		if !req.CampaignID.Set || req.CampaignID.Value == nil || *req.CampaignID.Value != 42 {
+			t.Fatalf("positive campaign_id was not preserved: %+v", req.CampaignID)
+		}
+	})
+
+	for _, body := range []string{
+		`{"campaign_id":0}`,
+		`{"campaign_id":-1}`,
+		`{"campaign_id":1.5}`,
+		`{"campaign_id":"42"}`,
+	} {
+		t.Run("rejects "+body, func(t *testing.T) {
+			var req UpdateShortLinkRequest
+			if err := json.Unmarshal([]byte(body), &req); err == nil {
+				t.Fatalf("expected invalid campaign_id to fail: %s", body)
+			}
+		})
+	}
+}
 
 func TestUpdateShortLinkRequestAllowsEmptyFallbackURL(t *testing.T) {
 	empty := ""

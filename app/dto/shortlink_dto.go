@@ -1,6 +1,11 @@
 package dto
 
-import "time"
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"time"
+)
 
 // CreateShortLinkRequest 创建短网址请求
 type CreateShortLinkRequest struct {
@@ -24,6 +29,29 @@ type CreateShortLinkRequest struct {
 	FindIfExists bool                 `json:"find_if_exists"` // 已存在相同目标URL时返回既有短链（仅域名策略为by_request时生效；带custom_code时忽略）
 }
 
+// NullableUint64 表示更新请求中的可空 uint64 字段。
+// Set=false 表示字段未提供；Set=true 且 Value=nil 表示显式传入 null。
+type NullableUint64 struct {
+	Set   bool
+	Value *uint64
+}
+
+// UnmarshalJSON 保留字段缺省、null 和正整数三种不同语义。
+func (value *NullableUint64) UnmarshalJSON(data []byte) error {
+	value.Set = true
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		value.Value = nil
+		return nil
+	}
+
+	var parsed uint64
+	if err := json.Unmarshal(data, &parsed); err != nil || parsed == 0 {
+		return errors.New("campaign_id 必须为大于 0 的整数或 null")
+	}
+	value.Value = &parsed
+	return nil
+}
+
 // UpdateShortLinkRequest 更新短网址请求
 type UpdateShortLinkRequest struct {
 	OriginalURL  string               `json:"original_url" binding:"omitempty,url"`
@@ -33,7 +61,7 @@ type UpdateShortLinkRequest struct {
 	RedirectCode *int                 `json:"redirect_code" binding:"omitempty,oneof=301 302 307 308"`
 	ExpireAt     *time.Time           `json:"expire_at"`
 	IsActive     *bool                `json:"is_active"`
-	CampaignID   *uint64              `json:"campaign_id"`
+	CampaignID   NullableUint64       `json:"campaign_id"`
 	TagIDs       []uint64             `json:"tag_ids"`
 	UTMSource    string               `json:"utm_source"`
 	UTMMedium    string               `json:"utm_medium"`

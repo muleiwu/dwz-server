@@ -459,10 +459,20 @@ PUT /api/v1/short_links/:id
     "original_url": "https://www.new-example.com",
     "title": "新标题",
     "description": "新描述",
+    "campaign_id": null,
     "expire_at": "2026-12-31T23:59:59Z",
     "is_active": true
 }
 ```
+
+`campaign_id` 在更新请求中具有三态语义：
+
+- 省略该字段：保留当前活动归因；
+- 传正整数：校验当前工作区中的活动并关联或切换；
+- 传 `null`：解除当前活动归因。
+
+`campaign_id: 0` 或其他非正整数值无效，服务端返回 400。`tag_ids: []`
+仍表示清空全部标签。
 
 ### 删除短链接
 

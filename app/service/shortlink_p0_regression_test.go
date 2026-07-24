@@ -237,6 +237,104 @@ func TestShortLinkP0RegressionCreateRedirectStatisticsAndABSplit(t *testing.T) {
 	}
 }
 
+func TestUpdateShortLinkCampaignTriState(t *testing.T) {
+	helper := newShortLinkRegressionHelper(t)
+	db := helper.GetDatabase()
+
+	if err := db.Create(&model.Domain{
+		WorkspaceID: 1,
+		Protocol:    "https",
+		Domain:      "dwz.do",
+		IsActive:    true,
+	}).Error; err != nil {
+		t.Fatalf("seed domain: %v", err)
+	}
+
+	campaignA := model.Campaign{WorkspaceID: 1, Name: "Campaign A", Status: model.CampaignStatusActive}
+	campaignB := model.Campaign{WorkspaceID: 1, Name: "Campaign B", Status: model.CampaignStatusActive}
+	foreignCampaign := model.Campaign{WorkspaceID: 2, Name: "Foreign Campaign", Status: model.CampaignStatusActive}
+	for _, campaign := range []*model.Campaign{&campaignA, &campaignB, &foreignCampaign} {
+		if err := db.Create(campaign).Error; err != nil {
+			t.Fatalf("seed campaign %q: %v", campaign.Name, err)
+		}
+	}
+	tag := model.Tag{WorkspaceID: 1, Name: "keep-tag", Color: "#1677ff"}
+	if err := db.Create(&tag).Error; err != nil {
+		t.Fatalf("seed tag: %v", err)
+	}
+
+	shortLinkSvc := NewShortLinkService(helper, context.Background())
+	created, err := shortLinkSvc.CreateShortLinkInWorkspace(&dto.CreateShortLinkRequest{
+		OriginalURL: "https://example.com/campaign-update",
+		Domain:      "dwz.do",
+		CustomCode:  "campaign-update",
+		CampaignID:  &campaignA.ID,
+		TagIDs:      []uint64{tag.ID},
+	}, "203.0.113.30", 1, 7)
+	if err != nil {
+		t.Fatalf("create attributed short link: %v", err)
+	}
+
+	preserved, err := shortLinkSvc.UpdateShortLinkInWorkspace(created.ID, &dto.UpdateShortLinkRequest{
+		Title: "campaign remains unchanged",
+	}, 1, 7)
+	if err != nil {
+		t.Fatalf("update without campaign_id: %v", err)
+	}
+	if preserved.CampaignID == nil || *preserved.CampaignID != campaignA.ID || preserved.CampaignName != campaignA.Name {
+		t.Fatalf("omitted campaign_id should preserve campaign A: %+v", preserved)
+	}
+
+	switched, err := shortLinkSvc.UpdateShortLinkInWorkspace(created.ID, &dto.UpdateShortLinkRequest{
+		CampaignID: dto.NullableUint64{Set: true, Value: &campaignB.ID},
+	}, 1, 7)
+	if err != nil {
+		t.Fatalf("switch to campaign B: %v", err)
+	}
+	if switched.CampaignID == nil || *switched.CampaignID != campaignB.ID || switched.CampaignName != campaignB.Name {
+		t.Fatalf("campaign switch response is stale: %+v", switched)
+	}
+
+	if _, err := shortLinkSvc.UpdateShortLinkInWorkspace(created.ID, &dto.UpdateShortLinkRequest{
+		CampaignID: dto.NullableUint64{Set: true, Value: &foreignCampaign.ID},
+	}, 1, 7); err == nil || !strings.Contains(err.Error(), "活动不存在") {
+		t.Fatalf("cross-workspace campaign should be rejected, got %v", err)
+	}
+	missingCampaignID := foreignCampaign.ID + 1000
+	if _, err := shortLinkSvc.UpdateShortLinkInWorkspace(created.ID, &dto.UpdateShortLinkRequest{
+		CampaignID: dto.NullableUint64{Set: true, Value: &missingCampaignID},
+	}, 1, 7); err == nil || !strings.Contains(err.Error(), "活动不存在") {
+		t.Fatalf("missing campaign should be rejected, got %v", err)
+	}
+	zero := uint64(0)
+	if _, err := shortLinkSvc.UpdateShortLinkInWorkspace(created.ID, &dto.UpdateShortLinkRequest{
+		CampaignID: dto.NullableUint64{Set: true, Value: &zero},
+	}, 1, 7); err == nil || !strings.Contains(err.Error(), "无效") {
+		t.Fatalf("zero campaign ID should be rejected, got %v", err)
+	}
+
+	cleared, err := shortLinkSvc.UpdateShortLinkInWorkspace(created.ID, &dto.UpdateShortLinkRequest{
+		CampaignID: dto.NullableUint64{Set: true, Value: nil},
+	}, 1, 7)
+	if err != nil {
+		t.Fatalf("clear campaign: %v", err)
+	}
+	if cleared.CampaignID != nil || cleared.CampaignName != "" {
+		t.Fatalf("cleared campaign response should not retain attribution: %+v", cleared)
+	}
+	if len(cleared.Tags) != 1 || cleared.Tags[0].ID != tag.ID {
+		t.Fatalf("clearing campaign should not change tags: %+v", cleared.Tags)
+	}
+
+	var stored model.ShortLink
+	if err := db.First(&stored, created.ID).Error; err != nil {
+		t.Fatalf("load stored short link: %v", err)
+	}
+	if stored.CampaignID != nil {
+		t.Fatalf("campaign_id should be NULL in storage, got %v", *stored.CampaignID)
+	}
+}
+
 func TestShortLinkHashRouteURLPreservedOnSaveAndRedirect(t *testing.T) {
 	helper := newShortLinkRegressionHelper(t)
 	db := helper.GetDatabase()

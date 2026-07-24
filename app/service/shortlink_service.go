@@ -308,11 +308,16 @@ func (s *ShortLinkService) UpdateShortLinkInWorkspace(id uint64, req *dto.Update
 		}
 		shortLink.RedirectCode = *req.RedirectCode
 	}
-	if err := s.validateCampaignAndTags(workspaceID, req.CampaignID, req.TagIDs); err != nil {
+	var campaignID *uint64
+	if req.CampaignID.Set {
+		campaignID = req.CampaignID.Value
+	}
+	if err := s.validateCampaignAndTags(workspaceID, campaignID, req.TagIDs); err != nil {
 		return nil, err
 	}
-	if req.CampaignID != nil {
-		shortLink.CampaignID = req.CampaignID
+	if req.CampaignID.Set {
+		shortLink.CampaignID = campaignID
+		shortLink.Campaign = nil
 	}
 
 	if req.Title != "" {
@@ -369,6 +374,12 @@ func (s *ShortLinkService) UpdateShortLinkInWorkspace(id uint64, req *dto.Update
 	}
 	if req.Security != nil {
 		if _, err := s.linkSecurityService.UpsertSecurity(shortLink.ID, shortLink.WorkspaceID, userID, req.Security); err != nil {
+			return nil, err
+		}
+	}
+	if req.CampaignID.Set {
+		shortLink, err = s.shortLinkDao.FindByIDInWorkspace(shortLink.ID, workspaceID)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -991,7 +1002,10 @@ func (s *ShortLinkService) modelToResponse(shortLink *model.ShortLink) *dto.Shor
 }
 
 func (s *ShortLinkService) validateCampaignAndTags(workspaceID uint64, campaignID *uint64, tagIDs []uint64) error {
-	if campaignID != nil && *campaignID > 0 {
+	if campaignID != nil {
+		if *campaignID == 0 {
+			return errors.New("无效的活动 ID")
+		}
 		if _, err := s.campaignDao.FindByID(*campaignID, workspaceID); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errors.New("活动不存在")
