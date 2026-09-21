@@ -1,0 +1,30 @@
+{{define "home_header"}}
+<header class="home-header">
+    <nav class="home-nav home-container" aria-label="主导航">
+        <a href="/" class="home-brand" aria-label="{{.SiteName}} 首页">
+            {{if .LogoURL}}
+            <img class="home-brand-custom" src="{{.LogoURL}}" alt="" height="40">
+            {{else}}
+            <img class="home-brand-mark" src="/assets/home/logo-mark.svg" alt="" width="56" height="36">
+            {{end}}
+            <span class="home-brand-name">{{.SiteName}}</span>
+        </a>
+        <button class="home-nav-toggle" type="button" aria-label="打开导航菜单" aria-expanded="false" aria-controls="home-nav-links"><span></span><span></span><span></span></button>
+        <ul class="home-nav-links" id="home-nav-links">
+            <li><a href="/" aria-current="page">首页</a></li>
+            <li><a href="/admin/">后台</a></li>
+        </ul>
+    </nav>
+</header>
+{{end}}
+
+{{define "home_footer"}}
+<footer class="home-footer">
+    <ul class="home-footer-links home-container" aria-label="版权与备案信息">
+        {{if .Copyright}}<li>{{.Copyright}}</li>{{end}}
+        <li>Powered by <a href="https://mdoc.cc/mliev/dwz" target="_blank" rel="noopener noreferrer">木雷短网址</a></li>
+        {{if .ICPNumber}}<li><a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{{.ICPNumber}}</a></li>{{end}}
+        {{if .PoliceNumber}}<li>公安备案号：{{.PoliceNumber}}</li>{{end}}
+    </ul>
+</footer>
+{{end}}
