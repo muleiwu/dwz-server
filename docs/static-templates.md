@@ -29,8 +29,8 @@ dwz-server 支持灵活的静态资源和模板加载方式，提供 **embed（�
 
 ### 3. 目录自动发现
 
-- 自动扫描 `static_dir` 配置的目录及所有子目录
-- 为每个文件注册独立路由
+- `static_dir` 是 `static/` 下需要公开的子目录名列表，默认包含 `admin` 和 `assets`
+- 为每个目录注册对应 URL 前缀，例如 `assets` 对应 `/assets/`
 - 自动处理目录访问（如 `/admin/` → `/admin/index.html`）
 
 ## 配置说明
@@ -41,7 +41,9 @@ dwz-server 支持灵活的静态资源和模板加载方式，提供 **embed（�
 http:
   mode: release              # 运行模式：debug, test, release
   addr: ":8080"              # 监听地址
-  static_dir: static         # 静态资源根目录
+  static_dir:               # static/ 下的公开目录，不要填写根目录名 static
+    - admin
+    - assets
   static_mode: embed         # 静态资源模式：embed 或 disk
   templates_mode: embed      # 模板模式：embed 或 disk
   templates_dir: templates   # 模板目录
@@ -184,6 +186,21 @@ project/
 | disk + debug | 较慢（读磁盘） | 较慢（读磁盘） | 低 | ✅ |
 | disk + release | 较慢（读磁盘） | 极快（内存） | 中等 | ❌ |
 | embed | 极快（内存） | 极快（内存） | 中等 | ❌ |
+
+## 首页资源 404
+
+模板和文件被编译进二进制，不等于已经注册静态路由。首页使用 `/assets/home/`，必须由 `assets`（或更窄的 `assets/home`）挂载提供。
+
+当前实现会为默认配置及已有 `static_dir: [admin]` 的配置补充 `assets`；显式关闭 `http.load_static` 仍然有效。更新前的版本如果已经包含首页文件，可在现有配置中添加目录并重启服务：
+
+```yaml
+http:
+  static_dir:
+    - admin
+    - assets
+```
+
+验证 `/assets/home/home.css` 和 `/assets/home/hero.webp` 均返回 HTTP 200。磁盘模式还需要部署 `static/assets/home/`；嵌入模式需要使用包含这些文件的新二进制。
 
 ## 常见问题
 

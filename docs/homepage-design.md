@@ -19,3 +19,9 @@
 桌面内容最大宽度 1400px；在 1920px 设计宽度下，首屏高 586px，指标卡向上重叠 53px，页脚高 120px。641–1024px 使用两列卡片；640px 以下功能卡单列，首屏图文上下排列。菜单支持 Enter、Tab 和 Escape；JavaScript 不可用时直接展示导航链接。
 
 静态资源通过 `/assets/home/` 访问，沿用现有 disk / embed 加载机制。首页默认使用设计稿蓝色 M 标志；自定义 Logo 优先。站点名称及页脚文字可换行，未配置备案信息时不生成备案链接。
+
+## 静态路由回归检查
+
+首页资源必须挂载到 `/assets/home/`。默认目录为 `admin`、`assets`；已有仅配置 `admin` 的安装也会补充 `assets`，显式关闭静态服务仍被保留。企业版独立补充此配置，以兼容尚未包含新默认值的 CE 发布依赖。
+
+`GOWORK=off go test . -run TestHomepageStaticResources -count=1` 使用真实应用配置装配和 go-web HTTP 服务验证 19 个资源的 GET、HEAD、字节内容及 MIME，覆盖 embed / disk、默认 / 旧配置 / 已有 assets / 单独 assets/home / 禁用静态服务，以及缺失文件的 404。独立的模板预览不能替代这项检查。

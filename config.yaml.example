@@ -2,9 +2,11 @@
 http:
   mode: release  # debug, release, test
   addr: ":8080"
-  # 静态资源根目录，会自动加载该目录下的所有文件和子目录
+  # 静态资源目录列表：每项对应 static/<name>，访问前缀为 /<name>
   # 访问 /admin/ 时会尝试返回 /admin/index.html 或 /admin/index.htm
-  static_dir: static
+  static_dir:
+    - admin
+    - assets
   # 静态文件模式: embed（嵌入到二进制）或 disk（从磁盘加载）
   static_mode: embed
   # 模板文件模式: embed（嵌入到二进制）或 disk（从磁盘加载）
@@ -20,7 +22,9 @@ http:
 # http:
 #   mode: debug              # 非 release 模式，实时读取磁盘
 #   addr: ":8080"
-#   static_dir: static
+#   static_dir:
+#     - admin
+#     - assets
 #   static_mode: disk        # 从磁盘加载
 #   templates_mode: disk     # 从磁盘加载
 #   templates_dir: templates
@@ -29,7 +33,9 @@ http:
 # http:
 #   mode: release            # release 模式，启用缓存
 #   addr: ":8080"
-#   static_dir: static
+#   static_dir:
+#     - admin
+#     - assets
 #   static_mode: disk        # 从磁盘加载（带缓存）
 #   templates_mode: embed    # 嵌入到二进制
 #   templates_dir: templates
@@ -38,7 +44,9 @@ http:
 # http:
 #   mode: release
 #   addr: ":8080"
-#   static_dir: static
+#   static_dir:
+#     - admin
+#     - assets
 #   static_mode: embed       # 嵌入到二进制
 #   templates_mode: embed    # 嵌入到二进制
 #   templates_dir: templates
