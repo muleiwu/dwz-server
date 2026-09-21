@@ -1,8 +1,8 @@
-FROM node:22-slim AS builder-web
+FROM node:22.23.2-slim AS builder-web
 
 ENV TZ=Asia/Shanghai
 
-RUN npm i -g corepack
+RUN npm install -g pnpm@10.34.5
 
 WORKDIR /app
 
@@ -10,10 +10,10 @@ WORKDIR /app
 COPY ./admin-webui /app
 
 # 安装 pnpm
-RUN pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm build:antd --filter=\!./docs
+RUN pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install --frozen-lockfile && pnpm build:antd --filter=\!./docs
 
 # 构建阶段
-FROM golang:1.26.0-alpine AS builder-go
+FROM golang:1.26.8-alpine AS builder-go
 
 # 设置工作目录
 WORKDIR /app
@@ -28,6 +28,7 @@ RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
 # 设置Go环境变量
 #ENV GOPROXY=https://goproxy.cn,direct
 ENV GO111MODULE=on
+ENV GOWORK=off
 ENV CGO_ENABLED=0
 
 # 复制go mod文件

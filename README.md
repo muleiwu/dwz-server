@@ -147,10 +147,12 @@ chmod +x dwz-server
 
 ### 环境要求
 
-- Go 1.26+
-- Node.js 22+（前端工作区最低要求为 20.10）
-- pnpm 10.10.0，推荐通过 Corepack 管理
+- Go 1.26.8+
+- Node.js 22.23.2+（版本记录于前端 `.node-version`）
+- pnpm 10.34.5，使用前端 `packageManager` 指定的版本
 - Git（管理端位于 `admin-webui` 子模块）
+
+依赖安全升级与复查命令见 [依赖安全记录](docs/dependency-security.md)。
 
 ### 构建前端与后端
 

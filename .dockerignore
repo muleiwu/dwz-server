@@ -35,4 +35,9 @@ README.md
 docs/
 
 # 忽略已编译的二进制文件
-go-web 
+go-web
+# Use the locked module graph and install dependencies inside the build stages.
+go.work
+go.work.sum
+vendor/
+**/node_modules

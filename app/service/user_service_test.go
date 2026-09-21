@@ -11,7 +11,7 @@ import (
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	ceInterfaces "cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	ipRegionImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/ip_region/impl"
-	"github.com/glebarez/sqlite"
+	"cnb.cool/mliev/open/go-web/pkg/server/database/sqlite"
 	"github.com/muleiwu/gsr"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"

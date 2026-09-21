@@ -48,7 +48,7 @@
   env:
     IMAGE_TAG: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-linux-loong64
   docker:
-    image: node:22-slim
+    image: node:22.23.2-slim
   runner:
     tags: cnb:arch:amd64:containerd-snapshotter
   services:
@@ -61,8 +61,8 @@
     - name: build-web
       script:
         - cd ./admin-webui
-        - npm config set registry http://mirrors.tencent.com/npm/ && npm i -g corepack
-        - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
+        - npm config set registry https://registry.npmjs.org/ && npm install -g pnpm@10.34.5
+        - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install --frozen-lockfile && pnpm run build:antd --filter=\!./docs
     # 云原生构建自动构建Docker镜像并将它发布到制品库
     - name: docker login
       script:
@@ -93,11 +93,14 @@
     BUILD_TIME: ${CNB_BUILD_START_TIME}
     GIT_COMMIT: ${CNB_COMMIT_SHORT}
     ENVIRONMENT: production
+    GOTOOLCHAIN: go1.26.8
+    GOWORK: off
   stages:
     - name: build-web
       script:
         - cd ./admin-webui
-        - pnpm config set registry https://mirrors.cloud.tencent.com/npm/ && pnpm install && pnpm run build:antd --filter=\!./docs
+        - npm exec --yes --registry=https://registry.npmjs.org --package=node@22.23.2 --package=pnpm@10.34.5 -- pnpm install --frozen-lockfile
+        - npm exec --yes --registry=https://registry.npmjs.org --package=node@22.23.2 --package=pnpm@10.34.5 -- pnpm run build:antd --filter=\!./docs
         - cd .. && mkdir -p ./static/admin && cp -a ./admin-webui/apps/web-antd/dist ./static/admin
     - name: changelog
       image: cnbcool/changelog
