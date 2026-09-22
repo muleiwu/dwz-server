@@ -228,6 +228,41 @@ chmod +x build.sh
 APP_VERSION=v1.0.0 ./build.sh
 ```
 
+## 🛠️ 本地开发与测试
+
+### 克隆仓库（含管理端子模块）
+
+```bash
+git clone --recurse-submodules https://github.com/muleiwu/dwz-server.git
+cd dwz-server
+```
+
+### 运行后端（使用已构建的管理端资源）
+
+```bash
+go mod download
+go run . start
+```
+
+### 前端热更新开发
+
+修改管理端时，在另一个终端启动 Vite：
+
+```bash
+cd admin-webui
+corepack enable
+pnpm install
+pnpm dev:antd
+```
+
+### 运行测试
+
+```bash
+go test ./...
+```
+
+依赖安全升级与复查命令见 [依赖安全记录](./dependency-security.md)。
+
 ## 🐳 Docker 镜像构建
 
 ### 标准构建

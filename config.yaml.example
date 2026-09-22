@@ -70,7 +70,7 @@ database:
 # DATABASE_DRIVER=mysql|postgresql|sqlite
 # DATABASE_HOST=localhost
 # DATABASE_PORT=3306
-# DATABASE_NAME=dwz_db  
+# DATABASE_DBNAME=dwz_db
 # DATABASE_USERNAME=root
 # DATABASE_PASSWORD=password
 # DATABASE_FILEPATH=./config/sqlite.db
@@ -153,4 +153,4 @@ cache:
 
 # ID生成器配置
 id_generator:
-  driver: redis  # memory、redis、none
+  driver: redis  # local、redis
