@@ -13,3 +13,6 @@ go.work.*
 
 # archify 浏览器验证证据（过程产物，不入库）
 docs/archify/**/*.visual-check.*
+
+# playwright-cli 会话产物
+.playwright-cli/
