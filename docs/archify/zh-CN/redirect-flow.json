@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "dwz-server 短码跳转请求时序",
+    "locale": "zh-CN",
+    "output": "redirect-flow.zh-CN.html",
+    "viewBox": [
+      1080,
+      640
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "dispatch-entry",
+        "label": "入口分发",
+        "focus": [
+          "visitor",
+          "dispatch",
+          "controller"
+        ],
+        "note": "短码请求由全局中间件拦截并转给跳转控制器。"
+      },
+      {
+        "id": "cache-fallback",
+        "label": "缓存与回源",
+        "focus": [
+          "service",
+          "cache",
+          "db"
+        ],
+        "note": "缓存未命中时回源 short_links 表，并回写 24 小时。"
+      },
+      {
+        "id": "gate-and-branch",
+        "label": "门控与分流",
+        "focus": [
+          "service",
+          "security",
+          "routing",
+          "visitor"
+        ],
+        "note": "安全门控与高级路由/A/B 分流决定目标 URL，统计异步记录。"
+      }
+    ]
+  },
+  "participants": [
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "访客",
+      "sublabel": "浏览器"
+    },
+    {
+      "id": "dispatch",
+      "type": "backend",
+      "label": "短码分发",
+      "sublabel": "shortCodeDispatch"
+    },
+    {
+      "id": "controller",
+      "type": "backend",
+      "label": "跳转控制器",
+      "sublabel": "RedirectShortLink"
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "短链服务",
+      "sublabel": "shortlink_service"
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "缓存",
+      "sublabel": "缓存 24h"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "数据库",
+      "sublabel": "short_links 表"
+    },
+    {
+      "id": "security",
+      "type": "security",
+      "label": "安全门控",
+      "sublabel": "EvaluateRedirect"
+    },
+    {
+      "id": "routing",
+      "type": "backend",
+      "label": "高级路由 + A/B",
+      "sublabel": "LinkRoute · ABTest"
+    }
+  ],
+  "segments": [
+    {
+      "from": 160,
+      "to": 236,
+      "label": "接收与分发"
+    },
+    {
+      "from": 246,
+      "to": 378,
+      "label": "缓存与数据库解析"
+    },
+    {
+      "from": 388,
+      "to": 562,
+      "label": "门控、路由与跳转"
+    }
+  ],
+  "messages": [
+    {
+      "id": "get-code",
+      "from": "visitor",
+      "to": "dispatch",
+      "y": 168,
+      "label": "GET /:code",
+      "variant": "emphasis"
+    },
+    {
+      "id": "hit-dispatch",
+      "from": "dispatch",
+      "to": "controller",
+      "y": 194,
+      "label": "命中单段码 → Abort()",
+      "variant": "default"
+    },
+    {
+      "id": "resolve-call",
+      "from": "controller",
+      "to": "service",
+      "y": 220,
+      "label": "ResolveRedirect",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cache-read",
+      "from": "service",
+      "to": "cache",
+      "y": 250,
+      "label": "读缓存",
+      "variant": "default"
+    },
+    {
+      "id": "cache-miss",
+      "from": "cache",
+      "to": "service",
+      "y": 278,
+      "label": "未命中",
+      "variant": "return"
+    },
+    {
+      "id": "db-query",
+      "from": "service",
+      "to": "db",
+      "y": 306,
+      "label": "查 short_links",
+      "variant": "emphasis"
+    },
+    {
+      "id": "db-row",
+      "from": "db",
+      "to": "service",
+      "y": 336,
+      "label": "短链记录",
+      "variant": "return"
+    },
+    {
+      "id": "cache-write",
+      "from": "service",
+      "to": "cache",
+      "y": 364,
+      "label": "回写 24h",
+      "variant": "dashed"
+    },
+    {
+      "id": "security-eval",
+      "from": "service",
+      "to": "security",
+      "y": 392,
+      "label": "EvaluateRedirect",
+      "variant": "security"
+    },
+    {
+      "id": "security-allow",
+      "from": "security",
+      "to": "service",
+      "y": 420,
+      "label": "放行",
+      "variant": "return"
+    },
+    {
+      "id": "route-resolve",
+      "from": "service",
+      "to": "routing",
+      "y": 448,
+      "label": "路由匹配 + A/B 分流",
+      "variant": "default"
+    },
+    {
+      "id": "route-target",
+      "from": "routing",
+      "to": "service",
+      "y": 476,
+      "label": "目标 URL + 变体",
+      "variant": "return"
+    },
+    {
+      "id": "redirect-decision",
+      "from": "service",
+      "to": "controller",
+      "y": 500,
+      "label": "跳转决策",
+      "variant": "return"
+    },
+    {
+      "id": "redirect-302",
+      "from": "controller",
+      "to": "visitor",
+      "y": 524,
+      "label": "302 Location",
+      "variant": "emphasis"
+    },
+    {
+      "id": "error-branch",
+      "from": "controller",
+      "to": "visitor",
+      "y": 556,
+      "label": "密码页 / 403 / 404 / 410",
+      "variant": "dashed"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "dispatch",
+      "from": 172,
+      "to": 200,
+      "type": "backend"
+    },
+    {
+      "participant": "controller",
+      "from": 198,
+      "to": 560,
+      "type": "backend"
+    },
+    {
+      "participant": "service",
+      "from": 224,
+      "to": 486,
+      "type": "backend"
+    },
+    {
+      "participant": "cache",
+      "from": 244,
+      "to": 372,
+      "type": "database"
+    },
+    {
+      "participant": "db",
+      "from": 300,
+      "to": 342,
+      "type": "database"
+    },
+    {
+      "participant": "security",
+      "from": 386,
+      "to": 426,
+      "type": "security"
+    },
+    {
+      "participant": "routing",
+      "from": 442,
+      "to": 482,
+      "type": "backend"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "主链路",
+      "items": [
+        "短码 GET /:code 由 shortCodeDispatch 中间件拦截（short_code_dispatch.go）",
+        "缓存优先，未命中回源 short_links 并回写 24h（shortlink_service.go）"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "分流与边界",
+      "items": [
+        "EvaluateRedirect 拦截风险链接；路由按国家/设备/语言，A/B 按 TrafficSplit（sessionID=hash(IP+UA)）",
+        "统计由 goroutine 异步写入；密码/410/403/防红为控制器分支；/preview/:code 不计统计"
+      ]
+    }
+  ]
+}

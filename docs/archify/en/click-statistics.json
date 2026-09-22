@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "dwz-server Click Statistics Data Flow",
+    "locale": "en",
+    "output": "click-statistics.en.html",
+    "viewBox": [
+      1080,
+      560
+    ],
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "capture-to-facts",
+        "label": "Capture to facts",
+        "focus": [
+          "visitor-click",
+          "redirect-service",
+          "async-click",
+          "click-facts"
+        ],
+        "note": "A click fires during the redirect and is enriched by a goroutine before landing in the facts table."
+      },
+      {
+        "id": "counter-and-ab",
+        "label": "Counter & A/B",
+        "focus": [
+          "async-click",
+          "link-counter",
+          "ab-clicks",
+          "ab-api"
+        ],
+        "note": "The same async task increments counters and records A/B clicks in parallel."
+      },
+      {
+        "id": "report-consumers",
+        "label": "Query & consume",
+        "focus": [
+          "click-facts",
+          "stats-api",
+          "admin-reports"
+        ],
+        "note": "Fact tables feed aggregate queries for analysis views and CSV exports."
+      }
+    ]
+  },
+  "stages": [
+    {
+      "label": "Capture"
+    },
+    {
+      "label": "Trigger"
+    },
+    {
+      "label": "Async & enrich"
+    },
+    {
+      "label": "Store"
+    },
+    {
+      "label": "Query & consume"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "visitor-click",
+      "type": "external",
+      "label": "Visitor Click",
+      "sublabel": "GET /:code",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "redirect-service",
+      "type": "backend",
+      "label": "Redirect Resolve",
+      "sublabel": "ResolveRedirect",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "async-click",
+      "type": "messagebus",
+      "label": "Async Click Enrich",
+      "sublabel": "ip2region + UA",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "ab-clicks",
+      "type": "database",
+      "label": "A/B Clicks",
+      "sublabel": "ab_test_click_statistic",
+      "stage": 3,
+      "row": 2
+    },
+    {
+      "id": "click-facts",
+      "type": "database",
+      "label": "Click Facts",
+      "sublabel": "click_statistics",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "link-counter",
+      "type": "database",
+      "label": "Link Counter",
+      "sublabel": "click_count INCR",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "admin-reports",
+      "type": "frontend",
+      "label": "Admin Reports",
+      "sublabel": "dashboard · CSV",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "stats-api",
+      "type": "backend",
+      "label": "Stats API",
+      "sublabel": "analysis · geo",
+      "stage": 4,
+      "row": 1
+    },
+    {
+      "id": "ab-api",
+      "type": "backend",
+      "label": "A/B Stats API",
+      "sublabel": "variant compare",
+      "stage": 4,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "id": "click-trigger",
+      "from": "visitor-click",
+      "to": "redirect-service",
+      "label": "302 redirect",
+      "classification": "click event",
+      "variant": "emphasis"
+    },
+    {
+      "id": "dispatch-goroutine",
+      "from": "redirect-service",
+      "to": "async-click",
+      "label": "spawn goroutine",
+      "classification": "async task",
+      "variant": "dashed"
+    },
+    {
+      "id": "insert-facts",
+      "from": "async-click",
+      "to": "click-facts",
+      "label": "INSERT facts",
+      "classification": "fact rows",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "incr-counter",
+      "from": "async-click",
+      "to": "link-counter",
+      "label": "INCR click_count",
+      "classification": "counter",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left",
+      "via": [
+        [
+          530,
+          157
+        ],
+        [
+          670,
+          157
+        ]
+      ]
+    },
+    {
+      "id": "ab-report",
+      "from": "async-click",
+      "to": "ab-clicks",
+      "label": "A/B record",
+      "classification": "fact rows",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "via": [
+        [
+          530,
+          385
+        ],
+        [
+          670,
+          385
+        ]
+      ]
+    },
+    {
+      "id": "aggregate-query",
+      "from": "click-facts",
+      "to": "stats-api",
+      "label": "aggregate query",
+      "classification": "SQL aggregation",
+      "variant": "default"
+    },
+    {
+      "id": "report-export",
+      "from": "stats-api",
+      "to": "admin-reports",
+      "label": "reports / CSV",
+      "classification": "query result",
+      "variant": "default",
+      "labelAt": [
+        960,
+        314
+      ]
+    },
+    {
+      "id": "variant-compare",
+      "from": "ab-clicks",
+      "to": "ab-api",
+      "label": "variant compare",
+      "classification": "SQL aggregation",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Primary data path",
+      "items": [
+        "Goroutines enrich clicks (ip2region geo + UA metadata) and insert into click_statistics",
+        "Counters increment via INCR on short_links.click_count (app/dao/short_link_dao.go:174)"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Consumer endpoints",
+      "items": [
+        "/api/v1/click_statistics serves /analysis, /geo-analysis and /export",
+        "/api/v1/statistics/{system,dashboard,short-links} summarizes metrics; A/B queries /api/v1/ab_test_click_statistics*"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Boundary facts",
+      "items": [
+        "No message queue anywhere — \"async\" means in-process goroutines only",
+        "/preview/:code preview requests produce no click data"
+      ]
+    }
+  ]
+}

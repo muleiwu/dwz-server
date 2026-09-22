@@ -1,0 +1,432 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Muleiwu URL Shortener (dwz-server) System Architecture",
+    "locale": "en",
+    "output": "system-architecture.en.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://cnb.cool/mliev/dwz/dwz-server",
+      "link_mode": "local-only",
+      "revision": "f80ca31ebe2ffe353aba1bfd3cf0e07ca4ddc966"
+    },
+    "views": [
+      {
+        "id": "public-redirect",
+        "label": "Public redirect",
+        "focus": [
+          "visitor",
+          "ingress",
+          "http-router",
+          "domain-services",
+          "redis",
+          "relational-db"
+        ],
+        "note": "Visitor requests enter the single-process service via the proxy; cache-first, DB fallback, synchronous 302 redirect."
+      },
+      {
+        "id": "admin-api",
+        "label": "Admin & API",
+        "focus": [
+          "admin-web",
+          "http-router",
+          "auth-gateway",
+          "oidc-provider",
+          "domain-services"
+        ],
+        "note": "The admin frontend calls protected APIs through three-mode auth and workspace RBAC to reach domain services."
+      },
+      {
+        "id": "data-layer",
+        "label": "Data & deployment",
+        "focus": [
+          "domain-services",
+          "redis",
+          "relational-db"
+        ],
+        "note": "Redis is optional; SQLite runs standalone, production switches to MySQL/PostgreSQL."
+      }
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "origin": [
+      64,
+      96
+    ],
+    "cols": 5,
+    "gapX": 92,
+    "gapY": 140,
+    "cellW": 176,
+    "cellH": 78
+  },
+  "components": [
+    {
+      "id": "oidc-provider",
+      "type": "external",
+      "label": "External OIDC Provider",
+      "sublabel": "Auth code + PKCE",
+      "row": 0,
+      "col": 4,
+      "size": [
+        176,
+        78
+      ],
+      "sources": [
+        {
+          "path": "app/service/oidc_service.go",
+          "line": 157,
+          "label": "OIDC auth-code flow"
+        },
+        {
+          "path": "config/autoload/router.go",
+          "line": 47,
+          "end_line": 48,
+          "label": "Public OIDC routes"
+        }
+      ]
+    },
+    {
+      "id": "auth-gateway",
+      "type": "security",
+      "label": "Auth Middleware",
+      "sublabel": "HMAC · JWT · API Token",
+      "tag": "Workspace RBAC",
+      "row": 0,
+      "col": 3,
+      "size": [
+        176,
+        78
+      ],
+      "sources": [
+        {
+          "path": "app/middleware/auth_middleware.go",
+          "line": 27,
+          "end_line": 63,
+          "label": "Three auth modes"
+        },
+        {
+          "path": "app/middleware/workspace_middleware.go",
+          "line": 20,
+          "end_line": 48,
+          "label": "Workspace resolve"
+        }
+      ]
+    },
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "Users & Visitors",
+      "sublabel": "Browser · API clients",
+      "row": 1,
+      "col": 0,
+      "size": [
+        176,
+        78
+      ],
+      "sources": [
+        {
+          "path": "README.md",
+          "label": "Entry points & features"
+        }
+      ]
+    },
+    {
+      "id": "ingress",
+      "type": "security",
+      "label": "DNS / TLS Reverse Proxy",
+      "sublabel": "Forwards real Host header",
+      "tag": "Deployment edge",
+      "row": 1,
+      "col": 1,
+      "size": [
+        176,
+        78
+      ],
+      "sources": [
+        {
+          "path": "README.md",
+          "label": "DNS, certs & proxy setup"
+        }
+      ]
+    },
+    {
+      "id": "http-router",
+      "type": "backend",
+      "label": "HTTP Server & Router",
+      "sublabel": "go-web · global middleware",
+      "tag": "Short-code dispatch",
+      "row": 1,
+      "col": 2,
+      "size": [
+        176,
+        78
+      ],
+      "sources": [
+        {
+          "path": "config/autoload/middleware.go",
+          "line": 12,
+          "end_line": 16,
+          "label": "Global middleware chain"
+        },
+        {
+          "path": "config/autoload/router.go",
+          "line": 66,
+          "end_line": 69,
+          "label": "Protected route group"
+        }
+      ]
+    },
+    {
+      "id": "domain-services",
+      "type": "backend",
+      "label": "Domain Services",
+      "sublabel": "Shortlink · A/B · stats",
+      "row": 1,
+      "col": 3,
+      "size": [
+        176,
+        78
+      ],
+      "sources": [
+        {
+          "path": "app/service/shortlink_service.go",
+          "line": 588,
+          "end_line": 716,
+          "label": "Redirect resolution"
+        },
+        {
+          "path": "app/service/link_route_service.go",
+          "line": 211,
+          "label": "Advanced routing"
+        },
+        {
+          "path": "app/service/ab_test_service.go",
+          "line": 340,
+          "end_line": 381,
+          "label": "A/B split"
+        }
+      ]
+    },
+    {
+      "id": "relational-db",
+      "type": "database",
+      "label": "Relational Database",
+      "sublabel": "MySQL · PostgreSQL · SQLite",
+      "tag": "GORM + goose migrations",
+      "row": 1,
+      "col": 4,
+      "size": [
+        176,
+        78
+      ],
+      "sources": [
+        {
+          "path": "config/autoload/database.go",
+          "line": 9,
+          "end_line": 27,
+          "label": "Multi-DB drivers"
+        },
+        {
+          "path": "pkg/service/migration/migration.go",
+          "line": 49,
+          "end_line": 54,
+          "label": "goose dialect migrations"
+        }
+      ]
+    },
+    {
+      "id": "admin-web",
+      "type": "frontend",
+      "label": "Admin Web UI",
+      "sublabel": "Vue 3 · embedded /admin/",
+      "tag": "Single binary",
+      "row": 2,
+      "col": 2,
+      "size": [
+        176,
+        78
+      ],
+      "sources": [
+        {
+          "path": "main.go",
+          "line": 26,
+          "end_line": 39,
+          "label": "Embedded static assets"
+        }
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis (optional)",
+      "sublabel": "Cache + distributed ID gen",
+      "row": 2,
+      "col": 4,
+      "size": [
+        176,
+        78
+      ],
+      "sources": [
+        {
+          "path": "config/autoload/cache.go",
+          "line": 11,
+          "label": "Cache driver"
+        },
+        {
+          "path": "config/autoload/id_generator.go",
+          "line": 11,
+          "label": "ID generator driver"
+        },
+        {
+          "path": "config/autoload/redis.go",
+          "line": 11,
+          "end_line": 16,
+          "label": "Redis connection"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Public network",
+      "wraps": [
+        "visitor"
+      ],
+      "pad": 24
+    },
+    {
+      "kind": "security-group",
+      "label": "Ingress boundary: TLS / Host",
+      "wraps": [
+        "ingress"
+      ],
+      "pad": 24
+    },
+    {
+      "kind": "security-group",
+      "label": "dwz-server process: single binary",
+      "wraps": [
+        "http-router",
+        "auth-gateway",
+        "domain-services",
+        "admin-web"
+      ],
+      "pad": 28
+    },
+    {
+      "kind": "security-group",
+      "label": "Data layer: localhost or restricted network",
+      "wraps": [
+        "relational-db",
+        "redis"
+      ],
+      "pad": 28
+    }
+  ],
+  "connections": [
+    {
+      "id": "visitor-to-ingress",
+      "from": "visitor",
+      "to": "ingress",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ingress-to-router",
+      "from": "ingress",
+      "to": "http-router",
+      "label": "GET /:code",
+      "variant": "emphasis"
+    },
+    {
+      "id": "router-to-services",
+      "from": "http-router",
+      "to": "domain-services",
+      "label": "Public redirect",
+      "variant": "emphasis",
+      "labelDy": 14
+    },
+    {
+      "id": "services-to-db",
+      "from": "domain-services",
+      "to": "relational-db",
+      "label": "GORM read/write",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ingress-to-admin",
+      "from": "ingress",
+      "to": "admin-web",
+      "label": "GET /admin/*",
+      "variant": "default"
+    },
+    {
+      "id": "admin-to-router",
+      "from": "admin-web",
+      "to": "http-router",
+      "label": "REST /api/v1/*",
+      "variant": "default"
+    },
+    {
+      "id": "router-to-auth",
+      "from": "http-router",
+      "to": "auth-gateway",
+      "label": "Protected API",
+      "variant": "security"
+    },
+    {
+      "id": "auth-to-services",
+      "from": "auth-gateway",
+      "to": "domain-services",
+      "label": "Identity + workspace ctx",
+      "variant": "security",
+      "labelAt": [
+        956,
+        188
+      ]
+    },
+    {
+      "id": "oidc-to-auth",
+      "from": "oidc-provider",
+      "to": "auth-gateway",
+      "label": "OIDC callback",
+      "variant": "security"
+    },
+    {
+      "id": "services-to-redis",
+      "from": "domain-services",
+      "to": "redis",
+      "label": "Cache / ID gen",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend & ingress",
+      "items": [
+        "One Go binary embeds the Vue 3 admin UI and public pages, served under /admin/ behind the reverse proxy",
+        "Short-code GET /:code is intercepted by the global shortCodeDispatch middleware, keeping the Gin root route free"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Data & deployment modes",
+      "items": [
+        "Standalone: SQLite + in-memory cache + local ID generation, zero external deps (DATABASE_DRIVER=sqlite)",
+        "Production: MySQL/PostgreSQL + Redis (CACHE_DRIVER=redis); goose runs migrations per dialect"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Auth & security",
+      "items": [
+        "AuthMiddleware authenticates by priority: HMAC signature > JWT Bearer > API Token",
+        "Workspace middleware resolves roles per X-Workspace-Id (RBAC); login rate limiting lives in the auth service"
+      ]
+    }
+  ]
+}

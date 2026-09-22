@@ -1,0 +1,329 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "dwz-server Startup Assembly & Install Flow",
+    "locale": "en",
+    "output": "startup-assembly.en.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "assembly-chain",
+        "label": "Assembly chain",
+        "focus": [
+          "main-start",
+          "register-assemblies",
+          "base-assembly",
+          "installed-check",
+          "infra-assembly"
+        ],
+        "note": "main.go embeds assets, then assemblies run in dependency order; Installed resolves before external resources."
+      },
+      {
+        "id": "cold-start-gate",
+        "label": "Install gating",
+        "focus": [
+          "installed-check",
+          "install-wizard",
+          "self-restart"
+        ],
+        "note": "Without install.lock the wizard runs migrations + seed, writes the lock, then rejoins via self-restart."
+      },
+      {
+        "id": "server-chain",
+        "label": "Server chain",
+        "focus": [
+          "infra-assembly",
+          "migration-server",
+          "id-generator",
+          "http-ready"
+        ],
+        "note": "After assemblies: Migration (goose) → IDGenerator → HttpServer start in order."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "entry",
+      "label": "Startup Entry"
+    },
+    {
+      "id": "assembly",
+      "label": "Assemblies"
+    },
+    {
+      "id": "servers",
+      "label": "Servers"
+    },
+    {
+      "id": "install",
+      "label": "Install Gating",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "process-entry",
+      "label": "Process entry",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "dependency-assembly",
+      "label": "Dependency assembly",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "infra-servers",
+      "label": "Infra & servers",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "groups": [
+    {
+      "id": "install-branch",
+      "label": "Not-installed branch",
+      "lane": "install",
+      "fromCol": 3,
+      "toCol": 5,
+      "variant": "security"
+    }
+  ],
+  "mainPath": [
+    "main-start",
+    "register-assemblies",
+    "base-assembly",
+    "installed-check",
+    "infra-assembly",
+    "migration-server",
+    "id-generator",
+    "http-ready"
+  ],
+  "semanticChecks": {
+    "allowedRoots": [
+      "main-start"
+    ],
+    "allowedTerminals": [
+      "http-ready",
+      "ee-wrap"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "main-start",
+      "lane": "entry",
+      "col": 0,
+      "type": "backend",
+      "label": "main.go Start",
+      "sublabel": "Embedded assets",
+      "width": 150
+    },
+    {
+      "id": "register-assemblies",
+      "lane": "entry",
+      "col": 1,
+      "type": "backend",
+      "label": "Register Assemblies",
+      "sublabel": "config.App · topo sort",
+      "width": 126
+    },
+    {
+      "id": "ee-wrap",
+      "lane": "entry",
+      "col": 2,
+      "type": "external",
+      "label": "CE/EE Wrap Point",
+      "sublabel": "DefaultAssemblies",
+      "width": 126
+    },
+    {
+      "id": "http-ready",
+      "lane": "entry",
+      "col": 5,
+      "type": "backend",
+      "label": "HttpServer Ready",
+      "sublabel": "Listens on HTTP_ADDR",
+      "tag": "Server 3",
+      "width": 150
+    },
+    {
+      "id": "base-assembly",
+      "lane": "assembly",
+      "col": 2,
+      "type": "backend",
+      "label": "Base Assembly",
+      "sublabel": "Env → Config → Logger",
+      "width": 148
+    },
+    {
+      "id": "installed-check",
+      "lane": "assembly",
+      "col": 3,
+      "type": "security",
+      "label": "Installed Check",
+      "sublabel": "install.lock + config.yaml",
+      "width": 148
+    },
+    {
+      "id": "infra-assembly",
+      "lane": "assembly",
+      "col": 4,
+      "type": "backend",
+      "label": "Infra Assembly",
+      "sublabel": "DB → Redis → Cache → IPRegion",
+      "width": 148
+    },
+    {
+      "id": "migration-server",
+      "lane": "servers",
+      "col": 4,
+      "type": "database",
+      "label": "Migration Server",
+      "sublabel": "goose dialect migrations",
+      "tag": "Server 1",
+      "width": 150
+    },
+    {
+      "id": "id-generator",
+      "lane": "servers",
+      "col": 5,
+      "type": "backend",
+      "label": "IDGenerator Server",
+      "sublabel": "base62 · redis ID gen",
+      "tag": "Server 2",
+      "width": 150
+    },
+    {
+      "id": "install-wizard",
+      "lane": "install",
+      "col": 3,
+      "type": "frontend",
+      "label": "Install Wizard",
+      "sublabel": "/install migrate + seed",
+      "width": 150
+    },
+    {
+      "id": "self-restart",
+      "lane": "install",
+      "col": 5,
+      "type": "backend",
+      "label": "Self-Restart",
+      "sublabel": "syscall.Exec",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-register",
+      "from": "main-start",
+      "to": "register-assemblies",
+      "label": "cmd.Start()",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "register-base",
+      "from": "register-assemblies",
+      "to": "base-assembly",
+      "label": "topo order",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "base-installed",
+      "from": "base-assembly",
+      "to": "installed-check",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "installed-infra",
+      "from": "installed-check",
+      "to": "infra-assembly",
+      "label": "installed",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "infra-migration",
+      "from": "infra-assembly",
+      "to": "migration-server",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "migration-idgen",
+      "from": "migration-server",
+      "to": "id-generator",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "idgen-http",
+      "from": "id-generator",
+      "to": "http-ready",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "installed-wizard",
+      "from": "installed-check",
+      "to": "install-wizard",
+      "label": "not installed",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "wizard-restart",
+      "from": "install-wizard",
+      "to": "self-restart",
+      "label": "write install.lock",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "restart-http",
+      "from": "self-restart",
+      "to": "http-ready",
+      "label": "rejoin main path",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "id": "register-ee",
+      "from": "register-assemblies",
+      "to": "ee-wrap",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Assembly chain (config/app.go)",
+      "items": [
+        "Env → Config → Logger → Installed → Version → Database → Redis → Cache → IPRegion",
+        "Installed resolves before external services, so a fresh download boots into the install wizard"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Pre-install degradation",
+      "items": [
+        "Database registers a typed-nil, Redis is skipped, cache is forced to memory",
+        "Migration and IDGenerator servers wait until installation completes"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Install & extension",
+      "items": [
+        "Install runs migrations + seed, writes install.lock, then self-restarts (syscall.Exec)",
+        "JWT secret auto-generates on first boot; EE extends via Default* wrap points and ee.* keys"
+      ]
+    }
+  ]
+}

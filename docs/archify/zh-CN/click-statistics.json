@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "dwz-server 点击统计数据流",
+    "locale": "zh-CN",
+    "output": "click-statistics.zh-CN.html",
+    "viewBox": [
+      1080,
+      560
+    ],
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "capture-to-facts",
+        "label": "采集到明细",
+        "focus": [
+          "visitor-click",
+          "redirect-service",
+          "async-click",
+          "click-facts"
+        ],
+        "note": "点击在跳转时触发，经 goroutine 富集后写入明细表。"
+      },
+      {
+        "id": "counter-and-ab",
+        "label": "计数与 A/B",
+        "focus": [
+          "async-click",
+          "link-counter",
+          "ab-clicks",
+          "ab-api"
+        ],
+        "note": "同一异步任务并行累加计数并上报 A/B 点击。"
+      },
+      {
+        "id": "report-consumers",
+        "label": "查询与消费",
+        "focus": [
+          "click-facts",
+          "stats-api",
+          "admin-reports"
+        ],
+        "note": "明细表经聚合查询支撑分析与报表导出。"
+      }
+    ]
+  },
+  "stages": [
+    {
+      "label": "采集"
+    },
+    {
+      "label": "触发"
+    },
+    {
+      "label": "异步与富集"
+    },
+    {
+      "label": "落库"
+    },
+    {
+      "label": "查询与消费"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "visitor-click",
+      "type": "external",
+      "label": "访客点击",
+      "sublabel": "GET /:code",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "redirect-service",
+      "type": "backend",
+      "label": "跳转解析",
+      "sublabel": "ResolveRedirect",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "async-click",
+      "type": "messagebus",
+      "label": "异步点击富集",
+      "sublabel": "ip2region + UA",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "ab-clicks",
+      "type": "database",
+      "label": "A/B 点击",
+      "sublabel": "ab_test_click_statistic",
+      "stage": 3,
+      "row": 2
+    },
+    {
+      "id": "click-facts",
+      "type": "database",
+      "label": "点击明细",
+      "sublabel": "click_statistics",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "link-counter",
+      "type": "database",
+      "label": "短链计数",
+      "sublabel": "click_count INCR",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "admin-reports",
+      "type": "frontend",
+      "label": "管理端报表",
+      "sublabel": "看板 · CSV 导出",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "stats-api",
+      "type": "backend",
+      "label": "统计分析 API",
+      "sublabel": "analysis · geo-analysis",
+      "stage": 4,
+      "row": 1
+    },
+    {
+      "id": "ab-api",
+      "type": "backend",
+      "label": "A/B 分析 API",
+      "sublabel": "变体对比",
+      "stage": 4,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "id": "click-trigger",
+      "from": "visitor-click",
+      "to": "redirect-service",
+      "label": "302 跳转",
+      "classification": "点击事件",
+      "variant": "emphasis"
+    },
+    {
+      "id": "dispatch-goroutine",
+      "from": "redirect-service",
+      "to": "async-click",
+      "label": "派发 goroutine",
+      "classification": "异步任务",
+      "variant": "dashed"
+    },
+    {
+      "id": "insert-facts",
+      "from": "async-click",
+      "to": "click-facts",
+      "label": "INSERT 明细",
+      "classification": "明细行",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "incr-counter",
+      "from": "async-click",
+      "to": "link-counter",
+      "label": "INCR click_count",
+      "classification": "计数",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "left",
+      "via": [
+        [
+          530,
+          157
+        ],
+        [
+          670,
+          157
+        ]
+      ]
+    },
+    {
+      "id": "ab-report",
+      "from": "async-click",
+      "to": "ab-clicks",
+      "label": "A/B 上报",
+      "classification": "明细行",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "via": [
+        [
+          530,
+          385
+        ],
+        [
+          670,
+          385
+        ]
+      ]
+    },
+    {
+      "id": "aggregate-query",
+      "from": "click-facts",
+      "to": "stats-api",
+      "label": "聚合查询",
+      "classification": "SQL 聚合",
+      "variant": "default"
+    },
+    {
+      "id": "report-export",
+      "from": "stats-api",
+      "to": "admin-reports",
+      "label": "报表 / CSV",
+      "classification": "查询结果",
+      "variant": "default",
+      "labelAt": [
+        960,
+        314
+      ]
+    },
+    {
+      "id": "variant-compare",
+      "from": "ab-clicks",
+      "to": "ab-api",
+      "label": "变体对比",
+      "classification": "SQL 聚合",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "主数据路径",
+      "items": [
+        "点击在跳转时触发，goroutine 异步富集（ip2region 归属地 + UA 元数据）后写入 click_statistics 明细表（app/service/shortlink_service.go:894）",
+        "点击计数经 INCR 累加到 short_links.click_count（app/dao/short_link_dao.go:174）"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "消费端点",
+      "items": [
+        "/api/v1/click_statistics 提供 /analysis、/geo-analysis、/export（click_statistic_controller.go）",
+        "/api/v1/statistics/{system,dashboard,short-links} 汇总指标；A/B 经 /api/v1/ab_test_click_statistics* 查询"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "边界事实",
+      "items": [
+        "全链路无消息队列——「异步」仅指进程内 goroutine",
+        "/preview/:code 预览请求不产生点击数据"
+      ]
+    }
+  ]
+}

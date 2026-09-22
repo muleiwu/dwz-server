@@ -1,0 +1,329 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "dwz-server 启动装配与安装流程",
+    "locale": "zh-CN",
+    "output": "startup-assembly.zh-CN.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "assembly-chain",
+        "label": "装配链",
+        "focus": [
+          "main-start",
+          "register-assemblies",
+          "base-assembly",
+          "installed-check",
+          "infra-assembly"
+        ],
+        "note": "main.go 嵌入资源后按依赖拓扑执行装配链，Installed 先于外部资源就绪。"
+      },
+      {
+        "id": "cold-start-gate",
+        "label": "安装门控",
+        "focus": [
+          "installed-check",
+          "install-wizard",
+          "self-restart"
+        ],
+        "note": "install.lock 缺失时走安装向导：迁移 + 种子 + 写锁，自重启后进入已安装链路。"
+      },
+      {
+        "id": "server-chain",
+        "label": "服务器链",
+        "focus": [
+          "infra-assembly",
+          "migration-server",
+          "id-generator",
+          "http-ready"
+        ],
+        "note": "装配完成后依次启动 Migration（goose）→ IDGenerator → HttpServer。"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "entry",
+      "label": "进程入口"
+    },
+    {
+      "id": "assembly",
+      "label": "依赖装配"
+    },
+    {
+      "id": "servers",
+      "label": "服务器链"
+    },
+    {
+      "id": "install",
+      "label": "安装门控",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "process-entry",
+      "label": "进程入口",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "dependency-assembly",
+      "label": "依赖装配",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "infra-servers",
+      "label": "基础设施与服务器",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "groups": [
+    {
+      "id": "install-branch",
+      "label": "未安装分支",
+      "lane": "install",
+      "fromCol": 3,
+      "toCol": 5,
+      "variant": "security"
+    }
+  ],
+  "mainPath": [
+    "main-start",
+    "register-assemblies",
+    "base-assembly",
+    "installed-check",
+    "infra-assembly",
+    "migration-server",
+    "id-generator",
+    "http-ready"
+  ],
+  "semanticChecks": {
+    "allowedRoots": [
+      "main-start"
+    ],
+    "allowedTerminals": [
+      "http-ready",
+      "ee-wrap"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "main-start",
+      "lane": "entry",
+      "col": 0,
+      "type": "backend",
+      "label": "main.go 启动",
+      "sublabel": "嵌入模板·静态·迁移",
+      "width": 150
+    },
+    {
+      "id": "register-assemblies",
+      "lane": "entry",
+      "col": 1,
+      "type": "backend",
+      "label": "注册装配",
+      "sublabel": "config.App · 拓扑排序",
+      "width": 126
+    },
+    {
+      "id": "ee-wrap",
+      "lane": "entry",
+      "col": 2,
+      "type": "external",
+      "label": "CE/EE 包装点",
+      "sublabel": "DefaultAssemblies",
+      "width": 126
+    },
+    {
+      "id": "http-ready",
+      "lane": "entry",
+      "col": 5,
+      "type": "backend",
+      "label": "HttpServer 就绪",
+      "sublabel": "监听 HTTP_ADDR",
+      "tag": "Server 3",
+      "width": 150
+    },
+    {
+      "id": "base-assembly",
+      "lane": "assembly",
+      "col": 2,
+      "type": "backend",
+      "label": "基础装配",
+      "sublabel": "Env → Config → Logger",
+      "width": 160
+    },
+    {
+      "id": "installed-check",
+      "lane": "assembly",
+      "col": 3,
+      "type": "security",
+      "label": "Installed 检查",
+      "sublabel": "install.lock + config.yaml",
+      "width": 160
+    },
+    {
+      "id": "infra-assembly",
+      "lane": "assembly",
+      "col": 4,
+      "type": "backend",
+      "label": "基础设施装配",
+      "sublabel": "DB → Redis → Cache → IPRegion",
+      "width": 160
+    },
+    {
+      "id": "migration-server",
+      "lane": "servers",
+      "col": 4,
+      "type": "database",
+      "label": "Migration 服务",
+      "sublabel": "goose 方言迁移",
+      "tag": "Server 1",
+      "width": 150
+    },
+    {
+      "id": "id-generator",
+      "lane": "servers",
+      "col": 5,
+      "type": "backend",
+      "label": "IDGenerator 服务",
+      "sublabel": "base62 · redis 发号",
+      "tag": "Server 2",
+      "width": 150
+    },
+    {
+      "id": "install-wizard",
+      "lane": "install",
+      "col": 3,
+      "type": "frontend",
+      "label": "安装向导",
+      "sublabel": "/install 迁移 + 种子",
+      "width": 150
+    },
+    {
+      "id": "self-restart",
+      "lane": "install",
+      "col": 5,
+      "type": "backend",
+      "label": "自重启",
+      "sublabel": "syscall.Exec",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-register",
+      "from": "main-start",
+      "to": "register-assemblies",
+      "label": "cmd.Start()",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "register-base",
+      "from": "register-assemblies",
+      "to": "base-assembly",
+      "label": "按依赖拓扑",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "base-installed",
+      "from": "base-assembly",
+      "to": "installed-check",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "installed-infra",
+      "from": "installed-check",
+      "to": "infra-assembly",
+      "label": "已安装",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "infra-migration",
+      "from": "infra-assembly",
+      "to": "migration-server",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "migration-idgen",
+      "from": "migration-server",
+      "to": "id-generator",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "idgen-http",
+      "from": "id-generator",
+      "to": "http-ready",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "installed-wizard",
+      "from": "installed-check",
+      "to": "install-wizard",
+      "label": "未安装",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "wizard-restart",
+      "from": "install-wizard",
+      "to": "self-restart",
+      "label": "写 install.lock",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "restart-http",
+      "from": "self-restart",
+      "to": "http-ready",
+      "label": "重启后进入主链",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "id": "register-ee",
+      "from": "register-assemblies",
+      "to": "ee-wrap",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "装配链（config/app.go）",
+      "items": [
+        "Env → Config → Logger → Installed → Version → Database → Redis → Cache → IPRegion",
+        "Installed 先于 DB/Redis/Cache 解析，全新下载无需外部服务即可进入安装向导"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "未安装降级",
+      "items": [
+        "数据库注册 typed-nil，Redis 跳过，缓存强制 memory",
+        "Migration 与 IDGenerator 服务跳过，等待安装完成后启动"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "安装与扩展",
+      "items": [
+        "安装接口执行迁移与种子（install_bootstrap 创建管理员与默认工作区）后写 install.lock 并自重启",
+        "JWT 密钥首启自动生成；EE 经 Default* 包装点与 ee.* 配置键扩展"
+      ]
+    }
+  ]
+}

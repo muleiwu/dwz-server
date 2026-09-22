@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "木雷短网址（dwz-server）系统架构",
+    "locale": "zh-CN",
+    "output": "system-architecture.zh-CN.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://cnb.cool/mliev/dwz/dwz-server",
+      "link_mode": "local-only",
+      "revision": "f80ca31ebe2ffe353aba1bfd3cf0e07ca4ddc966"
+    },
+    "views": [
+      {
+        "id": "public-redirect",
+        "label": "公开短链跳转",
+        "focus": ["visitor", "ingress", "http-router", "domain-services", "redis", "relational-db"],
+        "note": "访客请求经反代进入单进程服务，缓存优先、数据库回源，同步完成 302 跳转。"
+      },
+      {
+        "id": "admin-api",
+        "label": "管理端与 API",
+        "focus": ["admin-web", "http-router", "auth-gateway", "oidc-provider", "domain-services"],
+        "note": "管理前端调用受保护 API，经三模式认证与工作区 RBAC 到达业务服务。"
+      },
+      {
+        "id": "data-layer",
+        "label": "数据层与部署",
+        "focus": ["domain-services", "redis", "relational-db"],
+        "note": "Redis 可选；SQLite 可单机运行，生产切换 MySQL/PostgreSQL。"
+      }
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "origin": [64, 96],
+    "cols": 5,
+    "gapX": 92,
+    "gapY": 140,
+    "cellW": 176,
+    "cellH": 78
+  },
+  "components": [
+    {
+      "id": "oidc-provider",
+      "type": "external",
+      "label": "外部 OIDC 身份源",
+      "sublabel": "授权码 + PKCE",
+      "row": 0,
+      "col": 4,
+      "size": [176, 78],
+      "sources": [
+        {"path": "app/service/oidc_service.go", "line": 157, "label": "OIDC 授权码流程"},
+        {"path": "config/autoload/router.go", "line": 47, "end_line": 48, "label": "公开 OIDC 路由"}
+      ]
+    },
+    {
+      "id": "auth-gateway",
+      "type": "security",
+      "label": "认证与授权中间件",
+      "sublabel": "HMAC · JWT · API Token",
+      "tag": "工作区 RBAC",
+      "row": 0,
+      "col": 3,
+      "size": [176, 78],
+      "sources": [
+        {"path": "app/middleware/auth_middleware.go", "line": 27, "end_line": 63, "label": "三模式认证"},
+        {"path": "app/middleware/workspace_middleware.go", "line": 20, "end_line": 48, "label": "工作区解析"}
+      ]
+    },
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "用户与短链访客",
+      "sublabel": "浏览器 · API 客户端",
+      "row": 1,
+      "col": 0,
+      "size": [176, 78],
+      "sources": [{"path": "README.md", "label": "访问入口与功能概览"}]
+    },
+    {
+      "id": "ingress",
+      "type": "security",
+      "label": "DNS / TLS 反向代理",
+      "sublabel": "保留真实 Host 转发",
+      "tag": "部署前置",
+      "row": 1,
+      "col": 1,
+      "size": [176, 78],
+      "sources": [{"path": "README.md", "label": "DNS、证书与反代要求"}]
+    },
+    {
+      "id": "http-router",
+      "type": "backend",
+      "label": "HTTP 服务与路由",
+      "sublabel": "go-web · 全局中间件链",
+      "tag": "短码拦截分发",
+      "row": 1,
+      "col": 2,
+      "size": [176, 78],
+      "sources": [
+        {"path": "config/autoload/middleware.go", "line": 12, "end_line": 16, "label": "全局中间件链"},
+        {"path": "config/autoload/router.go", "line": 66, "end_line": 69, "label": "受保护路由组"}
+      ]
+    },
+    {
+      "id": "domain-services",
+      "type": "backend",
+      "label": "核心业务服务",
+      "sublabel": "短链 · 安全 · 路由 · A/B · 统计",
+      "tag": "同步处理链路",
+      "row": 1,
+      "col": 3,
+      "size": [176, 78],
+      "sources": [
+        {"path": "app/service/shortlink_service.go", "line": 588, "end_line": 716, "label": "跳转解析"},
+        {"path": "app/service/link_route_service.go", "line": 211, "label": "高级路由"},
+        {"path": "app/service/ab_test_service.go", "line": 340, "end_line": 381, "label": "A/B 分流"}
+      ]
+    },
+    {
+      "id": "relational-db",
+      "type": "database",
+      "label": "关系型数据库",
+      "sublabel": "MySQL · PostgreSQL · SQLite",
+      "tag": "GORM + goose 迁移",
+      "row": 1,
+      "col": 4,
+      "size": [176, 78],
+      "sources": [
+        {"path": "config/autoload/database.go", "line": 9, "end_line": 27, "label": "多数据库驱动"},
+        {"path": "pkg/service/migration/migration.go", "line": 49, "end_line": 54, "label": "goose 方言迁移"}
+      ]
+    },
+    {
+      "id": "admin-web",
+      "type": "frontend",
+      "label": "管理前端",
+      "sublabel": "Vue 3 · 嵌入 /admin/",
+      "tag": "单二进制内嵌",
+      "row": 2,
+      "col": 2,
+      "size": [176, 78],
+      "sources": [{"path": "main.go", "line": 26, "end_line": 39, "label": "静态资源嵌入"}]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis（可选）",
+      "sublabel": "缓存 + 分布式发号",
+      "row": 2,
+      "col": 4,
+      "size": [176, 78],
+      "sources": [
+        {"path": "config/autoload/cache.go", "line": 11, "label": "缓存驱动"},
+        {"path": "config/autoload/id_generator.go", "line": 11, "label": "发号器驱动"},
+        {"path": "config/autoload/redis.go", "line": 11, "end_line": 16, "label": "Redis 连接"}
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "公网访问域",
+      "wraps": ["visitor"],
+      "pad": 24
+    },
+    {
+      "kind": "security-group",
+      "label": "入口安全边界：TLS / Host",
+      "wraps": ["ingress"],
+      "pad": 24
+    },
+    {
+      "kind": "security-group",
+      "label": "dwz-server 进程：单二进制服务",
+      "wraps": ["http-router", "auth-gateway", "domain-services", "admin-web"],
+      "pad": 28
+    },
+    {
+      "kind": "security-group",
+      "label": "数据层：本机或受限内网",
+      "wraps": ["relational-db", "redis"],
+      "pad": 28
+    }
+  ],
+  "connections": [
+    {
+      "id": "visitor-to-ingress",
+      "from": "visitor",
+      "to": "ingress",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ingress-to-router",
+      "from": "ingress",
+      "to": "http-router",
+      "label": "GET /:code",
+      "variant": "emphasis"
+    },
+    {
+      "id": "router-to-services",
+      "from": "http-router",
+      "to": "domain-services",
+      "label": "公开跳转",
+      "variant": "emphasis",
+      "labelDy": 14
+    },
+    {
+      "id": "services-to-db",
+      "from": "domain-services",
+      "to": "relational-db",
+      "label": "GORM 读写",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ingress-to-admin",
+      "from": "ingress",
+      "to": "admin-web",
+      "label": "GET /admin/*",
+      "variant": "default"
+    },
+    {
+      "id": "admin-to-router",
+      "from": "admin-web",
+      "to": "http-router",
+      "label": "REST /api/v1/*",
+      "variant": "default"
+    },
+    {
+      "id": "router-to-auth",
+      "from": "http-router",
+      "to": "auth-gateway",
+      "label": "受保护 API",
+      "variant": "security"
+    },
+    {
+      "id": "auth-to-services",
+      "from": "auth-gateway",
+      "to": "domain-services",
+      "label": "身份与工作区上下文",
+      "variant": "security",
+      "labelAt": [956, 188]
+    },
+    {
+      "id": "oidc-to-auth",
+      "from": "oidc-provider",
+      "to": "auth-gateway",
+      "label": "OIDC 回调校验",
+      "variant": "security"
+    },
+    {
+      "id": "services-to-redis",
+      "from": "domain-services",
+      "to": "redis",
+      "label": "缓存 / 发号",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "前端与入口",
+      "items": [
+        "同一 Go 二进制内嵌 Vue 3 管理端与公开页面，经反向代理以 /admin/ 路径分发",
+        "短码 GET /:code 由全局中间件 shortCodeDispatch 拦截分发，不占用 Gin 根路由"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "数据与部署模式",
+      "items": [
+        "单机模式：SQLite + 内存缓存 + 本地发号，零外部依赖（DATABASE_DRIVER=sqlite）",
+        "生产模式：MySQL/PostgreSQL + Redis 缓存与分布式发号（CACHE_DRIVER=redis）",
+        "goose 管理 migrations/{mysql,postgresql,sqlite} 三方言迁移，安装完成后自动执行"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "认证与安全",
+      "items": [
+        "AuthMiddleware 按 HMAC 签名 > JWT Bearer > API Token 优先级认证",
+        "Workspace 中间件按 X-Workspace-Id 解析工作区角色（RBAC）",
+        "登录限流位于认证服务内部；未接入消息队列，跳转链路全同步"
+      ]
+    }
+  ]
+}

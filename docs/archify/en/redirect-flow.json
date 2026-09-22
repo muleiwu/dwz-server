@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "dwz-server Short-Code Redirect Sequence",
+    "locale": "en",
+    "output": "redirect-flow.en.html",
+    "viewBox": [
+      1080,
+      640
+    ],
+    "column_fit": "spread",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "dispatch-entry",
+        "label": "Entry dispatch",
+        "focus": [
+          "visitor",
+          "dispatch",
+          "controller"
+        ],
+        "note": "The short-code request is intercepted by global middleware and handed to the redirect controller."
+      },
+      {
+        "id": "cache-fallback",
+        "label": "Cache & fallback",
+        "focus": [
+          "service",
+          "cache",
+          "db"
+        ],
+        "note": "On cache miss the short_links table is queried and the entry is written back for 24 hours."
+      },
+      {
+        "id": "gate-and-branch",
+        "label": "Gate & split",
+        "focus": [
+          "service",
+          "security",
+          "routing",
+          "visitor"
+        ],
+        "note": "The security gate and advanced routing / A/B split decide the target URL; stats are recorded async."
+      }
+    ]
+  },
+  "participants": [
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "Visitor",
+      "sublabel": "browser"
+    },
+    {
+      "id": "dispatch",
+      "type": "backend",
+      "label": "Dispatch",
+      "sublabel": "shortCodeDispatch"
+    },
+    {
+      "id": "controller",
+      "type": "backend",
+      "label": "Controller",
+      "sublabel": "RedirectShortLink"
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "ShortLink",
+      "sublabel": "shortlink_service"
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "Cache",
+      "sublabel": "24h TTL"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Database",
+      "sublabel": "short_links"
+    },
+    {
+      "id": "security",
+      "type": "security",
+      "label": "Security Gate",
+      "sublabel": "EvaluateRedirect"
+    },
+    {
+      "id": "routing",
+      "type": "backend",
+      "label": "Routing + A/B",
+      "sublabel": "LinkRoute · ABTest"
+    }
+  ],
+  "segments": [
+    {
+      "from": 160,
+      "to": 236,
+      "label": "Receive & dispatch"
+    },
+    {
+      "from": 246,
+      "to": 378,
+      "label": "Cache & DB resolve"
+    },
+    {
+      "from": 388,
+      "to": 562,
+      "label": "Gate, route & redirect"
+    }
+  ],
+  "messages": [
+    {
+      "id": "get-code",
+      "from": "visitor",
+      "to": "dispatch",
+      "y": 168,
+      "label": "GET /:code",
+      "variant": "emphasis"
+    },
+    {
+      "id": "hit-dispatch",
+      "from": "dispatch",
+      "to": "controller",
+      "y": 194,
+      "label": "single-segment → Abort()",
+      "variant": "default"
+    },
+    {
+      "id": "resolve-call",
+      "from": "controller",
+      "to": "service",
+      "y": 220,
+      "label": "ResolveRedirect",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cache-read",
+      "from": "service",
+      "to": "cache",
+      "y": 250,
+      "label": "read cache",
+      "variant": "default"
+    },
+    {
+      "id": "cache-miss",
+      "from": "cache",
+      "to": "service",
+      "y": 278,
+      "label": "miss",
+      "variant": "return"
+    },
+    {
+      "id": "db-query",
+      "from": "service",
+      "to": "db",
+      "y": 306,
+      "label": "query short_links",
+      "variant": "emphasis"
+    },
+    {
+      "id": "db-row",
+      "from": "db",
+      "to": "service",
+      "y": 336,
+      "label": "link row",
+      "variant": "return"
+    },
+    {
+      "id": "cache-write",
+      "from": "service",
+      "to": "cache",
+      "y": 364,
+      "label": "write-back 24h",
+      "variant": "dashed"
+    },
+    {
+      "id": "security-eval",
+      "from": "service",
+      "to": "security",
+      "y": 392,
+      "label": "EvaluateRedirect",
+      "variant": "security"
+    },
+    {
+      "id": "security-allow",
+      "from": "security",
+      "to": "service",
+      "y": 420,
+      "label": "allow",
+      "variant": "return"
+    },
+    {
+      "id": "route-resolve",
+      "from": "service",
+      "to": "routing",
+      "y": 448,
+      "label": "route resolve + A/B split",
+      "variant": "default"
+    },
+    {
+      "id": "route-target",
+      "from": "routing",
+      "to": "service",
+      "y": 476,
+      "label": "target URL + variant",
+      "variant": "return"
+    },
+    {
+      "id": "redirect-decision",
+      "from": "service",
+      "to": "controller",
+      "y": 500,
+      "label": "redirect decision",
+      "variant": "return"
+    },
+    {
+      "id": "redirect-302",
+      "from": "controller",
+      "to": "visitor",
+      "y": 524,
+      "label": "302 Location",
+      "variant": "emphasis"
+    },
+    {
+      "id": "error-branch",
+      "from": "controller",
+      "to": "visitor",
+      "y": 556,
+      "label": "password / 403 / 404 / 410",
+      "variant": "dashed"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "dispatch",
+      "from": 172,
+      "to": 200,
+      "type": "backend"
+    },
+    {
+      "participant": "controller",
+      "from": 198,
+      "to": 560,
+      "type": "backend"
+    },
+    {
+      "participant": "service",
+      "from": 224,
+      "to": 486,
+      "type": "backend"
+    },
+    {
+      "participant": "cache",
+      "from": 244,
+      "to": 372,
+      "type": "database"
+    },
+    {
+      "participant": "db",
+      "from": 300,
+      "to": 342,
+      "type": "database"
+    },
+    {
+      "participant": "security",
+      "from": 386,
+      "to": 426,
+      "type": "security"
+    },
+    {
+      "participant": "routing",
+      "from": 442,
+      "to": 482,
+      "type": "backend"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Main path",
+      "items": [
+        "GET /:code is intercepted by the shortCodeDispatch middleware",
+        "Cache-first; DB fallback writes back for 24h"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Split & boundaries",
+      "items": [
+        "EvaluateRedirect gates risky links; A/B splits by TrafficSplit",
+        "Stats are async goroutines; /preview/:code records nothing"
+      ]
+    }
+  ]
+}
