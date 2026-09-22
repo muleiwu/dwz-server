@@ -16,8 +16,8 @@ Bilingual interactive diagrams generated with [archify](https://github.com/tt-a1
   All nodes and messages are grounded in repository code (assembly chain, short-code dispatch, redirect resolution, goose migrations, etc.).
 - 架构图两份规格带有 Git 校验的源码锚点（`meta.repository`，revision `f80ca31`，local-only 链接模式，共 17 处引用）。
   The two architecture specs carry Git-verified source anchors (`meta.repository`, revision `f80ca31`, local-only link mode, 17 references).
-- 每份 HTML 均通过 archify showcase 校验（9/9 检查、0 错误、0 警告）与浏览器 visual-check（1440×900 / 2048×1320，明暗双主题，无溢出）；各语言目录内 `*.visual-check.*` 为交付证据文件。
-  Every HTML passed archify showcase validation (9/9 checks, 0 errors, 0 warnings) and browser visual-check (1440×900 / 2048×1320, light and dark, no overflow); the `*.visual-check.*` files inside each language folder are delivery evidence.
+- 每份 HTML 均通过 archify showcase 校验（9/9 检查、0 错误、0 警告）与浏览器 visual-check（1440×900 / 2048×1320，明暗双主题，无溢出）；验证证据为生成时一次性过程产物，不入库（已由 `.gitignore` 排除）。
+  Every HTML passed archify showcase validation (9/9 checks, 0 errors, 0 warnings) and browser visual-check (1440×900 / 2048×1320, light and dark, no overflow); the evidence files are one-off process artifacts and are not tracked (excluded via `.gitignore`).
 
 ## 重新生成 / Regenerate
 
