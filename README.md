@@ -126,11 +126,19 @@ docker compose pull && docker compose up -d
 
 Download the archive for your platform from [GitHub Releases](https://github.com/muleiwu/dwz-server/releases), extract it into a writable directory, then:
 
+Linux / macOS:
+
 ```bash
 chmod +x dwz-server
 ./dwz-server start              # run in foreground
 ./dwz-server start --daemon     # daemon mode
 ./dwz-server status | restart | stop
+```
+
+Windows: download `dwz-server_Windows_x86_64.zip` (x64) or `dwz-server_Windows_arm64.zip` (ARM64), then run in PowerShell:
+
+```powershell
+.\dwz-server.exe start
 ```
 
 Open <http://localhost:8080> after first start to complete installation; lightweight mode needs no database or Redis.

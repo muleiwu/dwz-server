@@ -10,7 +10,7 @@
 
 ### 后端构建环境
 - Go 1.26.8+
-- goreleaser（可选，用于跨平台构建）
+- GoReleaser 2.6+（可选，用于跨平台构建）
 
 ## 🎨 前端打包
 
@@ -133,6 +133,14 @@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build \
     -o dwz-server-windows-amd64.exe main.go
 ```
 
+#### Windows ARM64
+
+```bash
+GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build \
+    -ldflags="-s -w" \
+    -o dwz-server-windows-arm64.exe main.go
+```
+
 #### 龙芯 LoongArch64
 
 ```bash
@@ -144,10 +152,13 @@ GOOS=linux GOARCH=loong64 CGO_ENABLED=0 go build \
 ### 方式四：使用 GoReleaser（推荐批量构建）
 
 项目已配置 `.goreleaser.yaml`，支持一键构建多平台版本。
+Windows 支持 AMD64 和 ARM64，分别生成 `dwz-server_Windows_x86_64.zip` 和
+`dwz-server_Windows_arm64.zip`，压缩包内均为 `dwz-server.exe`；Linux / macOS 使用 `tar.gz`。
+标签发布流水线会将这两个 Windows ZIP 包和校验和文件一并上传到 Release 附件。
 
 ```bash
 # 安装 goreleaser
-go install github.com/goreleaser/goreleaser@latest
+go install github.com/goreleaser/goreleaser/v2@latest
 
 # 本地快照构建（不发布）
 goreleaser release --snapshot --clean
@@ -322,6 +333,8 @@ dwz-server/
 │   ├── dwz-server_Linux_arm64.tar.gz
 │   ├── dwz-server_Linux_x86_64.tar.gz
 │   ├── dwz-server_Linux_loong64.tar.gz
+│   ├── dwz-server_Windows_x86_64.zip
+│   ├── dwz-server_Windows_arm64.zip
 │   └── ...
 ├── Dockerfile                   # 标准 Dockerfile
 ├── Dockerfile.loong64           # 龙芯架构 Dockerfile

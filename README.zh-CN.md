@@ -126,11 +126,19 @@ docker compose pull && docker compose up -d
 
 从 [GitHub Releases](https://github.com/muleiwu/dwz-server/releases) 下载对应平台压缩包，解压到可写目录后：
 
+Linux / macOS：
+
 ```bash
 chmod +x dwz-server
 ./dwz-server start              # 前台运行
 ./dwz-server start --daemon     # 守护进程模式
 ./dwz-server status | restart | stop
+```
+
+Windows：下载 `dwz-server_Windows_x86_64.zip`（x64）或 `dwz-server_Windows_arm64.zip`（ARM64），在 PowerShell 中运行：
+
+```powershell
+.\dwz-server.exe start
 ```
 
 首次启动后访问 <http://localhost:8080> 完成安装；轻量模式无需预装数据库或 Redis。

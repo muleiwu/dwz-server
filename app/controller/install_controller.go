@@ -2,8 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"os"
-	"syscall"
 	"time"
 
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/service"
@@ -11,6 +9,7 @@ import (
 	dwzInterfaces "cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/install_bootstrap"
 	httpInterfaces "cnb.cool/mliev/open/go-web/pkg/server/http_server/interfaces"
+	"cnb.cool/mliev/open/go-web/pkg/server/reload"
 )
 
 type InstallController struct {
@@ -149,8 +148,6 @@ func (ctrl InstallController) Install(c httpInterfaces.RouterContextInterface) {
 		return
 	}
 
-	logger := helper.GetLogger()
-
 	installer := service.NewInitInstallService(helper)
 
 	dbCfg := toInstallDB(req.Database)
@@ -198,27 +195,19 @@ func (ctrl InstallController) Install(c httpInterfaces.RouterContextInterface) {
 		return
 	}
 
-	// 翻转当前进程的 installed 标记,让在 exec 完成前到达的请求不再走安装向导。
+	// 翻转当前进程的 installed 标记,让在重启完成前到达的请求不再走安装向导。
 	if installed := helper.GetInstalled(); installed != nil {
 		installed.SetInstalled(true)
 	}
 
 	ctrl.SuccessWithMessage(c, "安装完成，服务即将重启...", nil)
 
-	// go-web's reload reuses the existing container providers (same priority
-	// rejects replacement), so the freshly written config.yaml would be
-	// ignored. Re-exec the binary instead — that gives us a guaranteed clean
-	// container, and gomander preserves the daemon lifecycle.
+	// Restart the process so the freshly written config.yaml is loaded into a
+	// clean container. go-web stops services first, then re-execs on Unix or
+	// spawns a replacement process on Windows. Allow the response to flush.
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		binary, err := os.Executable()
-		if err != nil {
-			logger.Error("[install] 无法定位可执行文件，请手动重启服务: " + err.Error())
-			return
-		}
-		if err := syscall.Exec(binary, os.Args, os.Environ()); err != nil {
-			logger.Error("[install] 重启服务失败，请手动重启: " + err.Error())
-		}
+		reload.Restart()
 	}()
 }
 
