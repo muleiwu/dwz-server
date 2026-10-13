@@ -102,6 +102,9 @@
         - npm exec --yes --registry=https://registry.npmjs.org --package=node@22.23.2 --package=pnpm@10.34.5 -- pnpm install --frozen-lockfile
         - npm exec --yes --registry=https://registry.npmjs.org --package=node@22.23.2 --package=pnpm@10.34.5 -- pnpm run build:antd --filter=\!./docs
         - cd .. && mkdir -p ./static/admin && cp -a ./admin-webui/apps/web-antd/dist ./static/admin
+    # changelog fetches historical tags; missing old submodule commits must not block it.
+    - name: disable recursive fetch for changelog
+      script: git config --local fetch.recurseSubmodules false
     - name: changelog
       image: cnbcool/changelog
       exports:
