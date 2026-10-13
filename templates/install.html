@@ -495,6 +495,7 @@
                         <label class="form-label" for="dbType">数据库类型</label>
                         <select class="form-input" id="dbType" name="dbType" required onchange="changeDbType()">
                             <option value="mysql" {{if eq .DatabaseConfig.Driver "mysql"}}selected{{end}}>MySQL</option>
+                            <option value="mariadb" {{if eq .DatabaseConfig.Driver "mariadb"}}selected{{end}}>MariaDB</option>
                             <option value="postgresql" {{if eq .DatabaseConfig.Driver "postgresql"}}selected{{end}}>PostgreSQL</option>
                             <option value="sqlite" {{if eq .DatabaseConfig.Driver "sqlite"}}selected{{end}}>SQLite</option>
                         </select>
@@ -507,7 +508,7 @@
                         <small class="form-help">SQLite数据库文件的存储路径</small>
                     </div>
                     
-                    <!-- MySQL/PostgreSQL 网络配置 -->
+                    <!-- MySQL/MariaDB/PostgreSQL 网络配置 -->
                     <div id="networkDbConfig">
                         <div class="form-grid">
                             <div class="form-group">
@@ -786,7 +787,7 @@
                 
                 // 只在用户主动切换时才重置端口
                 if (resetPort) {
-                    if (dbType === 'mysql') {
+                    if (dbType === 'mysql' || dbType === 'mariadb') {
                         portInput.value = '3306';
                     } else if (dbType === 'postgresql') {
                         portInput.value = '5432';
@@ -981,7 +982,7 @@
         function updateSummary() {
             // 数据库配置
             const dbType = document.getElementById('dbType').value;
-            const dbTypeText = dbType === 'mysql' ? 'MySQL' : dbType === 'postgresql' ? 'PostgreSQL' : 'SQLite';
+            const dbTypeText = document.getElementById('dbType').selectedOptions[0].textContent;
             document.getElementById('summaryDbType').textContent = dbTypeText;
             if (dbType === 'sqlite') {
                 document.getElementById('summaryDbHost').textContent = '本地文件';

@@ -15,9 +15,9 @@ import (
 	"cnb.cool/mliev/dwz/dwz-server/v2/app/model"
 	"cnb.cool/mliev/dwz/dwz-server/v2/migrations"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/interfaces"
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/database"
 	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/install_bootstrap"
 	dbconfig "cnb.cool/mliev/open/go-web/pkg/server/database/config"
-	dbDriver "cnb.cool/mliev/open/go-web/pkg/server/database/driver"
 	"github.com/pressly/goose/v3"
 	"github.com/redis/go-redis/v9"
 	"go.yaml.in/yaml/v3"
@@ -193,12 +193,14 @@ func generateInstallSecret(length int) string {
 // 包循环;memory 驱动不在安装向导里走此路径。
 var installDialectMap = map[string]string{
 	"mysql":      "mysql",
+	"mariadb":    "mysql",
 	"postgresql": "postgres",
 	"sqlite":     "sqlite3",
 }
 
 var installMigrationDirMap = map[string]string{
 	"mysql":      "mysql",
+	"mariadb":    "mysql",
 	"postgresql": "postgresql",
 	"sqlite":     "sqlite",
 }
@@ -290,11 +292,7 @@ func openInstallGormDB(cfg InstallDatabaseConfig) (*gorm.DB, error) {
 		return nil, err
 	}
 	driverCfg := toGoWebDatabaseConfig(cfg)
-	db, err := dbDriver.DatabaseDriverManager.Make(driverCfg.Driver, driverCfg)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
+	return database.Open(driverCfg)
 }
 
 func toGoWebDatabaseConfig(cfg InstallDatabaseConfig) *dbconfig.DatabaseConfig {
@@ -315,7 +313,7 @@ func toGoWebDatabaseConfig(cfg InstallDatabaseConfig) *dbconfig.DatabaseConfig {
 func NormalizeInstallDatabaseConfig(cfg InstallDatabaseConfig) (InstallDatabaseConfig, error) {
 	cfg.Driver = strings.ToLower(strings.TrimSpace(cfg.Driver))
 	switch cfg.Driver {
-	case "mysql", "postgresql":
+	case "mysql", "mariadb", "postgresql":
 		host, err := dbconfig.NormalizeTCPHost(cfg.Host)
 		if err != nil {
 			return cfg, err

@@ -20,7 +20,7 @@ English | [简体中文](README.zh-CN.md)
 
 Muleiwu URL Shortener (dwz-server) combines short-link management, multi-domain support, access policies, A/B testing, marketing attribution, and click analytics in one self-hosted platform. The backend is written in Go; the Vue 3 + Ant Design Vue admin console ships inside the same binary or Docker image.
 
-It runs standalone on SQLite with an in-memory cache and a local ID generator, or on MySQL/PostgreSQL plus Redis for production and multi-instance deployments.
+It runs standalone on SQLite with an in-memory cache and a local ID generator, or on MySQL/MariaDB/PostgreSQL plus Redis for production and multi-instance deployments.
 
 > **Important:** before creating production short links, configure your public short domain's DNS, certificate, and reverse proxy. The app resolves links by the exact `Host + short code` it receives — if a proxy rewrites Host to an internal address, container name, or wrong port, the admin panel and health check stay green while public short links return 404. See the [first-use guide](https://mdoc.cc/mliev/dwz/v2.22.3/391) and the [aaPanel tutorial](https://mdoc.cc/mliev/dwz/v2.22.3/335) (both in Chinese).
 
@@ -84,7 +84,7 @@ Four diagrams, grounded in the repository code, are provided as interactive HTML
 | Scenario | Database | Cache | ID generator |
 | --- | --- | --- | --- |
 | Lightweight standalone | SQLite | memory | local |
-| Standard production | MySQL / PostgreSQL | Redis | Redis |
+| Standard production | MySQL / MariaDB / PostgreSQL | Redis | Redis |
 
 ### Docker
 
@@ -112,7 +112,9 @@ docker compose up -d
 docker compose logs -f dwz-server
 ```
 
-Open <http://localhost:8080> in a browser; a fresh install redirects to the setup wizard: (1) choose SQLite or enter an existing MySQL/PostgreSQL connection; (2) for standalone mode pick the memory cache and local ID generator (or enter Redis connection details); (3) create the first administrator. The wizard writes `config/config.yaml` and `config/install.lock`, runs migrations, and restarts the service. Keep all three mounted directories — `data` also stores uploaded brand logos.
+Open <http://localhost:8080> in a browser; a fresh install redirects to the setup wizard: (1) choose SQLite or enter an existing MySQL/MariaDB/PostgreSQL connection; (2) for standalone mode pick the memory cache and local ID generator (or enter Redis connection details); (3) create the first administrator. The wizard writes `config/config.yaml` and `config/install.lock`, runs migrations, and restarts the service. Keep all three mounted directories — `data` also stores uploaded brand logos.
+
+For MariaDB, select **MariaDB** in the wizard (default port `3306`). The saved configuration keeps `database.driver: mariadb`; connections and schema migrations reuse the MySQL driver and migration scripts.
 
 ```bash
 # Health check

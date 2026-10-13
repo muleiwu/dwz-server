@@ -20,7 +20,7 @@
 
 木雷短网址（dwz-server）集短链生成、多域名、访问策略、A/B 测试、营销归因和统计分析于一体。服务端使用 Go 开发，管理端基于 Vue 3 与 Ant Design Vue，并随同一个二进制或 Docker 镜像分发。
 
-项目既可以用 SQLite、内存缓存和本地发号器单机运行，也可以接入 MySQL/PostgreSQL 与 Redis，用于生产环境和多实例部署。
+项目既可以用 SQLite、内存缓存和本地发号器单机运行，也可以接入 MySQL/MariaDB/PostgreSQL 与 Redis，用于生产环境和多实例部署。
 
 > **部署与首次使用的关键前置**：创建正式短链前，必须先配置公开短域名的 DNS、证书和反向代理。程序按实际收到的 HTTP `Host + 短码` 查找记录——Host 被改成内部地址、容器名或错误端口时，后台和健康检查可能一切正常，但公开短链仍会返回 404。详见[首次使用说明](https://mdoc.cc/mliev/dwz/v2.22.3/391)与[宝塔面板安装教程](https://mdoc.cc/mliev/dwz/v2.22.3/335)。
 
@@ -84,7 +84,7 @@
 | 场景 | 数据库 | 缓存 | ID 发号器 |
 | --- | --- | --- | --- |
 | 轻量单机 | SQLite | memory | local |
-| 标准生产 | MySQL / PostgreSQL | Redis | Redis |
+| 标准生产 | MySQL / MariaDB / PostgreSQL | Redis | Redis |
 
 ### Docker
 
@@ -112,7 +112,9 @@ docker compose up -d
 docker compose logs -f dwz-server
 ```
 
-浏览器打开 <http://localhost:8080>，未安装时会自动跳转安装向导：① 选择 SQLite 或填写已有 MySQL/PostgreSQL 连接；② 单机模式选内存缓存与本地发号器（使用 Redis 时填写连接）；③ 创建首个系统管理员。安装完成后生成 `config/config.yaml` 与 `config/install.lock`，执行迁移并自动重启；三个挂载目录需持续保留。
+浏览器打开 <http://localhost:8080>，未安装时会自动跳转安装向导：① 选择 SQLite 或填写已有 MySQL/MariaDB/PostgreSQL 连接；② 单机模式选内存缓存与本地发号器（使用 Redis 时填写连接）；③ 创建首个系统管理员。安装完成后生成 `config/config.yaml` 与 `config/install.lock`，执行迁移并自动重启；三个挂载目录需持续保留。
+
+使用 MariaDB 时，在向导中选择 **MariaDB**，默认端口为 `3306`。配置文件保留 `database.driver: mariadb`，数据库连接和建表迁移复用 MySQL 驱动及迁移脚本。
 
 ```bash
 # 健康检查

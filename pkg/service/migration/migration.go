@@ -39,6 +39,7 @@ const legacySentinelTable = "users"
 // dev/test environments.
 var dialectMap = map[string]string{
 	"mysql":      "mysql",
+	"mariadb":    "mysql",
 	"postgresql": "postgres",
 	"sqlite":     "sqlite3",
 	"memory":     "sqlite3",
@@ -48,6 +49,7 @@ var dialectMap = map[string]string{
 // also work for the in-memory driver.
 var dirByDriver = map[string]string{
 	"mysql":      "migrations/mysql",
+	"mariadb":    "migrations/mysql",
 	"postgresql": "migrations/postgresql",
 	"sqlite":     "migrations/sqlite",
 	"memory":     "migrations/sqlite",

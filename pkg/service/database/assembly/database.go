@@ -3,10 +3,10 @@ package assembly
 import (
 	"reflect"
 
+	"cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/database"
 	installedImpl "cnb.cool/mliev/dwz/dwz-server/v2/pkg/service/installed/impl"
 	"cnb.cool/mliev/open/go-web/pkg/container"
 	"cnb.cool/mliev/open/go-web/pkg/server/database/config"
-	dbDriver "cnb.cool/mliev/open/go-web/pkg/server/database/driver"
 	"github.com/muleiwu/golog"
 	"github.com/muleiwu/gsr"
 	"gorm.io/gorm"
@@ -38,7 +38,7 @@ func (Database) Assembly() (any, error) {
 
 	cfg := container.MustGet[gsr.Provider]()
 	dbCfg := config.NewConfig(cfg)
-	db, err := dbDriver.DatabaseDriverManager.Make(dbCfg.Driver, dbCfg)
+	db, err := database.Open(dbCfg)
 	if err != nil {
 		// Already installed but DB is unreachable: log loudly and still
 		// register a nil — operators can fix the config and SIGHUP-reload.

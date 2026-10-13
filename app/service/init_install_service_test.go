@@ -8,6 +8,70 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+func TestNormalizeInstallDatabaseConfigSupportsMariaDB(t *testing.T) {
+	cfg, err := NormalizeInstallDatabaseConfig(InstallDatabaseConfig{
+		Driver: "  MariaDB  ", Host: " 127.0.0.1 ", Port: 3307,
+		DBName: "dwz", Username: "dwz", Password: "secret",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Driver != "mariadb" || cfg.Host != "127.0.0.1" || cfg.Port != 3307 {
+		t.Fatalf("unexpected normalized config: driver=%q host=%q port=%d", cfg.Driver, cfg.Host, cfg.Port)
+	}
+	content, err := renderInstallConfigFile(cfg, InstallRedisConfig{}, "memory", "local", time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved installConfigFile
+	if err := yaml.Unmarshal(content, &saved); err != nil {
+		t.Fatal(err)
+	}
+	if saved.Database.Driver != "mariadb" || saved.Database.Host != cfg.Host ||
+		saved.Database.Port != cfg.Port || saved.Database.DBName != cfg.DBName ||
+		saved.Database.Username != cfg.Username || saved.Database.Password != cfg.Password {
+		t.Fatal("MariaDB config was not preserved in generated YAML")
+	}
+}
+
+func TestNormalizeInstallDatabaseConfigValidatesNetworkDatabases(t *testing.T) {
+	cases := []struct {
+		name   string
+		change func(*InstallDatabaseConfig)
+	}{
+		{"host", func(c *InstallDatabaseConfig) { c.Host = "127.0.0.1)/dwz?allowAllFiles=true" }},
+		{"zero_port", func(c *InstallDatabaseConfig) { c.Port = 0 }},
+		{"large_port", func(c *InstallDatabaseConfig) { c.Port = 65536 }},
+		{"empty_database", func(c *InstallDatabaseConfig) { c.DBName = " " }},
+		{"database_parameters", func(c *InstallDatabaseConfig) { c.DBName = "dwz?allowAllFiles=true" }},
+		{"database_control_character", func(c *InstallDatabaseConfig) { c.DBName = "dwz\n" }},
+		{"empty_user", func(c *InstallDatabaseConfig) { c.Username = " " }},
+	}
+	for _, driver := range []string{"mysql", "mariadb", "postgresql"} {
+		t.Run(driver, func(t *testing.T) {
+			cfg := InstallDatabaseConfig{Driver: driver, Host: "localhost", Port: 3306, DBName: "dwz", Username: "dwz"}
+			if _, err := NormalizeInstallDatabaseConfig(cfg); err != nil {
+				t.Fatalf("valid config rejected: %v", err)
+			}
+			for _, tc := range cases {
+				t.Run(tc.name, func(t *testing.T) {
+					invalid := cfg
+					tc.change(&invalid)
+					if _, err := NormalizeInstallDatabaseConfig(invalid); err == nil {
+						t.Fatal("expected invalid config to be rejected")
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestInstallMariaDBUsesMySQLMigrations(t *testing.T) {
+	if installDialectMap["mariadb"] != "mysql" || installMigrationDirMap["mariadb"] != "mysql" {
+		t.Fatal("MariaDB must use the MySQL dialect and migration directory during installation")
+	}
+}
+
 func TestNormalizeInstallDatabaseConfigRejectsMySQLParamInjection(t *testing.T) {
 	_, err := NormalizeInstallDatabaseConfig(InstallDatabaseConfig{
 		Driver:   "mysql",
