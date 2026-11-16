@@ -58,3 +58,52 @@ pnpm build:antd
 ```
 
 企业版前端构建使用 `VITE_APP_EDITION=ee pnpm build:antd`。本地 go.work 是开发覆盖，不用于发布依赖验收。
+
+## 2026-11-16：CE 管理端依赖复查
+
+本轮仅更新当前 `dwz-server/admin-webui` 子模块及安全修复所需的兼容代码；没有重新审计 Go、企业版或容器 OS 包。继续使用 Node.js 22.23.2 和 pnpm 10.34.5。依赖解析与审计使用 npm 官方源，保留无关 catalog 项目的原有版本范围与锁定版本。
+
+### 审计结果
+
+| 级别 | 更新前 | 更新后 |
+| --- | ---: | ---: |
+| critical | 0 | 0 |
+| high | 24 | 0 |
+| moderate | 33 | 0 |
+| low | 15 | 1 |
+| 合计 | 72 | 1 |
+
+剩余告警为 [GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4)：deepmerge 4.3.1 尚无上游修复版本，本轮使用 pnpm 本地补丁修复。npm 审计按发布版本匹配，无法识别本地补丁，因此 `pnpm run audit:security` 仍返回退出码 1。没有加入忽略列表，也不将这一结果记为“零漏洞”。
+
+### 实际锁定的升级版本
+
+| 依赖 | 本轮锁定版本 |
+| --- | --- |
+| Vite / Vitest（含内部包） | 7.3.8 / 4.1.12 |
+| Happy DOM | 21.0.4 |
+| Zod / zod-defaults | 4.6.7 / 0.2.3 |
+| vue-i18n / @intlify/core-base / @intlify/shared | 11.4.20 |
+| qs / follow-redirects | 6.17.1 / 1.16.3 |
+| node-forge / undici | 1.4.3 / 7.30.2 |
+| serialize-javascript / source-map-js | 7.1.4 / 1.2.2 |
+| fast-uri / postcss-selector-parser 6.x | 3.1.9 / 6.1.6 |
+| 受影响的 glob / minimatch | 14.0.6 / 11.0.8 |
+
+版本范围继续使用兼容的 caret 范围，部分依赖解析到计划最低修复版本之后的兼容版本；实际安装结果由锁文件固定。minimatch 的未受本轮告警影响的 3.x、5.x 分支保留原版本。
+
+### 兼容性与本地补丁
+
+- 表单规则迁移到 Zod 4，移除只支持 Zod 3 的 `@vee-validate/zod`，保留 vee-validate 4.15.1。新的内部 TypedSchema 适配器处理异步校验、转换、默认值、嵌套数组及 union 错误路径，遵循 [Zod 4 迁移说明](https://zod.dev/v4/changelog)。
+- Vue 深层响应式代理不能代理 Zod 4 的不可配置内部属性。初始化、规则解包、必填判断和校验入口统一通过 `toRaw` 获取原始 schema；响应式及 readonly schema 均有回归测试。原有表单初始化行为保持不变。
+- `admin-webui/patches/deepmerge@4.3.1.patch` 修复源码、CommonJS 和 UMD 入口，阻止目标复制和源合并过程中的 `__proto__`、`constructor`、`prototype` 键。测试覆盖空原型对象、原型占位值、嵌套合并、数组及 Symbol 属性。
+- minimatch 11 改为具名导出；`admin-webui/patches/depcheck@1.4.7.patch` 调整 depcheck 的文件匹配与 gulp 插件匹配入口。回归测试使用临时项目验证导入和插件检测。
+- 两个补丁均登记在 `pnpm-workspace.yaml` 的 `patchedDependencies`，补丁哈希进入锁文件；不直接修改安装目录。移除补丁前，需升级到包含对应修复的上游版本并重新执行回归测试及完整审计。
+
+### 本轮验证
+
+- 升级前 33 个测试文件、285 个单元测试通过；升级后 38 个测试文件、311 个测试通过。
+- `pnpm check:type`、`pnpm build:antd`、修改源码的 ESLint 检查通过。
+- `pnpm check:dep` 正常完成，未报告缺失或未使用依赖。
+- 新增测试验证 archiver 文件匹配和 Workbox manifest 生成，覆盖默认生产构建未启用的可选插件路径。
+- Chromium 实测开发服务和生产预览：登录输入框正常渲染，空表单提示正确，填写后错误提示消失，没有意外控制台错误。站点品牌和登录选项 GET 接口使用模拟响应，未发送登录请求；此项不等于后端认证端到端验证。
+- `pnpm install --frozen-lockfile` 通过，安装前后的 workspace 配置和锁文件哈希一致，两个补丁的登记与哈希通过锁文件校验。
